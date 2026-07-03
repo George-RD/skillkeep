@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "dev.skillkeep.app",
   "build": {
-    "beforeDevCommand": "bun run --cwd ../packages/ui dev",
-    "beforeBuildCommand": "bun run --cwd ../packages/ui build",
+    "beforeDevCommand": "bun run --cwd ../../packages/ui dev",
+    "beforeBuildCommand": "bun run --cwd ../../packages/ui build",
     "devUrl": "http://localhost:5173",
-    "frontendDist": "../../packages/ui/dist"
+    "frontendDist": "../../../packages/ui/dist"
   },
   "app": {
     "windows": [],
@@ -25,6 +25,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "externalBin": ["binaries/skillkeep"]
+    "externalBin": ["../binaries/skillkeep"]
   }
 }

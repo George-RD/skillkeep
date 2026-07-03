@@ -18,3 +18,14 @@ tauri-build = { version = "2", features = [] }
 [dependencies]
 # Core Tauri runtime: window/webview management, IPC, bundler config types.
 tauri = { version = "2" }
+# Spawns the compiled `skillkeep` CLI as the daemon sidecar (Command::sidecar) and manages its lifecycle.
+tauri-plugin-shell = "2"
+# Native error dialogs for boot-sequence failures (sidecar spawn/health-check failure).
+tauri-plugin-dialog = "2"
+# (De)serialises the injected `window.__SKILLKEEP__` global and reads `daemon.token`/`daemon.port`.
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Resolves the platform data dir (matches @skillkeep/core's dataDir() contract) without hand-rolling per-OS paths.
+dirs = "6"
+# Minimal HTTP client for polling the sidecar's GET /healthz; no TLS features needed (loopback http only).
+reqwest = { version = "0.13", default-features = false, features = ["blocking", "json"] }
