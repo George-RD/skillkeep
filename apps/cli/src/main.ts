@@ -213,6 +213,15 @@ export async function runCheckCommand(config: Config, write: Writer = report): P
 
 // --- doctor ----------------------------------------------------------------------
 
+/** Doctor hint shown only on Windows when the symlink probe failed: how to unlock symlink mode. */
+export function windowsSymlinkHint(
+  symlinkSupported: boolean,
+  platform: NodeJS.Platform = process.platform,
+): string | null {
+  if (platform !== "win32" || symlinkSupported) return null;
+  return "hint: enable Windows Developer Mode (Settings > System > For developers) to allow symlinks without elevation; skillkeep uses copy mode until then";
+}
+
 export async function runDoctorCommand(config: Config, write: Writer = report): Promise<void> {
   const result = await runDoctor(config);
   write(
@@ -221,6 +230,8 @@ export async function runDoctorCommand(config: Config, write: Writer = report): 
   write(
     `link mode: ${result.linkMode} (symlinks ${result.symlinkSupported ? "supported" : "unsupported"} on this machine)`,
   );
+  const hint = windowsSymlinkHint(result.symlinkSupported);
+  if (hint) write(hint);
   write(
     `clients found: ${result.clientsFound.length > 0 ? result.clientsFound.join(", ") : "none"}`,
   );
