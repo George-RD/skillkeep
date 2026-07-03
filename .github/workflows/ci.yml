@@ -23,3 +23,36 @@ jobs:
         run: bunx biome ci .
       - name: test
         run: bun test
+
+  desktop-rust:
+    # Only the platforms the desktop shell actually targets (macOS + Windows, per the plan) --
+    # apps/desktop/src-tauri is never built or shipped for Linux.
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            triple: aarch64-apple-darwin
+          - os: windows-latest
+            triple: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - name: placeholder sidecar
+        # tauri-build's build.rs (runs from Cargo's build script, which `cargo clippy` also
+        # triggers) hard-fails if `externalBin`'s resource path doesn't exist on disk -- it never
+        # reads the file's contents, so a zero-byte stand-in is enough to satisfy the manifest
+        # check without actually compiling apps/cli (that only needs to happen for a real release
+        # build, handled by release.yml's `sidecar` job).
+        shell: bash
+        run: |
+          out="apps/desktop/binaries/skillkeep-${{ matrix.triple }}"
+          if [[ "${{ matrix.os }}" == windows-latest ]]; then out="${out}.exe"; fi
+          mkdir -p apps/desktop/binaries
+          touch "$out"
+      - name: cargo clippy
+        working-directory: apps/desktop/src-tauri
+        run: cargo clippy --all-targets -- -D warnings
