@@ -1,6 +1,6 @@
 import { type ReactNode, useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
-import type { Settings, SettingsInput } from "../api/types";
+import type { HubInput, Settings, SettingsInput } from "../api/types";
 import { ErrorCard } from "../components/ErrorCard";
 import { StringListEditor } from "../components/ListEditor";
 import { useToast } from "../components/Toast";
@@ -8,7 +8,7 @@ import { usePutSettingsMutation, useSettings } from "../hooks/api";
 
 const KNOWN_CLIENTS = ["claude", "codex", "opencode", "gemini", "omp", "cursor"];
 
-function toInput(d: Settings): SettingsInput {
+export function toInput(d: Settings): SettingsInput {
   return {
     registryRoot: d.registryRoot,
     repoRoots: [...d.repoRoots],
@@ -16,7 +16,14 @@ function toInput(d: Settings): SettingsInput {
     repoClients: [...d.repoClients],
     linkMode: d.linkMode,
     inboxDirs: [...d.inboxDirs],
+    hub: d.hub ? { url: d.hub.url, token: "", device: d.hub.device } : null,
   };
+}
+
+/** Toggling hub sync off nulls the whole object; toggling on seeds blank fields (or keeps them). */
+export function withHubEnabled(form: SettingsInput, enabled: boolean): SettingsInput {
+  if (!enabled) return { ...form, hub: null };
+  return { ...form, hub: form.hub ?? { url: "", token: "", device: "" } };
 }
 
 function clientOptions(...lists: string[][]): string[] {
@@ -49,6 +56,10 @@ export function SettingsScreen() {
 
   function update(patch: Partial<SettingsInput>) {
     setForm((prev) => (prev ? { ...prev, ...patch } : prev));
+  }
+
+  function updateHub(patch: Partial<HubInput>) {
+    setForm((prev) => (prev?.hub ? { ...prev, hub: { ...prev.hub, ...patch } } : prev));
   }
 
   function save() {
@@ -140,6 +151,51 @@ export function SettingsScreen() {
           placeholder="~/.omp/agent/managed-skills"
           onChange={(next) => update({ inboxDirs: next })}
         />
+      </Field>
+
+      <Field label="Hub sync">
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.hub !== null}
+              onChange={(e) => setForm(withHubEnabled(form, e.target.checked))}
+            />
+            Enable hub sync
+          </label>
+          {form.hub !== null && (
+            <div className="flex flex-col gap-2 pl-6">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-slate-500">URL</span>
+                <input
+                  className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={form.hub.url}
+                  placeholder="https://hub.example.com"
+                  onChange={(e) => updateHub({ url: e.target.value })}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-slate-500">Token</span>
+                <input
+                  type="password"
+                  className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={form.hub.token}
+                  placeholder="Leave blank to keep the current token"
+                  onChange={(e) => updateHub({ token: e.target.value })}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-slate-500">Device name</span>
+                <input
+                  className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={form.hub.device}
+                  placeholder="e.g. laptop"
+                  onChange={(e) => updateHub({ device: e.target.value })}
+                />
+              </label>
+            </div>
+          )}
+        </div>
       </Field>
 
       <div className="flex justify-end">

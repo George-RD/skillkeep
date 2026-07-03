@@ -1,27 +1,55 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { baseUrl, getConnection } from "./api/client";
+import type { Health } from "./api/types";
 import { useHealth } from "./hooks/api";
 import { DetectScreen } from "./screens/Detect";
+import { DevicesScreen } from "./screens/Devices";
 import { RegistryScreen } from "./screens/Registry";
 import { SettingsScreen } from "./screens/Settings";
 import { SyncScreen } from "./screens/Sync";
 import { UsageScreen } from "./screens/Usage";
 
-type ScreenId = "detect" | "registry" | "sync" | "usage" | "settings";
+export type ScreenId = "detect" | "registry" | "sync" | "usage" | "settings" | "devices";
 
-const NAV: { id: ScreenId; label: string }[] = [
-  { id: "detect", label: "Detect" },
+interface NavItem {
+  id: ScreenId;
+  label: string;
+  /** Omitted → shown in both modes. "hub" → hub-mode daemon only. "agent" → agent-mode daemon only. */
+  restrict?: "hub" | "agent";
+}
+
+const ALL_NAV: NavItem[] = [
+  { id: "detect", label: "Detect", restrict: "agent" },
   { id: "registry", label: "Registry" },
-  { id: "sync", label: "Sync" },
+  { id: "devices", label: "Devices", restrict: "hub" },
+  { id: "sync", label: "Sync", restrict: "agent" },
   { id: "usage", label: "Usage" },
   { id: "settings", label: "Settings" },
 ];
+
+/** The nav items relevant to the daemon's current mode. Undefined mode (health not loaded yet,
+ * or an older daemon that omits the field) is treated as agent mode. Detect/Sync call routes
+ * that 501 in hub mode; Devices only exists on a hub daemon. */
+export function visibleNav(mode: Health["mode"] | undefined): NavItem[] {
+  const isHub = mode === "hub";
+  return ALL_NAV.filter((n) => n.restrict === undefined || (n.restrict === "hub") === isHub);
+}
 
 export function App() {
   const [screen, setScreen] = useState<ScreenId>("detect");
   const queryClient = useQueryClient();
   const health = useHealth();
+  const mode = health.data?.mode;
+  const nav = useMemo(() => visibleNav(mode), [mode]);
+
+  // If the daemon's mode flips (or the current screen is invalid for it, e.g. Detect while
+  // hub-mode Detect/Sync are hidden), fall back to the first screen still on the nav.
+  useEffect(() => {
+    if (!nav.some((n) => n.id === screen)) {
+      setScreen(nav[0]?.id ?? "registry");
+    }
+  }, [nav, screen]);
 
   // SSE from the daemon drives cache invalidation. EventSource can't send
   // headers, so the bearer token rides as a query param (the daemon accepts it
@@ -58,7 +86,7 @@ export function App() {
             offline={health.isError}
           />
           <nav className="ml-auto flex gap-1">
-            {NAV.map((n) => (
+            {nav.map((n) => (
               <button
                 type="button"
                 key={n.id}
@@ -79,6 +107,7 @@ export function App() {
         {screen === "sync" && <SyncScreen />}
         {screen === "usage" && <UsageScreen />}
         {screen === "settings" && <SettingsScreen />}
+        {screen === "devices" && <DevicesScreen />}
       </main>
     </div>
   );

@@ -2,7 +2,10 @@ import type {
   AdoptItem,
   AdoptResult,
   Detection,
+  Device,
   Health,
+  HubPullResult,
+  HubPushResult,
   OpResult,
   RegistryScope,
   Settings,
@@ -130,3 +133,11 @@ export const getSettings = (): Promise<Settings> => apiFetch<Settings>("/api/set
 
 export const putSettings = (input: SettingsInput): Promise<{ ok: true }> =>
   apiFetch<{ ok: true }>("/api/settings", { method: "PUT", body: JSON.stringify(input) });
+
+export const getDevices = (): Promise<Device[]> => apiFetch<Device[]>("/api/v1/devices");
+
+export const postHubPush = (): Promise<HubPushResult> =>
+  apiFetch<HubPushResult>("/api/hub/push", { method: "POST" });
+
+export const postHubPull = (): Promise<HubPullResult> =>
+  apiFetch<HubPullResult>("/api/hub/pull", { method: "POST" });

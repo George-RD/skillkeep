@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getDevices,
   getHealth,
   getRegistry,
   getScan,
@@ -9,6 +10,8 @@ import {
   getUsage,
   postAdopt,
   postArchive,
+  postHubPull,
+  postHubPush,
   postMove,
   postSync,
   putSettings,
@@ -23,6 +26,7 @@ export const queryKeys = {
   skill: (name: string) => ["skill", name] as const,
   status: ["status"] as const,
   settings: ["settings"] as const,
+  devices: ["devices"] as const,
   usage: (group: UsageGroup, from: string, to: string) => ["usage", group, from, to] as const,
 };
 
@@ -122,5 +126,38 @@ export function useSyncMutation() {
 }
 
 export function usePutSettingsMutation() {
-  return useMutation({ mutationFn: (input: SettingsInput) => putSettings(input) });
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: SettingsInput) => putSettings(input),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.settings });
+    },
+  });
+}
+
+export function useDevices() {
+  return useQuery({ queryKey: queryKeys.devices, queryFn: getDevices });
+}
+
+export function useHubPushMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => postHubPush(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.registry });
+      qc.invalidateQueries({ queryKey: queryKeys.devices });
+    },
+  });
+}
+
+export function useHubPullMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => postHubPull(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.registry });
+      qc.invalidateQueries({ queryKey: queryKeys.scan });
+      qc.invalidateQueries({ queryKey: queryKeys.status });
+    },
+  });
 }
