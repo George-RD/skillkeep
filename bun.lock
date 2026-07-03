@@ -10,6 +10,17 @@
         "typescript": "^5.6.0",
       },
     },
+    "apps/cli": {
+      "name": "@skillkeep/cli",
+      "version": "0.1.0",
+      "bin": {
+        "skillkeep": "src/main.ts",
+      },
+      "dependencies": {
+        "@skillkeep/core": "workspace:*",
+        "@skillkeep/server": "workspace:*",
+      },
+    },
     "apps/desktop": {
       "name": "@skillkeep/desktop",
       "version": "0.1.0",
@@ -247,6 +258,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.62.2", "", { "os": "win32", "cpu": "x64" }, "sha512-T6xr6ucWSFto+VGajA8YH26LdpHRuP4YLHEKAtCWvJDOlnmWcDZVCI2Jmjr+IFHDlt2zRaTAKE4tfjTaWLgJBg=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.62.2", "", { "os": "win32", "cpu": "x64" }, "sha512-BfzEnDJOt9T8M989/lA37EcJgat01wLRnoi5dQf3QzOH7jzpqTAzdDbVfRljVr5r+jzKqpbHeyOfAaXxAd0PAA=="],
+
+    "@skillkeep/cli": ["@skillkeep/cli@workspace:apps/cli"],
 
     "@skillkeep/core": ["@skillkeep/core@workspace:packages/core"],
 

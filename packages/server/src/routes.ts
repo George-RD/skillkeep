@@ -1,0 +1,441 @@
+import type { Database } from "bun:sqlite";
+import { randomUUID } from "node:crypto";
+import { existsSync } from "node:fs";
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
+import * as path from "node:path";
+import {
+  adoptDetectedBulk,
+  archiveSkill,
+  buildStatus,
+  CLIENT_DIRS,
+  type ClientId,
+  type Config,
+  type DetectedSkill,
+  findInRegistry,
+  getConfig,
+  globalOnlyTokenEstimate,
+  hashSkillDir,
+  loadRules,
+  moveSkill,
+  readSkillMeta,
+  resolveLinkMode,
+  runSync,
+  scanRegistry,
+  setConfig,
+  symlinkProbe,
+  tildeExpand,
+} from "@skillkeep/core";
+import { requireAuth } from "./auth";
+import { emit, sseResponse } from "./events";
+import { getScan, resetScanCache } from "./scan-cache";
+
+/** Everything a route handler needs: the state store, the bearer token, and the daemon's data dir. */
+export interface RouterContext {
+  db: Database;
+  token: string;
+  dataDir: string;
+  version: string;
+}
+
+const UI_DIST_DIR = path.join(import.meta.dir, "../../ui/dist");
+const ALL_CLIENT_IDS = Object.keys(CLIENT_DIRS) as ClientId[];
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+async function readJsonBody<T>(req: Request): Promise<T | null> {
+  try {
+    return (await req.json()) as T;
+  } catch {
+    return null;
+  }
+}
+
+// --- /healthz ----------------------------------------------------------------
+
+function handleHealthz(ctx: RouterContext): Response {
+  return jsonResponse({ ok: true, version: ctx.version });
+}
+
+// --- /api/scan -----------------------------------------------------------------
+
+async function handleScan(ctx: RouterContext, url: URL): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const fresh = url.searchParams.get("fresh") === "1";
+  const { data, computed } = await getScan(config, fresh);
+  if (computed) emit("scan:progress");
+  return jsonResponse(data);
+}
+
+// --- /api/adopt ------------------------------------------------------------
+
+interface AdoptItemInput {
+  name: string;
+  path: string;
+  scope: string;
+}
+
+interface AdoptResultOutput {
+  name: string;
+  ok: boolean;
+  error?: string;
+}
+
+async function handleAdopt(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<{ items?: AdoptItemInput[] }>(req);
+  if (!body || !Array.isArray(body.items)) {
+    return jsonResponse({ error: "expected { items: AdoptItem[] }" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  const { data: detection } = await getScan(config, false);
+
+  const results: (AdoptResultOutput | null)[] = body.items.map(() => null);
+  const bulkInputs: { skill: DetectedSkill; scope: string }[] = [];
+  const bulkPositions: number[] = [];
+  body.items.forEach((item, index) => {
+    const skill = detection.skills.find((s) => s.name === item.name && s.path === item.path);
+    if (!skill) {
+      results[index] = { name: item.name, ok: false, error: "not found in last scan" };
+      return;
+    }
+    bulkInputs.push({ skill, scope: item.scope });
+    bulkPositions.push(index);
+  });
+
+  const bulkResults = await adoptDetectedBulk(bulkInputs, config);
+  bulkResults.forEach((result, i) => {
+    const position = bulkPositions[i];
+    if (position !== undefined) results[position] = result;
+  });
+
+  resetScanCache();
+  return jsonResponse(results);
+}
+
+// --- /api/registry -----------------------------------------------------------
+
+async function handleRegistryList(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const entries = await scanRegistry(config.registryRoot);
+  const withHash = await Promise.all(
+    entries.map(async (entry) => ({
+      scope: entry.scope,
+      name: entry.skill.name,
+      description: entry.skill.description,
+      hash: await hashSkillDir(entry.skill.dir),
+    })),
+  );
+  const byScope = new Map<string, { name: string; description: string | null; hash: string }[]>();
+  for (const item of withHash) {
+    const list = byScope.get(item.scope) ?? [];
+    list.push({ name: item.name, description: item.description, hash: item.hash });
+    byScope.set(item.scope, list);
+  }
+  const scopes = [...byScope.entries()].map(([scope, skills]) => ({ scope, skills }));
+  return jsonResponse(scopes);
+}
+
+async function handleRegistryMove(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<{ name?: unknown; toScope?: unknown }>(req);
+  if (!body || typeof body.name !== "string" || typeof body.toScope !== "string") {
+    return jsonResponse({ error: "expected { name: string, toScope: string }" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  try {
+    await moveSkill(config.registryRoot, body.name, body.toScope);
+    resetScanCache();
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+async function handleRegistryArchive(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<{ name?: unknown }>(req);
+  if (!body || typeof body.name !== "string") {
+    return jsonResponse({ error: "expected { name: string }" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  try {
+    await archiveSkill(config.registryRoot, body.name);
+    resetScanCache();
+    return jsonResponse({ ok: true });
+  } catch (err) {
+    return jsonResponse({ ok: false, error: err instanceof Error ? err.message : String(err) });
+  }
+}
+
+// --- /api/skill --------------------------------------------------------------
+
+async function handleSkillGet(ctx: RouterContext, url: URL): Promise<Response> {
+  const name = url.searchParams.get("name");
+  if (!name) return jsonResponse({ error: "missing name query param" }, 400);
+  const config = getConfig(ctx.db);
+  const entry = await findInRegistry(config.registryRoot, name);
+  if (!entry) return jsonResponse({ error: "not found" }, 404);
+  const content = await Bun.file(entry.skill.skillMdPath).text();
+  return jsonResponse({ name, content });
+}
+
+/** Validate SKILL.md content in a disposable temp dir (via the same parser the registry uses) before ever touching the real file. */
+async function validateSkillContent(
+  content: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const tempDir = path.join(os.tmpdir(), `skillkeep-validate-${randomUUID()}`);
+  await fs.mkdir(tempDir, { recursive: true });
+  try {
+    await fs.writeFile(path.join(tempDir, "SKILL.md"), content, "utf8");
+    const meta = await readSkillMeta(tempDir);
+    if (meta.invalid) {
+      return {
+        ok: false,
+        error: "invalid SKILL.md: missing or unparsable frontmatter description",
+      };
+    }
+    return { ok: true };
+  } finally {
+    await fs.rm(tempDir, { recursive: true, force: true });
+  }
+}
+
+async function handleSkillPut(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<{ name?: unknown; content?: unknown }>(req);
+  if (!body || typeof body.name !== "string" || typeof body.content !== "string") {
+    return jsonResponse({ error: "expected { name: string, content: string }" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  const entry = await findInRegistry(config.registryRoot, body.name);
+  if (!entry) return jsonResponse({ error: "not found" }, 404);
+
+  const validation = await validateSkillContent(body.content);
+  if (!validation.ok) return jsonResponse({ error: validation.error }, 422);
+
+  await fs.writeFile(entry.skill.skillMdPath, body.content, "utf8");
+  resetScanCache();
+  return jsonResponse({ ok: true });
+}
+
+// --- /api/sync -----------------------------------------------------------------
+
+async function handleSync(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<{ dryRun?: unknown }>(req);
+  if (!body || typeof body.dryRun !== "boolean") {
+    return jsonResponse({ error: "expected { dryRun: boolean }" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  const report = await runSync(config, { dryRun: body.dryRun, prune: false });
+  if (!body.dryRun) {
+    resetScanCache();
+    emit("sync:done");
+  }
+  return jsonResponse(report);
+}
+
+// --- /api/status ---------------------------------------------------------------
+
+async function handleStatus(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const rules = await loadRules(config.registryRoot);
+  const [status, tokenEstimate, { data: scan }] = await Promise.all([
+    buildStatus(config.registryRoot, rules, config.inboxDirs),
+    globalOnlyTokenEstimate(config.registryRoot),
+    getScan(config, false),
+  ]);
+  const drift = [...new Set(scan.skills.filter((s) => s.state === "drifted").map((s) => s.name))];
+  return jsonResponse({
+    counts: status.registryCounts,
+    duplicates: status.duplicates.map((d) => d.name),
+    misplacements: status.misplacements.map((m) => m.name),
+    drift,
+    globalOnlyTokenEstimate: tokenEstimate,
+  });
+}
+
+// --- /api/settings ---------------------------------------------------------------
+
+async function buildLinkModeProbe(
+  config: Config,
+  dataDir: string,
+): Promise<{ platform: string; result: "symlink" | "copy"; reason: string }> {
+  const probeResult = await symlinkProbe(dataDir);
+  const result = await resolveLinkMode(config.linkMode, process.platform, () =>
+    Promise.resolve(probeResult),
+  );
+  let reason: string;
+  if (config.linkMode === "copy") {
+    reason = "settings force copy mode regardless of platform support";
+  } else if (process.platform === "win32") {
+    reason = probeResult
+      ? "Windows symlink probe succeeded (Developer Mode or admin privileges)"
+      : "Windows symlink probe failed; falling back to copy mode";
+  } else {
+    reason = `${process.platform} supports symlinks natively`;
+  }
+  return { platform: process.platform, result, reason };
+}
+
+async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const linkModeProbe = await buildLinkModeProbe(config, ctx.dataDir);
+  return jsonResponse({
+    registryRoot: config.registryRoot,
+    repoRoots: config.repoRoots,
+    globalClients: config.globalClients,
+    repoClients: config.repoClients,
+    linkMode: config.linkMode,
+    inboxDirs: config.inboxDirs,
+    linkModeProbe,
+  });
+}
+
+function filterClientIds(values: unknown): ClientId[] {
+  if (!Array.isArray(values)) return [];
+  const allowed: string[] = ALL_CLIENT_IDS;
+  return values.filter((v): v is ClientId => typeof v === "string" && allowed.includes(v));
+}
+
+async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<Record<string, unknown>>(req);
+  if (!body) return jsonResponse({ error: "invalid JSON body" }, 400);
+
+  const { registryRoot, repoRoots, linkMode, inboxDirs } = body;
+  if (typeof registryRoot !== "string" || registryRoot.trim() === "") {
+    return jsonResponse({ error: "registryRoot is required" }, 422);
+  }
+  if (!Array.isArray(repoRoots) || !repoRoots.every((r) => typeof r === "string")) {
+    return jsonResponse({ error: "repoRoots must be an array of strings" }, 422);
+  }
+  if (!repoRoots.every((r) => path.isAbsolute(tildeExpand(r)))) {
+    return jsonResponse({ error: "every repoRoots entry must be absolute (or ~/-relative)" }, 422);
+  }
+  if (linkMode !== "symlink" && linkMode !== "copy") {
+    return jsonResponse({ error: "linkMode must be 'symlink' or 'copy'" }, 422);
+  }
+  if (!Array.isArray(inboxDirs) || !inboxDirs.every((d) => typeof d === "string")) {
+    return jsonResponse({ error: "inboxDirs must be an array of strings" }, 422);
+  }
+
+  const current = getConfig(ctx.db);
+  const merged: Config = {
+    ...current,
+    registryRoot,
+    repoRoots,
+    globalClients: filterClientIds(body.globalClients),
+    repoClients: filterClientIds(body.repoClients),
+    linkMode,
+    inboxDirs,
+  };
+  setConfig(ctx.db, merged);
+  resetScanCache();
+  return jsonResponse({ ok: true });
+}
+
+// --- static UI (packages/ui/dist) ---------------------------------------------
+
+/**
+ * Serve one static asset from the built SPA (JS/CSS bundles). No auth: build artefacts carry no
+ * secrets and a `<script src>`/`<link>` load can't attach an Authorization header anyway.
+ */
+async function serveAsset(pathname: string): Promise<Response> {
+  const resolved = path.normalize(path.join(UI_DIST_DIR, pathname));
+  if (resolved !== UI_DIST_DIR && !resolved.startsWith(`${UI_DIST_DIR}${path.sep}`)) {
+    return jsonResponse({ error: "not found" }, 404);
+  }
+  const file = Bun.file(resolved);
+  if (!(await file.exists())) return jsonResponse({ error: "not found" }, 404);
+  return new Response(file);
+}
+
+/**
+ * Serve index.html with the real token injected as `window.__SKILLKEEP__` — the exact global the
+ * Tauri shell also injects — so the page's own subsequent /api/* fetches authenticate normally.
+ * Callers MUST have already confirmed the caller holds the real token (header or `?token=`);
+ * this function never re-checks, so a caller that skips that check would leak the token to
+ * anyone able to load `/` (e.g. via DNS rebinding), defeating the whole bearer scheme.
+ */
+async function serveIndexHtml(req: Request, ctx: RouterContext): Promise<Response> {
+  const file = Bun.file(path.join(UI_DIST_DIR, "index.html"));
+  if (!(await file.exists())) return jsonResponse({ error: "not found" }, 404);
+  const host = req.headers.get("host") ?? "127.0.0.1";
+  const html = await file.text();
+  const injected = html.replace(
+    "</head>",
+    `<script>window.__SKILLKEEP__ = ${JSON.stringify({ port: Number(host.split(":")[1] ?? 0), token: ctx.token })};</script></head>`,
+  );
+  return new Response(injected, { headers: { "Content-Type": "text/html" } });
+}
+
+// --- router --------------------------------------------------------------------
+
+/**
+ * Build the daemon's request handler: one route table, auth-gated except /healthz (no auth) and
+ * two deliberate query-param allowances that exist only because a browser can't set headers on a
+ * plain navigation or an EventSource: `/api/events` (SSE, per the UI's exact convention) and `/`
+ * (so `skillkeep ui` can open `http://127.0.0.1:<port>/?token=<token>` in a bare browser tab).
+ * Every other route accepts the Authorization header only.
+ */
+export function createRouter(ctx: RouterContext): (req: Request) => Promise<Response> {
+  return async function handleRequest(req: Request): Promise<Response> {
+    const url = new URL(req.url);
+    const { pathname } = url;
+    const { method } = req;
+
+    if (pathname === "/healthz" && method === "GET") return handleHealthz(ctx);
+
+    if (pathname === "/api/events" && method === "GET") {
+      if (!requireAuth(req, ctx.token)) return jsonResponse({ error: "unauthorized" }, 401);
+      return sseResponse();
+    }
+
+    if (pathname.startsWith("/api/")) {
+      if (!requireAuth(req, ctx.token)) return jsonResponse({ error: "unauthorized" }, 401);
+      try {
+        if (pathname === "/api/scan" && method === "GET") return await handleScan(ctx, url);
+        if (pathname === "/api/adopt" && method === "POST") return await handleAdopt(ctx, req);
+        if (pathname === "/api/registry" && method === "GET") return await handleRegistryList(ctx);
+        if (pathname === "/api/registry/move" && method === "POST") {
+          return await handleRegistryMove(ctx, req);
+        }
+        if (pathname === "/api/registry/archive" && method === "POST") {
+          return await handleRegistryArchive(ctx, req);
+        }
+        if (pathname === "/api/skill" && method === "GET") return await handleSkillGet(ctx, url);
+        if (pathname === "/api/skill" && method === "PUT") return await handleSkillPut(ctx, req);
+        if (pathname === "/api/sync" && method === "POST") return await handleSync(ctx, req);
+        if (pathname === "/api/status" && method === "GET") return await handleStatus(ctx);
+        if (pathname === "/api/usage/summary" && method === "GET") {
+          return jsonResponse({ error: "usage not available yet" }, 501);
+        }
+        if (pathname === "/api/settings" && method === "GET") return await handleSettingsGet(ctx);
+        if (pathname === "/api/settings" && method === "PUT")
+          return await handleSettingsPut(ctx, req);
+      } catch (err) {
+        return jsonResponse({ error: err instanceof Error ? err.message : String(err) }, 500);
+      }
+      return jsonResponse({ error: "not found" }, 404);
+    }
+
+    if (method !== "GET") return jsonResponse({ error: "not found" }, 404);
+
+    if (pathname === "/" || pathname === "/index.html") {
+      if (!existsSync(UI_DIST_DIR)) {
+        return new Response("UI not built. Run `bun run --cwd packages/ui build`.\n", {
+          headers: { "Content-Type": "text/plain" },
+        });
+      }
+      const queryToken = url.searchParams.get("token");
+      if (!requireAuth(req, ctx.token) && queryToken !== ctx.token) {
+        return jsonResponse({ error: "unauthorized" }, 401);
+      }
+      return serveIndexHtml(req, ctx);
+    }
+
+    if (!existsSync(UI_DIST_DIR)) return jsonResponse({ error: "not found" }, 404);
+    return serveAsset(pathname);
+  };
+}

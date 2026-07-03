@@ -1,0 +1,420 @@
+import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { execSync } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import type { Config } from "@skillkeep/core";
+import { openDb, setConfig } from "@skillkeep/core";
+import type { Server } from "bun";
+import { startServer } from "../src/index";
+import { resetScanCache } from "../src/scan-cache";
+
+let tmpDir: string;
+let dataDir: string;
+let registryRoot: string;
+let reposRoot: string;
+let repoDir: string;
+let server: Server<undefined>;
+let token: string;
+let baseUrl: string;
+
+function makeSkillDir(dir: string, name: string, description: string): void {
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(
+    path.join(dir, "SKILL.md"),
+    `---\nname: ${name}\ndescription: ${description}\n---\nbody`,
+  );
+}
+
+async function get(pathAndQuery: string, opts: { auth?: boolean } = {}): Promise<Response> {
+  const headers: Record<string, string> = {};
+  if (opts.auth !== false) headers.Authorization = `Bearer ${token}`;
+  return fetch(`${baseUrl}${pathAndQuery}`, { headers });
+}
+
+async function send(
+  method: string,
+  pathAndQuery: string,
+  body: unknown,
+  opts: { auth?: boolean } = {},
+): Promise<Response> {
+  const headers: Record<string, string> = { "Content-Type": "application/json" };
+  if (opts.auth !== false) headers.Authorization = `Bearer ${token}`;
+  return fetch(`${baseUrl}${pathAndQuery}`, { method, headers, body: JSON.stringify(body) });
+}
+
+beforeAll(async () => {
+  tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-server-test-"));
+  dataDir = path.join(tmpDir, "data");
+  registryRoot = path.join(tmpDir, "registry");
+  reposRoot = path.join(tmpDir, "reposRoot");
+  repoDir = path.join(reposRoot, "srv-test-repo");
+  fs.mkdirSync(dataDir, { recursive: true });
+  fs.mkdirSync(registryRoot, { recursive: true });
+  fs.mkdirSync(repoDir, { recursive: true });
+  execSync("git init", { cwd: repoDir, stdio: "ignore" });
+
+  // Registry fixtures: one skill per mutation test so tests don't stomp each other.
+  makeSkillDir(
+    path.join(registryRoot, "skills", "global", "srv-managed"),
+    "srv-managed",
+    "managed fixture skill",
+  );
+  makeSkillDir(
+    path.join(registryRoot, "skills", "global", "srv-move-me"),
+    "srv-move-me",
+    "move fixture skill",
+  );
+  makeSkillDir(
+    path.join(registryRoot, "skills", "global", "srv-archive-me"),
+    "srv-archive-me",
+    "archive fixture skill",
+  );
+  makeSkillDir(
+    path.join(registryRoot, "skills", "global", "srv-edit-me"),
+    "srv-edit-me",
+    "edit fixture skill",
+  );
+
+  // Repo surface: srv-managed symlinked back into the registry, srv-fresh sitting unmanaged.
+  const agentsDir = path.join(repoDir, ".agents", "skills");
+  fs.mkdirSync(agentsDir, { recursive: true });
+  fs.symlinkSync(
+    path.join(registryRoot, "skills", "global", "srv-managed"),
+    path.join(agentsDir, "srv-managed"),
+    "dir",
+  );
+  makeSkillDir(path.join(agentsDir, "srv-fresh"), "srv-fresh", "fresh unmanaged fixture skill");
+
+  const config: Config = {
+    registryRoot,
+    repoRoots: [reposRoot],
+    globalClients: [],
+    repoClients: [],
+    linkMode: "symlink",
+    inboxDirs: [],
+    projects: {},
+  };
+  const seedDb = openDb(path.join(dataDir, "skillkeep.db"));
+  setConfig(seedDb, config);
+  seedDb.close();
+
+  const started = await startServer({ mode: "agent", port: 0, dataDir });
+  server = started.server;
+  token = started.token;
+  baseUrl = `http://127.0.0.1:${started.port}`;
+});
+
+afterAll(() => {
+  server.stop(true);
+  fs.rmSync(tmpDir, { recursive: true, force: true });
+});
+
+describe("auth", () => {
+  test("GET /healthz needs no token", async () => {
+    const res = await get("/healthz", { auth: false });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; version: string };
+    expect(body).toEqual({ ok: true, version: "0.1.0" });
+  });
+
+  test("protected route without a token is 401", async () => {
+    const res = await get("/api/scan", { auth: false });
+    expect(res.status).toBe(401);
+    const body = (await res.json()) as { error: string };
+    expect(typeof body.error).toBe("string");
+  });
+
+  test("protected route with the wrong token is 401", async () => {
+    const res = await fetch(`${baseUrl}/api/scan`, { headers: { Authorization: "Bearer nope" } });
+    expect(res.status).toBe(401);
+  });
+
+  test("protected route with the real token is 200", async () => {
+    const res = await get("/api/scan");
+    expect(res.status).toBe(200);
+  });
+
+  test("hands out a 0600 token file", () => {
+    const stat = fs.statSync(path.join(dataDir, "daemon.token"));
+    expect(stat.mode & 0o777).toBe(0o600);
+    const fileToken = fs.readFileSync(path.join(dataDir, "daemon.token"), "utf8").trim();
+    expect(fileToken).toBe(token);
+  });
+});
+
+describe("GET /api/events", () => {
+  test("accepts the header form", async () => {
+    const res = await get("/api/events");
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/event-stream");
+    await res.body?.cancel();
+  });
+
+  test("accepts ?token= (EventSource can't set headers)", async () => {
+    const res = await fetch(`${baseUrl}/api/events?token=${encodeURIComponent(token)}`);
+    expect(res.status).toBe(200);
+    await res.body?.cancel();
+  });
+
+  test("rejects a missing/wrong token", async () => {
+    const res = await fetch(`${baseUrl}/api/events?token=nope`);
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("GET /api/scan", () => {
+  test("classifies the fixture repo surface", async () => {
+    const res = await get("/api/scan?fresh=1");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      skills: { name: string; state: string; path: string }[];
+    };
+    const managed = body.skills.find((s) => s.name === "srv-managed");
+    expect(managed?.state).toBe("managed");
+    const fresh = body.skills.find((s) => s.name === "srv-fresh");
+    expect(fresh?.state).toBe("unmanaged");
+  });
+});
+
+describe("GET /api/registry", () => {
+  test("groups entries by scope with a content hash", async () => {
+    const res = await get("/api/registry");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      scope: string;
+      skills: { name: string; hash: string }[];
+    }[];
+    const global = body.find((s) => s.scope === "global");
+    const managed = global?.skills.find((s) => s.name === "srv-managed");
+    expect(managed).toBeDefined();
+    expect(managed?.hash.length).toBeGreaterThan(0);
+  });
+});
+
+describe("GET/PUT /api/skill", () => {
+  test("404s for a name that doesn't exist", async () => {
+    const res = await get("/api/skill?name=srv-does-not-exist");
+    expect(res.status).toBe(404);
+    expect(await res.json()).toEqual({ error: "not found" });
+  });
+
+  test("round-trips content through GET then PUT", async () => {
+    const getRes = await get("/api/skill?name=srv-edit-me");
+    expect(getRes.status).toBe(200);
+    const before = (await getRes.json()) as { name: string; content: string };
+    expect(before.name).toBe("srv-edit-me");
+    expect(before.content).toContain("edit fixture skill");
+
+    const putRes = await send("PUT", "/api/skill", {
+      name: "srv-edit-me",
+      content: "---\nname: srv-edit-me\ndescription: updated description\n---\nbody",
+    });
+    expect(putRes.status).toBe(200);
+    expect(await putRes.json()).toEqual({ ok: true });
+
+    const after = await get("/api/skill?name=srv-edit-me");
+    const afterBody = (await after.json()) as { content: string };
+    expect(afterBody.content).toContain("updated description");
+  });
+
+  test("422s and does not write when the content has no valid frontmatter", async () => {
+    const putRes = await send("PUT", "/api/skill", {
+      name: "srv-edit-me",
+      content: "not a skill file at all",
+    });
+    expect(putRes.status).toBe(422);
+    const body = (await putRes.json()) as { error: string };
+    expect(typeof body.error).toBe("string");
+
+    // Untouched: still holds the previous (valid) content, not the rejected one.
+    const after = await get("/api/skill?name=srv-edit-me");
+    const afterBody = (await after.json()) as { content: string };
+    expect(afterBody.content).not.toBe("not a skill file at all");
+  });
+});
+
+describe("POST /api/registry/move and /archive", () => {
+  test("move to an invalid scope returns 200 with ok:false (matches the UI's OpResult contract)", async () => {
+    const res = await send("POST", "/api/registry/move", {
+      name: "srv-move-me",
+      toScope: "not-a-scope",
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; error?: string };
+    expect(body.ok).toBe(false);
+    expect(typeof body.error).toBe("string");
+  });
+
+  test("moves a skill to a valid scope", async () => {
+    const res = await send("POST", "/api/registry/move", {
+      name: "srv-move-me",
+      toScope: "project/srv-test",
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const registry = await get("/api/registry");
+    const body = (await registry.json()) as { scope: string; skills: { name: string }[] }[];
+    const projectScope = body.find((s) => s.scope === "project/srv-test");
+    expect(projectScope?.skills.some((s) => s.name === "srv-move-me")).toBe(true);
+  });
+
+  test("archives a skill", async () => {
+    const res = await send("POST", "/api/registry/archive", { name: "srv-archive-me" });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const registry = await get("/api/registry");
+    const body = (await registry.json()) as { scope: string; skills: { name: string }[] }[];
+    const archiveScope = body.find((s) => s.scope === "archive");
+    expect(archiveScope?.skills.some((s) => s.name === "srv-archive-me")).toBe(true);
+  });
+
+  test("archiving an unknown name returns ok:false", async () => {
+    const res = await send("POST", "/api/registry/archive", { name: "srv-does-not-exist" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { ok: boolean; error?: string };
+    expect(body.ok).toBe(false);
+  });
+});
+
+describe("POST /api/adopt", () => {
+  test("adopts a found skill and reports 'not found in last scan' for the rest of the batch", async () => {
+    resetScanCache();
+    const res = await send("POST", "/api/adopt", {
+      items: [
+        {
+          name: "srv-fresh",
+          path: path.join(repoDir, ".agents", "skills", "srv-fresh"),
+          scope: "global",
+        },
+        { name: "srv-bogus", path: "/nowhere", scope: "global" },
+      ],
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { name: string; ok: boolean; error?: string }[];
+    expect(body).toHaveLength(2);
+    expect(body.find((r) => r.name === "srv-fresh")?.ok).toBe(true);
+    const bogus = body.find((r) => r.name === "srv-bogus");
+    expect(bogus?.ok).toBe(false);
+    expect(bogus?.error).toBe("not found in last scan");
+
+    const registry = await get("/api/registry");
+    const registryBody = (await registry.json()) as { scope: string; skills: { name: string }[] }[];
+    const global = registryBody.find((s) => s.scope === "global");
+    expect(global?.skills.some((s) => s.name === "srv-fresh")).toBe(true);
+  });
+});
+
+describe("POST /api/sync", () => {
+  test("dry-run returns a SyncReport shape", async () => {
+    const res = await send("POST", "/api/sync", { dryRun: true });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as Record<string, unknown>;
+    for (const key of ["created", "fixed", "pruned", "configReminders", "errors"]) {
+      expect(Array.isArray(body[key])).toBe(true);
+    }
+  });
+});
+
+describe("GET /api/status", () => {
+  test("reports counts and a token estimate", async () => {
+    const res = await get("/api/status");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      counts: Record<string, number>;
+      duplicates: string[];
+      misplacements: string[];
+      drift: string[];
+      globalOnlyTokenEstimate: number;
+    };
+    expect(typeof body.counts).toBe("object");
+    expect(Array.isArray(body.duplicates)).toBe(true);
+    expect(Array.isArray(body.misplacements)).toBe(true);
+    expect(Array.isArray(body.drift)).toBe(true);
+    expect(typeof body.globalOnlyTokenEstimate).toBe("number");
+  });
+});
+
+describe("GET /api/usage/summary", () => {
+  test("is a deliberate 501 until M3 wires usage into the daemon", async () => {
+    const res = await get("/api/usage/summary?group=model&from=2026-01-01&to=2026-01-31");
+    expect(res.status).toBe(501);
+    expect(await res.json()).toEqual({ error: "usage not available yet" });
+  });
+});
+
+describe("GET/PUT /api/settings", () => {
+  test("GET reflects the persisted config plus a linkModeProbe", async () => {
+    const res = await get("/api/settings");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      registryRoot: string;
+      linkModeProbe?: { platform: string; result: string; reason: string };
+    };
+    expect(body.registryRoot).toBe(registryRoot);
+    expect(body.linkModeProbe?.platform).toBe(process.platform);
+    expect(["symlink", "copy"]).toContain(body.linkModeProbe?.result);
+  });
+
+  test("PUT rejects an empty registryRoot with 422", async () => {
+    const res = await send("PUT", "/api/settings", {
+      registryRoot: "",
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+    });
+    expect(res.status).toBe(422);
+  });
+
+  test("PUT rejects a relative repoRoots entry with 422", async () => {
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: ["relative/path"],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+    });
+    expect(res.status).toBe(422);
+  });
+
+  test("PUT persists a valid settings update", async () => {
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: ["claude"],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const after = await get("/api/settings");
+    const body = (await after.json()) as { globalClients: string[] };
+    expect(body.globalClients).toEqual(["claude"]);
+  });
+});
+
+describe("static UI", () => {
+  test("GET / with no token is 401", async () => {
+    const res = await fetch(`${baseUrl}/`);
+    expect(res.status).toBe(401);
+  });
+
+  test("GET /?token=<token> injects window.__SKILLKEEP__ with the real token", async () => {
+    const res = await fetch(`${baseUrl}/?token=${encodeURIComponent(token)}`);
+    expect(res.status).toBe(200);
+    const html = await res.text();
+    expect(html).toContain(`"token":"${token}"`);
+  });
+
+  test("an unknown asset path is 404", async () => {
+    const res = await get("/assets/does-not-exist.js", { auth: false });
+    expect(res.status).toBe(404);
+  });
+});
