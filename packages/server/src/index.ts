@@ -3,6 +3,7 @@ import { dataDir, openDb } from "@skillkeep/core";
 import type { ClientId } from "@skillkeep/usage";
 import type { Server } from "bun";
 import { ensureToken } from "./auth";
+import { createDrainingHandler } from "./drain";
 import { emit } from "./events";
 import { bindServer } from "./port";
 import { createRouter } from "./routes";
@@ -17,11 +18,12 @@ const USAGE_RESCAN_INTERVAL_MS = 5 * 60 * 1000;
 
 /**
  * Outcome of `startServer`: the running Bun server, its bearer token, and the port it bound to.
- * `close()` stops the server, clears the agent-mode rescan interval, and closes the underlying
- * SQLite handle — call it for any deterministic shutdown (tests, or a future CLI signal handler);
- * skipping it just leaks the handle/timer until the process itself exits, which is harmless for a
- * long-running daemon but leaves the data dir's `.db`/`.db-wal`/`.db-shm` files open, which is
- * fatal to a same-process cleanup on Windows (no unlink-of-open-file semantics there).
+ * `close()` stops accepting new requests, drains in-flight ones, clears the agent-mode rescan
+ * interval, and closes the underlying SQLite handle — call it for any deterministic shutdown
+ * (tests, or the CLI's SIGINT/SIGTERM handler); skipping it just leaks the handle/timer until the
+ * process itself exits, which is harmless for a long-running daemon but leaves the data dir's
+ * `.db`/`.db-wal`/`.db-shm` files open, which is fatal to a same-process cleanup on Windows (no
+ * unlink-of-open-file semantics there).
  */
 export interface StartedServer {
   server: Server<undefined>;
@@ -78,10 +80,11 @@ export async function startServer(opts: {
     version: VERSION,
     mode: opts.mode,
   });
+  const draining = createDrainingHandler(router);
   const { server, port } = await bindServer({
     port: opts.port,
     dataDir: resolvedDataDir,
-    fetch: router,
+    fetch: draining.fetch,
     host: opts.mode === "hub" ? "0.0.0.0" : "127.0.0.1",
   });
 
@@ -103,13 +106,15 @@ export async function startServer(opts: {
     token,
     port,
     close: async () => {
-      // Stop scheduling new rescans first, then let whichever one is already running finish
-      // before closing db -- otherwise a boot-time `rescan()` still walking usage roots can try
-      // to write through an already-closed handle (harmless, since it's caught, but it's also
-      // exactly the kind of self-inflicted race that made the Windows EBUSY-on-cleanup bug in
-      // server.test.ts/usage-ingest.test.ts intermittent rather than deterministic).
+      // Stop accepting new requests first, then let whichever ones are already in flight
+      // finish (including a boot-time `rescan()` still walking usage roots) before closing the
+      // db handle out from under them -- exactly the kind of self-inflicted race that made the
+      // Windows EBUSY-on-cleanup bug in server.test.ts/usage-ingest.test.ts intermittent rather
+      // than deterministic.
+      draining.beginClose();
       clearInterval(rescanTimer);
       await inFlightRescan;
+      await draining.drain();
       server.stop(true);
       db.close();
     },

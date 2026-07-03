@@ -272,6 +272,10 @@ export async function runDaemonCommand(args: string[] = [], write: Writer = repo
     const started = await startServer({ mode, port, dataDir: dataDirFlag });
     const host = mode === "hub" ? "0.0.0.0" : "127.0.0.1";
     write(`skillkeep daemon ready on http://${host}:${started.port} (mode: ${mode})`);
+    // The bound server owns the event loop; wait for a shutdown signal so this stays the
+    // foreground daemon, then release the db handle/rescan timer deterministically instead of
+    // relying on process exit to leak them.
+    await waitForShutdownSignal(started.close);
   } catch (err) {
     if (err instanceof DaemonAlreadyRunningError) {
       write(err.message);
@@ -279,18 +283,31 @@ export async function runDaemonCommand(args: string[] = [], write: Writer = repo
     }
     process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
     process.exitCode = 1;
-    return;
   }
-  // The bound server owns the event loop; block forever so this stays the foreground daemon.
-  await new Promise<void>(() => {});
 }
 
-/** Stub pending implementation (commit 2). */
+/**
+ * Resolve once the process receives SIGINT or SIGTERM, having first awaited `close()` so the
+ * daemon releases its db handle/rescan timer before the process exits. A second signal (or the
+ * same signal again) after the first is a no-op -- `close()` runs exactly once. Errors from
+ * `close()` are swallowed: the process is exiting either way, and a half-torn-down daemon is
+ * still strictly better than one that never released its resources.
+ */
 export function waitForShutdownSignal(
-  _close: () => Promise<void>,
-  _proc: { on(event: "SIGINT" | "SIGTERM", cb: () => void): unknown } = process,
+  close: () => Promise<void>,
+  proc: { on(event: "SIGINT" | "SIGTERM", cb: () => void): unknown } = process,
 ): Promise<void> {
-  const { promise } = Promise.withResolvers<void>();
+  const { promise, resolve } = Promise.withResolvers<void>();
+  let handled = false;
+  const onSignal = (): void => {
+    if (handled) return;
+    handled = true;
+    close()
+      .catch(() => {})
+      .then(resolve);
+  };
+  proc.on("SIGINT", onSignal);
+  proc.on("SIGTERM", onSignal);
   return promise;
 }
 
