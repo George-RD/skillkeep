@@ -3,7 +3,14 @@ import { expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { defaultConfig, getConfig, openDb, recordAdoption, setConfig } from "../src/db";
+import {
+  defaultConfig,
+  getConfig,
+  openDb,
+  recordAdoption,
+  runMigrations,
+  setConfig,
+} from "../src/db";
 import type { Config } from "../src/types";
 import { rmrfRetry } from "./test-utils";
 
@@ -123,4 +130,25 @@ test("openDb migrates a pre-existing v1 database: device joins the PK, existing 
     db?.close();
     await rmrfRetry(tmpDir);
   }
+});
+
+test("a migration step that throws rolls back atomically: table intact, user_version unchanged", () => {
+  const db = new Database(":memory:");
+  db.exec(
+    "CREATE TABLE usage_facts(day TEXT, client TEXT, model TEXT, repo TEXT, input INTEGER, output INTEGER, cache_read INTEGER, cache_write INTEGER, cost_microusd INTEGER, PRIMARY KEY(day, client, model, repo))",
+  );
+  db.prepare(
+    "INSERT INTO usage_facts (day, client, model, repo, input, output, cache_read, cache_write, cost_microusd) VALUES ('2026-01-01','claude','m','r',10,5,0,0,100)",
+  ).run();
+  db.exec("PRAGMA user_version = 1");
+  const boom = (d: Database): void => {
+    d.exec("DROP TABLE usage_facts");
+    d.exec("PRAGMA user_version = 99");
+    throw new Error("boom");
+  };
+  expect(() => runMigrations(db, 1, 2, [() => {}, boom])).toThrow("boom");
+  const rows = db.prepare("SELECT day FROM usage_facts").all();
+  expect(rows).toHaveLength(1);
+  const version = db.prepare("PRAGMA user_version").get() as { user_version: number };
+  expect(version.user_version).toBe(1);
 });

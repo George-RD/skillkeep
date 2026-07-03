@@ -76,9 +76,23 @@ function rebuildWithDeviceInPk(
   db.exec(`ALTER TABLE ${tmp} RENAME TO ${table}`);
 }
 
-function runMigrations(db: Database, fromVersion: number): void {
-  for (let v = fromVersion; v < SCHEMA_VERSION; v++) {
-    MIGRATIONS[v]?.(db);
+/**
+ * Run pending migrations, one transaction per step: the step's DDL/DML and its
+ * `user_version` bump to v+1 commit together, so a crash mid-step rolls the whole
+ * step back and the next open re-runs it from a consistent state. `toVersion` and
+ * `migrations` are injectable so tests can prove the rollback contract.
+ */
+export function runMigrations(
+  db: Database,
+  fromVersion: number,
+  toVersion: number = SCHEMA_VERSION,
+  migrations: readonly ((db: Database) => void)[] = MIGRATIONS,
+): void {
+  for (let v = fromVersion; v < toVersion; v++) {
+    db.transaction(() => {
+      migrations[v]?.(db);
+      db.exec(`PRAGMA user_version = ${v + 1}`);
+    })();
   }
 }
 
@@ -130,7 +144,6 @@ export function openDb(dbPath: string): Database {
   const currentVersion = versionRow?.user_version ?? 0;
   if (currentVersion < SCHEMA_VERSION) {
     runMigrations(db, currentVersion);
-    db.exec(`PRAGMA user_version = ${SCHEMA_VERSION}`);
   }
   return db;
 }
