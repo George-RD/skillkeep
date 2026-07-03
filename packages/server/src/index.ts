@@ -27,7 +27,7 @@ export interface StartedServer {
   server: Server<undefined>;
   token: string;
   port: number;
-  close: () => void;
+  close: () => Promise<void>;
 }
 
 /**
@@ -83,11 +83,14 @@ export async function startServer(opts: {
   });
 
   let rescanTimer: Timer | undefined;
+  let inFlightRescan: Promise<void> = Promise.resolve();
   if (opts.mode === "agent") {
-    const rescan = () =>
-      runUsageIngest(db, { dataDir: resolvedDataDir, roots: opts.usageRoots })
+    const rescan = () => {
+      inFlightRescan = runUsageIngest(db, { dataDir: resolvedDataDir, roots: opts.usageRoots })
         .then(() => emit("usage:updated", {}))
         .catch(() => {});
+      return inFlightRescan;
+    };
     void rescan();
     rescanTimer = setInterval(rescan, USAGE_RESCAN_INTERVAL_MS);
   }
@@ -96,8 +99,14 @@ export async function startServer(opts: {
     server,
     token,
     port,
-    close: () => {
+    close: async () => {
+      // Stop scheduling new rescans first, then let whichever one is already running finish
+      // before closing db -- otherwise a boot-time `rescan()` still walking usage roots can try
+      // to write through an already-closed handle (harmless, since it's caught, but it's also
+      // exactly the kind of self-inflicted race that made the Windows EBUSY-on-cleanup bug in
+      // server.test.ts/usage-ingest.test.ts intermittent rather than deterministic).
       clearInterval(rescanTimer);
+      await inFlightRescan;
       server.stop(true);
       db.close();
     },

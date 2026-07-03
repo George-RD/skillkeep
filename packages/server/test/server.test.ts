@@ -7,6 +7,7 @@ import type { Config } from "@skillkeep/core";
 import { openDb, setConfig } from "@skillkeep/core";
 import { startServer } from "../src/index";
 import { resetScanCache } from "../src/scan-cache";
+import { rmrfRetry } from "./test-utils";
 
 let tmpDir: string;
 let dataDir: string;
@@ -15,7 +16,7 @@ let reposRoot: string;
 let repoDir: string;
 let token: string;
 let baseUrl: string;
-let close: () => void;
+let close: () => Promise<void>;
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -121,14 +122,9 @@ beforeAll(async () => {
   baseUrl = `http://127.0.0.1:${started.port}`;
 });
 
-afterAll(() => {
-  close();
-  // close() calls db.close() synchronously, but on win32 the OS doesn't always release the
-  // underlying file handle (skillkeep.db + its -wal/-shm siblings) in that same tick -- an
-  // immediate rm can still hit EBUSY. maxRetries/retryDelay is Node's documented mechanism for
-  // exactly this class of race (see fs.rmSync docs: retries on EBUSY/EPERM/ENOTEMPTY with linear
-  // backoff) rather than a fixed sleep that's either too short under load or wastes time locally.
-  fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+afterAll(async () => {
+  await close();
+  await rmrfRetry(tmpDir);
 });
 
 describe("auth", () => {

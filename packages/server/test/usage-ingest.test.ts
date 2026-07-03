@@ -5,6 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { openDb, queryUsageSummary } from "@skillkeep/core";
 import { runUsageIngest } from "../src/usage-ingest";
+import { rmrfRetry } from "./test-utils";
 
 // Redacted, structurally-real lines (same shapes documented in
 // packages/usage/FORMATS.md): line 1 is an assistant turn that both reports
@@ -66,11 +67,9 @@ beforeAll(() => {
   };
 });
 
-afterAll(() => {
+afterAll(async () => {
   db.close();
-  // See the identical comment in server.test.ts's afterAll: db.close() doesn't guarantee win32
-  // has released the file handle in the same tick, so an immediate rm can hit EBUSY.
-  fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
+  await rmrfRetry(tmpDir);
 });
 
 describe("runUsageIngest", () => {

@@ -33,7 +33,7 @@ test("startServer refuses hub mode without SKILLKEEP_TOKEN in the environment", 
 });
 
 describe("hub mode server", () => {
-  let close: () => void;
+  let close: () => Promise<void>;
   let baseUrl: string;
   const token = "hub-test-token-abc123";
   const savedEnvToken = process.env.SKILLKEEP_TOKEN;
@@ -80,8 +80,8 @@ describe("hub mode server", () => {
     expect(started.token).toBe(token);
   });
 
-  afterAll(() => {
-    close();
+  afterAll(async () => {
+    await close();
     if (savedEnvToken !== undefined) process.env.SKILLKEEP_TOKEN = savedEnvToken;
     else {
       delete process.env.SKILLKEEP_TOKEN;
