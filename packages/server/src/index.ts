@@ -64,9 +64,12 @@ export async function startServer(opts: {
   usageRoots?: Partial<Record<ClientId, string>>;
 }): Promise<StartedServer> {
   const resolvedDataDir = opts.dataDir ?? dataDir();
-  const db = openDb(path.join(resolvedDataDir, "skillkeep.db"));
-
+  // Resolve the token before opening the db: in hub mode, requireHubToken() throws
+  // synchronously when SKILLKEEP_TOKEN is unset, and that must happen before any resource is
+  // opened -- otherwise the just-created sqlite handle (and its on-disk file) leaks for the rest
+  // of the process, since startServer never returns a StartedServer to close() with.
   const token = opts.mode === "hub" ? requireHubToken() : await ensureToken(resolvedDataDir);
+  const db = openDb(path.join(resolvedDataDir, "skillkeep.db"));
 
   const router = createRouter({
     db,

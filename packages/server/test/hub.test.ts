@@ -29,6 +29,9 @@ test("startServer refuses hub mode without SKILLKEEP_TOKEN in the environment", 
     );
   } finally {
     if (saved !== undefined) process.env.SKILLKEEP_TOKEN = saved;
+    // No db is opened on this path now (requireHubToken() is resolved before openDb() in
+    // startServer), so a plain rm suffices -- nothing sqlite-related to retry around.
+    fs.rmSync(dir, { recursive: true, force: true });
   }
 });
 

@@ -65,6 +65,15 @@ beforeAll(() => {
     gemini: path.join(tmpDir, "no-gemini"),
     omp: ompRoot,
   };
+
+  // runUsageIngest unconditionally calls loadPriceTable(dataDir) first, which -- absent a fresh
+  // <dataDir>/prices.json -- does a LIVE fetch to GitHub for LiteLLM's price snapshot. Seed an
+  // (empty but valid, and fresh) cache so that fetch never fires: this suite's fixture models
+  // are deliberately unpriced anyway (see CLAUDE_FIXTURE/OMP_FIXTURE's module comments), so an
+  // empty table changes nothing it asserts, and removes a real network call + non-determinism
+  // from what's supposed to be a fully hermetic test (matching the intent already stated above
+  // for codex/opencode/gemini's roots).
+  fs.writeFileSync(path.join(tmpDir, "prices.json"), "{}");
 });
 
 afterAll(async () => {

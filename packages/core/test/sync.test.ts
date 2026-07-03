@@ -154,6 +154,30 @@ test("a real run materialises the expected symlink and .omp/config.yml", async (
   ]);
 });
 
+test("a linked git worktree under the same repoRoot gets the farm materialised too (persistentWorktrees' prefix-match branch, not just the wt === repoRoot fast path)", async () => {
+  // `git worktree add` needs at least one real commit to branch from -- an inline identity keeps
+  // this hermetic (no dependency on this machine's/runner's global git config existing).
+  execSync("git -c user.email=test@example.com -c user.name=test commit --allow-empty -m init", {
+    cwd: repoDir,
+    stdio: "ignore",
+  });
+  // Sibling of repoDir, still under the same ~/repos/skillkeep-sync-test-* tmpDir -- i.e. still
+  // under config.repoRoots=["~/repos"], so persistentWorktrees must include it via the
+  // `expanded.some(prefix => wt.startsWith(prefix))` branch (it is NOT === repoDir, the only
+  // branch every other test in this file exercises).
+  const worktreeDir = path.join(tmpDir, "repo-worktree");
+  execSync(`git worktree add -b wt-branch "${worktreeDir}"`, { cwd: repoDir, stdio: "ignore" });
+
+  const report = await runSync(config, { dryRun: false, prune: false });
+  const mainLink = path.join(repoDir, ".agents", "skills", "demo-project-skill");
+  const worktreeLink = path.join(worktreeDir, ".agents", "skills", "demo-project-skill");
+
+  expect(report.created).toContain(mainLink);
+  expect(report.created).toContain(worktreeLink);
+  expect(fs.lstatSync(worktreeLink).isSymbolicLink()).toBe(true);
+  expect(fs.realpathSync(worktreeLink)).toBe(fs.realpathSync(mainLink));
+});
+
 test("sync is idempotent", async () => {
   await runSync(config, { dryRun: false, prune: false });
   const second = await runSync(config, { dryRun: false, prune: false });
