@@ -121,7 +121,11 @@ function ompRepoAndSession(file: string): { repo: string; sessionId: string } {
  *    (documented in OMP's own tool inventory); the name is the segment after
  *    `skill://` verbatim, taken directly rather than through
  *    {@link attributedSkill} (which expects a path ending in
- *    `skills/<name>/SKILL.md`, not a bare display name).
+ *    `skills/<name>/SKILL.md`, not a bare display name). A trailing
+ *    `/SKILL.md` (the `skill://<name>/SKILL.md` sub-path form used to read the
+ *    raw file rather than the rendered instructions — see this project's own
+ *    `skill://<name>/<path>` URI convention) is stripped so both forms count
+ *    as the same skill instead of fragmenting into two usage rows.
  *  - a literal filesystem path ending in `.../managed-skills/<name>/SKILL.md`
  *    (or `.../skills/<name>/SKILL.md`) — attributed via {@link attributedSkill}.
  * `attributedSkill` is tried first since it also matches a `skill://` URI that
@@ -133,7 +137,10 @@ function skillFromOmpReadPath(path: string): string | null {
   const viaPath = attributedSkill(path);
   if (viaPath) return viaPath;
   if (path.startsWith("skill://")) {
-    const name = path.slice("skill://".length).trim();
+    const name = path
+      .slice("skill://".length)
+      .trim()
+      .replace(/\/SKILL\.md$/i, "");
     return name.length > 0 ? name : null;
   }
   return null;

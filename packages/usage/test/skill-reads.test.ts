@@ -28,13 +28,17 @@ const CLAUDE_FIXTURE = [
 // Redacted, structurally-real lines copied from a live
 // ~/.omp/agent/sessions/<cwd-slug>/<session-id>/<Name>.jsonl (see
 // FORMATS.md, "Skill-read attribution — omp"). Line 1 is a `read` toolCall
-// with a `skill://<Display Name>` URI (the internal skill-reference
-// convention); line 2 is a `read` toolCall of a literal
-// managed-skills/<name>/SKILL.md path; line 3 is a `read` of an ordinary
-// file (no attribution); line 4 is a non-assistant ("user") message.
+// with a bare `skill://<Display Name>` URI (the internal skill-reference
+// convention); line 2 is a `read` toolCall of the same URI convention's
+// `skill://<name>/SKILL.md` sub-path form (reads the raw file rather than
+// the rendered instructions) — must normalize to the same skill as the bare
+// form; line 3 is a `read` toolCall of a literal managed-skills/<name>/SKILL.md
+// path; line 4 is a `read` of an ordinary file (no attribution); line 5 is a
+// non-assistant ("user") message.
 const OMP_FIXTURE = [
   '{"type":"message","id":"a63ba2a4","parentId":"9711d37f","timestamp":"2026-06-17T18:40:24.935Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_1","name":"read","arguments":{"_i":"Reading dispatch skill","path":"skill://Force Dispatch Patterns"}}],"api":"openai-responses","provider":"openai","model":"gpt-5.4"}}',
-  '{"type":"message","id":"349e9cbe","parentId":"a63ba2a4","timestamp":"2026-06-17T18:41:00.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_2","name":"read","arguments":{"_i":"Reading skill","path":"/Users/george/.omp/agent/managed-skills/rtk/SKILL.md"}}],"api":"anthropic-messages","provider":"kimi-code","model":"kimi-for-coding"}}',
+  '{"type":"message","id":"b1c2d3e4","parentId":"a63ba2a4","timestamp":"2026-06-17T18:40:30.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_1b","name":"read","arguments":{"_i":"Reading skill file","path":"skill://loopcontext/SKILL.md"}}],"api":"openai-responses","provider":"openai","model":"gpt-5.4"}}',
+  '{"type":"message","id":"349e9cbe","parentId":"b1c2d3e4","timestamp":"2026-06-17T18:41:00.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_2","name":"read","arguments":{"_i":"Reading skill","path":"/Users/george/.omp/agent/managed-skills/rtk/SKILL.md"}}],"api":"anthropic-messages","provider":"kimi-code","model":"kimi-for-coding"}}',
   '{"type":"message","id":"c3818dec","parentId":"349e9cbe","timestamp":"2026-06-17T18:42:00.000Z","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_3","name":"read","arguments":{"_i":"Reading file","path":"/Users/george/repos/zzz-fixture/README.md"}}],"api":"anthropic-messages","provider":"kimi-code","model":"kimi-for-coding"}}',
   '{"type":"message","id":"d4929edd","parentId":"c3818dec","timestamp":"2026-06-17T18:43:00.000Z","message":{"role":"user","content":"redacted"}}',
 ].join("\n");
@@ -83,7 +87,7 @@ describe("claudeSkillReads", () => {
 });
 
 describe("ompSkillReads", () => {
-  test("attributes a skill:// URI read and a managed-skills/<name>/SKILL.md path read; ignores ordinary reads and non-assistant messages", async () => {
+  test("attributes a skill:// URI read (bare and /SKILL.md-suffixed) and a managed-skills/<name>/SKILL.md path read; ignores ordinary reads and non-assistant messages", async () => {
     const dir = tmpDir();
     const slug = "-repos-zzz-fixture";
     const sessionId = "2026-06-17T18-40-24-fixture-session";
@@ -96,10 +100,10 @@ describe("ompSkillReads", () => {
     const results = await collectSkillReads(ompSkillReads(file, 0));
     const events = results.map((r) => r.event).filter((e): e is SkillReadEvent => e !== null);
 
-    expect(results).toHaveLength(4);
-    expect(results[2]?.event).toBeNull(); // ordinary file read, no attribution
-    expect(results[3]?.event).toBeNull(); // user message
-    expect(events).toHaveLength(2);
+    expect(results).toHaveLength(5);
+    expect(results[3]?.event).toBeNull(); // ordinary file read, no attribution
+    expect(results[4]?.event).toBeNull(); // user message
+    expect(events).toHaveLength(3);
 
     expect(events[0]).toEqual({
       ts: Date.parse("2026-06-17T18:40:24.935Z"),
@@ -110,6 +114,14 @@ describe("ompSkillReads", () => {
       sessionId,
     });
     expect(events[1]).toEqual({
+      ts: Date.parse("2026-06-17T18:40:30.000Z"),
+      client: "omp",
+      skill: "loopcontext", // the /SKILL.md sub-path form, normalized to the bare skill name
+      repo: slug,
+      model: "gpt-5.4",
+      sessionId,
+    });
+    expect(events[2]).toEqual({
       ts: Date.parse("2026-06-17T18:41:00.000Z"),
       client: "omp",
       skill: "rtk",
