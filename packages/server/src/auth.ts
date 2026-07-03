@@ -11,12 +11,21 @@ export function tokenFilePath(dataDir: string): string {
   return path.join(dataDir, TOKEN_FILE_NAME);
 }
 
+export interface AclOpts {
+  platform?: NodeJS.Platform;
+  username?: string;
+  spawn?: (cmd: string[]) => { exited: Promise<number>; stderr?: ReadableStream<Uint8Array> };
+}
+
+/** Stub pending implementation (commit 2). */
+export async function hardenTokenFileAcl(_tokenPath: string, _opts: AclOpts = {}): Promise<void> {}
+
 /**
  * Read the existing bearer token from `<dataDir>/daemon.token`, or generate and persist a new
  * 32-byte random one (0600 permissions) on first run. Re-asserts 0600 even when the file
  * pre-existed with looser permissions.
  */
-export async function ensureToken(dataDir: string): Promise<string> {
+export async function ensureToken(dataDir: string, _aclOpts: AclOpts = {}): Promise<string> {
   await fs.mkdir(dataDir, { recursive: true });
   const tokenPath = tokenFilePath(dataDir);
   if (existsSync(tokenPath)) {
