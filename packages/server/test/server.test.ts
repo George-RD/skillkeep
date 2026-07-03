@@ -123,7 +123,12 @@ beforeAll(async () => {
 
 afterAll(() => {
   close();
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  // close() calls db.close() synchronously, but on win32 the OS doesn't always release the
+  // underlying file handle (skillkeep.db + its -wal/-shm siblings) in that same tick -- an
+  // immediate rm can still hit EBUSY. maxRetries/retryDelay is Node's documented mechanism for
+  // exactly this class of race (see fs.rmSync docs: retries on EBUSY/EPERM/ENOTEMPTY with linear
+  // backoff) rather than a fixed sleep that's either too short under load or wastes time locally.
+  fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
 describe("auth", () => {

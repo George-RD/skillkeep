@@ -68,7 +68,9 @@ beforeAll(() => {
 
 afterAll(() => {
   db.close();
-  fs.rmSync(tmpDir, { recursive: true, force: true });
+  // See the identical comment in server.test.ts's afterAll: db.close() doesn't guarantee win32
+  // has released the file handle in the same tick, so an immediate rm can hit EBUSY.
+  fs.rmSync(tmpDir, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 });
 });
 
 describe("runUsageIngest", () => {
