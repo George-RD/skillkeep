@@ -5,7 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import YAML from "yaml";
 import { scopeDir, tildeCollapse } from "../src/paths";
-import { resolveLinkMode, runSync } from "../src/sync";
+import { filterPersistentWorktrees, resolveLinkMode, runSync } from "../src/sync";
 import type { Config } from "../src/types";
 
 // --- resolveLinkMode tests ---
@@ -37,6 +37,35 @@ test("resolveLinkMode respects explicit copy regardless of platform", async () =
     throw new Error("probe should not be called for copy");
   };
   expect(await resolveLinkMode("copy", "darwin", probe)).toBe("copy");
+});
+
+// --- filterPersistentWorktrees tests ---
+
+test("filterPersistentWorktrees matches a worktree under a repoRoot despite win32 casing", () => {
+  expect(
+    filterPersistentWorktrees(["/repos/proj/wt-a"], "/repos/proj", ["/Repos"], "win32"),
+  ).toEqual([path.normalize("/repos/proj/wt-a")]);
+});
+
+test("filterPersistentWorktrees matches the repo root itself despite win32 casing", () => {
+  expect(
+    filterPersistentWorktrees(["/REPOS/proj"], "/repos/proj", ["/elsewhere"], "win32"),
+  ).toEqual([path.normalize("/REPOS/proj")]);
+});
+
+test("filterPersistentWorktrees rejects the same casing mismatch on linux", () => {
+  expect(
+    filterPersistentWorktrees(["/repos/proj/wt-a"], "/repos/proj", ["/Repos"], "linux"),
+  ).toEqual([]);
+  expect(
+    filterPersistentWorktrees(["/REPOS/proj"], "/repos/proj", ["/elsewhere"], "linux"),
+  ).toEqual([]);
+});
+
+test("filterPersistentWorktrees never lowercases the returned worktree strings", () => {
+  const result = filterPersistentWorktrees(["/REPOS/proj"], "/repos/proj", ["/elsewhere"], "win32");
+  // Case is preserved as git reported it; only the path separator is platform-normalized.
+  expect(result[0]).toBe(path.normalize("/REPOS/proj"));
 });
 
 // --- Ported sync tests (adapted from agent-skills test/sync.test.ts) ---

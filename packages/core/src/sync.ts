@@ -239,6 +239,16 @@ async function syncCommittedMode(
   report.configReminders.push(`${repoDir}: review + commit .agents/skills (committed mode)`);
 }
 
+/** Stub pending implementation (commit 2). */
+export function filterPersistentWorktrees(
+  worktrees: string[],
+  _repoRoot: string,
+  _repoRoots: string[],
+  _platform: NodeJS.Platform = process.platform,
+): string[] {
+  return worktrees;
+}
+
 /** Worktrees to materialise farms into: only those under a configured repoRoot — never scratch/ephemeral worktrees. */
 async function persistentWorktrees(repoRoot: string, repoRoots: string[]): Promise<string[]> {
   // `git worktree list --porcelain` emits forward-slash paths even on Windows (git normalises
