@@ -1,0 +1,11 @@
+# Force LF line endings for every text file regardless of the checkout platform's git
+# core.autocrlf default. Without this, a Windows CI runner (GitHub Actions windows-latest
+# defaults to core.autocrlf=true) checks every source file out with CRLF, and biome's
+# formatter -- which always writes LF -- then reports every single file as "differs from
+# formatting output" in `biome ci`, failing CI on Windows for files that are otherwise
+# correctly formatted (observed: apps/cli/src/main.ts and others, CI run 28652656834).
+* text=auto eol=lf
+
+# Windows-only script wrapper Cargo/rustup can generate; harmless to leave CRLF if it
+# ever appears, since nothing in this repo formats or lints it.
+*.bat text eol=crlf

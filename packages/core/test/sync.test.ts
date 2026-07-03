@@ -48,7 +48,11 @@ let config: Config;
 
 beforeEach(() => {
   // Place the fixture under ~/repos so persistentWorktrees (filtered by repoRoots=["~/repos"]) keeps it.
-  tmpDir = fs.mkdtempSync(path.join(os.homedir(), "repos", "skillkeep-sync-test-"));
+  // A fresh CI runner has no ~/repos at all (only a dev machine that already uses this convention
+  // does), so create it first -- mkdtempSync only creates the leaf temp dir, never its parent.
+  const reposRoot = path.join(os.homedir(), "repos");
+  fs.mkdirSync(reposRoot, { recursive: true });
+  tmpDir = fs.mkdtempSync(path.join(reposRoot, "skillkeep-sync-test-"));
   registryRoot = path.join(tmpDir, "registry");
   repoDir = path.join(tmpDir, "repo");
 
