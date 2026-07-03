@@ -5,6 +5,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { defaultConfig, getConfig, openDb, recordAdoption, setConfig } from "../src/db";
 import type { Config } from "../src/types";
+import { rmrfRetry } from "./test-utils";
 
 test("openDb creates tables and sets user_version to 2", () => {
   const db = openDb(":memory:");
@@ -65,15 +66,13 @@ test("recordAdoption inserts an auditable row", () => {
   expect(rows[0]?.source_path).toBe("/source/path");
 });
 
-test("openDb migrates a pre-existing v1 database: device joins the PK, existing rows preserved with device NULL", () => {
+test("openDb migrates a pre-existing v1 database: device joins the PK, existing rows preserved with device NULL", async () => {
   // A fresh :memory: db always gets the final v2 shape straight from CREATE TABLE IF NOT EXISTS —
   // this test instead builds a REAL v1 file (the exact shape this project shipped before hub mode
   // existed: no `device` column, PK = (day, client, model, repo)) and re-opens it via `openDb`, so
   // the actual `MIGRATIONS[1]` rebuild path runs, not just the fresh-db path.
-  const dbPath = path.join(
-    fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-db-migrate-")),
-    "v1.db",
-  );
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-db-migrate-"));
+  const dbPath = path.join(tmpDir, "v1.db");
   const seed = new Database(dbPath, { create: true });
   seed.exec(
     "CREATE TABLE usage_facts(day TEXT, client TEXT, model TEXT, repo TEXT, input INTEGER, output INTEGER, cache_read INTEGER, cache_write INTEGER, cost_microusd INTEGER, PRIMARY KEY(day, client, model, repo))",
@@ -94,28 +93,34 @@ test("openDb migrates a pre-existing v1 database: device joins the PK, existing 
   seed.exec("PRAGMA user_version = 1");
   seed.close();
 
-  const db = openDb(dbPath);
+  let db: Database | undefined;
+  try {
+    db = openDb(dbPath);
 
-  const version = db.prepare("PRAGMA user_version").get() as { user_version: number };
-  expect(version.user_version).toBe(2);
+    const version = db.prepare("PRAGMA user_version").get() as { user_version: number };
+    expect(version.user_version).toBe(2);
 
-  const ufCols = db.prepare("PRAGMA table_info(usage_facts)").all() as {
-    name: string;
-    pk: number;
-  }[];
-  const deviceCol = ufCols.find((c) => c.name === "device");
-  expect(deviceCol?.pk).toBeGreaterThan(0);
+    const ufCols = db.prepare("PRAGMA table_info(usage_facts)").all() as {
+      name: string;
+      pk: number;
+    }[];
+    const deviceCol = ufCols.find((c) => c.name === "device");
+    expect(deviceCol?.pk).toBeGreaterThan(0);
 
-  const ufRow = db.prepare("SELECT input, output, device FROM usage_facts").get() as {
-    input: number;
-    output: number;
-    device: string | null;
-  };
-  expect(ufRow).toEqual({ input: 10, output: 5, device: null });
+    const ufRow = db.prepare("SELECT input, output, device FROM usage_facts").get() as {
+      input: number;
+      output: number;
+      device: string | null;
+    };
+    expect(ufRow).toEqual({ input: 10, output: 5, device: null });
 
-  const suRow = db.prepare("SELECT count, device FROM skill_usage").get() as {
-    count: number;
-    device: string | null;
-  };
-  expect(suRow).toEqual({ count: 3, device: null });
+    const suRow = db.prepare("SELECT count, device FROM skill_usage").get() as {
+      count: number;
+      device: string | null;
+    };
+    expect(suRow).toEqual({ count: 3, device: null });
+  } finally {
+    db?.close();
+    await rmrfRetry(tmpDir);
+  }
 });
