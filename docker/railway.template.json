@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.up.railway.app/template.schema.json",
+  "name": "skillkeep hub",
+  "description": "Self-hostable hub for skillkeep: multi-device skill registry sync, usage dashboard, BYOK AI proxy.",
+  "services": [
+    {
+      "name": "skillkeep-hub",
+      "source": {
+        "image": "ghcr.io/george-rd/skillkeep:latest"
+      },
+      "volumes": [
+        {
+          "mountPath": "/data",
+          "name": "skillkeep-data"
+        }
+      ],
+      "variables": {
+        "SKILLKEEP_TOKEN": {
+          "description": "Bearer token required by every agent that syncs with this hub. Generate a random 32+ byte string.",
+          "required": true
+        },
+        "PORT": {
+          "description": "Provided automatically by Railway.",
+          "required": false
+        }
+      },
+      "healthcheckPath": "/healthz"
+    }
+  ]
+}

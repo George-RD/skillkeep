@@ -14,7 +14,7 @@
     "resolveJsonModule": true,
     "verbatimModuleSyntax": true,
     "noUncheckedIndexedAccess": true,
-    "types": ["bun-types"]
+    "types": ["bun"]
   },
   "exclude": ["**/dist/**", "**/node_modules/**", "apps/desktop/src-tauri/target/**"]
 }

@@ -1,0 +1,87 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+jobs:
+  sidecar:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            bun_target: bun-darwin-arm64
+            triple: aarch64-apple-darwin
+          - os: macos-latest
+            bun_target: bun-darwin-x64
+            triple: x86_64-apple-darwin
+          - os: windows-latest
+            bun_target: bun-windows-x64
+            triple: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install
+      - name: build ui
+        run: bun run --cwd packages/ui build
+      - name: compile sidecar
+        shell: bash
+        run: |
+          out="apps/desktop/binaries/skillkeep-${{ matrix.triple }}"
+          if [[ "${{ matrix.os }}" == windows-latest ]]; then out="${out}.exe"; fi
+          bun build --compile --target=${{ matrix.bun_target }} apps/cli/src/main.ts --outfile "$out"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sidecar-${{ matrix.triple }}
+          path: apps/desktop/binaries/
+
+  desktop:
+    needs: sidecar
+    strategy:
+      matrix:
+        os: [macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - uses: dtolnay/rust-toolchain@stable
+      - run: bun install
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sidecar-*
+          path: apps/desktop/binaries
+          merge-multiple: true
+      - name: tauri build
+        # Unsigned artefacts in v1 — code-signing/notarisation is a later, paid decision (see README).
+        run: bunx --cwd apps/desktop tauri build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.os }}
+          path: |
+            apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg
+            apps/desktop/src-tauri/target/release/bundle/msi/*.msi
+
+  docker:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.ref_name }},ghcr.io/${{ github.repository }}:latest
