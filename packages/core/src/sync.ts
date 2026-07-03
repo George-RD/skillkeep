@@ -42,12 +42,23 @@ async function mkdirIfReal(dir: string, dryRun: boolean): Promise<void> {
   if (!dryRun) await fs.mkdir(dir, { recursive: true });
 }
 
-/** Copy srcDir to destDir iff their hashes differ; push to report.created on a real copy. Shared by committed-mode and copy-farms. */
-async function copyHashVerify(
+const defaultCopyDir = (src: string, dest: string): Promise<void> =>
+  fs.cp(src, dest, { recursive: true });
+
+/**
+ * Copy srcDir to destDir iff their hashes differ; push to report.created on a real copy.
+ * Shared by committed-mode and copy-farms. The replacement is atomic: content is copied to a
+ * dot-prefixed temp sibling (same parent dir, so fs.rename never crosses filesystems; the dot
+ * prefix keeps scanSkillDirs from ever detecting a leftover temp as a skill), the old directory is
+ * renamed aside, the temp folder is renamed into place, and the old folder is deleted. If the final
+ * rename fails, the old directory is restored. `copyDir` is injectable so tests can prove the failure contract.
+ */
+export async function copyHashVerify(
   srcDir: string,
   destDir: string,
   opts: SyncOptions,
   report: SyncReport,
+  copyDir: (src: string, dest: string) => Promise<void> = defaultCopyDir,
 ): Promise<void> {
   const srcHash = await hashSkillDir(srcDir);
   let destHash: string | null;
@@ -59,9 +70,32 @@ async function copyHashVerify(
   if (srcHash === destHash) return;
   report.created.push(destDir);
   if (opts.dryRun) return;
-  await fs.rm(destDir, { recursive: true, force: true });
-  await fs.mkdir(destDir, { recursive: true });
-  await fs.cp(srcDir, destDir, { recursive: true });
+  const tmpDir = path.join(path.dirname(destDir), `.${path.basename(destDir)}.skillkeep-tmp`);
+  await fs.rm(tmpDir, { recursive: true, force: true });
+  try {
+    await copyDir(srcDir, tmpDir);
+  } catch (err) {
+    await fs.rm(tmpDir, { recursive: true, force: true });
+    throw err;
+  }
+  const oldDir = path.join(path.dirname(destDir), `.${path.basename(destDir)}.skillkeep-old`);
+  await fs.rm(oldDir, { recursive: true, force: true });
+  let renamedOld = false;
+  try {
+    await fs.rename(destDir, oldDir);
+    renamedOld = true;
+  } catch {
+    // destDir might not exist, which is fine
+  }
+  try {
+    await fs.rename(tmpDir, destDir);
+  } catch (err) {
+    if (renamedOld) {
+      await fs.rename(oldDir, destDir);
+    }
+    throw err;
+  }
+  await fs.rm(oldDir, { recursive: true, force: true });
 }
 
 async function syncGlobalFarms(
