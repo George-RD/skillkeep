@@ -156,9 +156,9 @@ describe("auth", () => {
     const stat = fs.statSync(path.join(dataDir, "daemon.token"));
     // NTFS has no POSIX permission-bit model -- fs.chmod on win32 only ever toggles the
     // read-only attribute, so stat.mode never reflects 0600 there regardless of what
-    // ensureToken() requests. Confidentiality on Windows instead comes from the token file
-    // living under the per-user AppData directory, which already has default ACLs scoped to
-    // that user. Only assert the POSIX bits on platforms where they're actually enforced.
+    // ensureToken() requests. Confidentiality on win32 instead comes from explicit
+    // `icacls /inheritance:r` hardening in ensureToken (see hardenTokenFileAcl in
+    // ../src/auth.ts), not solely from inherited AppData ACLs.
     if (process.platform !== "win32") expect(stat.mode & 0o777).toBe(0o600);
     const fileToken = fs.readFileSync(path.join(dataDir, "daemon.token"), "utf8").trim();
     expect(fileToken).toBe(token);

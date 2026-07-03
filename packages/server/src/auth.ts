@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 
 const TOKEN_FILE_NAME = "daemon.token";
@@ -17,25 +18,50 @@ export interface AclOpts {
   spawn?: (cmd: string[]) => { exited: Promise<number>; stderr?: ReadableStream<Uint8Array> };
 }
 
-/** Stub pending implementation (commit 2). */
-export async function hardenTokenFileAcl(_tokenPath: string, _opts: AclOpts = {}): Promise<void> {}
+/**
+ * Harden `tokenPath`'s ACL on win32 via `icacls`: strip inherited access for every non-owner
+ * principal (`/inheritance:r`) and grant the current user full control (`/grant:r`). No-op on
+ * darwin/linux, where `ensureToken`'s 0600 chmod already suffices. Fails closed on a non-zero
+ * `icacls` exit -- a silent failure here would defeat the hardening, and `icacls` is always
+ * present on Windows.
+ *
+ * Grants `:F` (full control) rather than the minimal `:RW`: `/inheritance:r` alone already
+ * delivers the confidentiality goal (stripping every non-owner principal), and `:RW`'s simple
+ * rights set omits DELETE, which risks EPERM in Windows CI's rmrfRetry teardown of test data
+ * dirs.
+ */
+export async function hardenTokenFileAcl(tokenPath: string, opts: AclOpts = {}): Promise<void> {
+  const platform = opts.platform ?? process.platform;
+  if (platform !== "win32") return;
+  const username = opts.username ?? os.userInfo().username;
+  const spawn =
+    opts.spawn ?? ((cmd: string[]) => Bun.spawn(cmd, { stdout: "ignore", stderr: "pipe" }));
+  const proc = spawn(["icacls", tokenPath, "/inheritance:r", "/grant:r", `${username}:F`]);
+  const exitCode = await proc.exited;
+  if (exitCode !== 0) {
+    const stderrText = proc.stderr ? await new Response(proc.stderr).text() : "";
+    throw new Error(`icacls failed hardening ${tokenPath} (exit ${exitCode}): ${stderrText}`);
+  }
+}
 
 /**
  * Read the existing bearer token from `<dataDir>/daemon.token`, or generate and persist a new
- * 32-byte random one (0600 permissions) on first run. Re-asserts 0600 even when the file
- * pre-existed with looser permissions.
+ * 32-byte random one (0600 permissions) on first run. Re-asserts 0600 (and, on win32, explicit
+ * icacls hardening) even when the file pre-existed with looser permissions.
  */
-export async function ensureToken(dataDir: string, _aclOpts: AclOpts = {}): Promise<string> {
+export async function ensureToken(dataDir: string, aclOpts: AclOpts = {}): Promise<string> {
   await fs.mkdir(dataDir, { recursive: true });
   const tokenPath = tokenFilePath(dataDir);
   if (existsSync(tokenPath)) {
     const existing = (await fs.readFile(tokenPath, "utf8")).trim();
     await fs.chmod(tokenPath, TOKEN_FILE_MODE);
+    await hardenTokenFileAcl(tokenPath, aclOpts);
     if (existing !== "") return existing;
   }
   const token = randomBytes(32).toString("hex");
   await fs.writeFile(tokenPath, token, { mode: TOKEN_FILE_MODE });
   await fs.chmod(tokenPath, TOKEN_FILE_MODE);
+  await hardenTokenFileAcl(tokenPath, aclOpts);
   return token;
 }
 

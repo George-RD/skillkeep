@@ -50,7 +50,13 @@ test("ensureToken re-asserts icacls hardening on both the fresh-token and pre-ex
 
     const first = await ensureToken(tmpDir, opts);
     expect(calls).toHaveLength(1);
-    expect(calls[0]).toEqual(["icacls", tokenFilePath(tmpDir), "/inheritance:r", "/grant:r", "alice:F"]);
+    expect(calls[0]).toEqual([
+      "icacls",
+      tokenFilePath(tmpDir),
+      "/inheritance:r",
+      "/grant:r",
+      "alice:F",
+    ]);
 
     const second = await ensureToken(tmpDir, opts);
     expect(second).toBe(first);
