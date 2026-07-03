@@ -108,7 +108,12 @@ describe("codex parser", () => {
     // Instance A represents "daemon before restart": read only up through the
     // first emitted delta, then stop — as if it persisted that cursor and the
     // process then crashed/restarted before reading any further.
-    const instanceA: typeof codex = { ...codex, seenTotals: new Map(), seenModel: new Map(), seenCwd: new Map() };
+    const instanceA: typeof codex = {
+      ...codex,
+      seenTotals: new Map(),
+      seenModel: new Map(),
+      seenCwd: new Map(),
+    };
     let cursorAfterFirstEvent = 0;
     for await (const y of instanceA.parse(file, 0)) {
       cursorAfterFirstEvent = y.nextOffset;
@@ -117,7 +122,12 @@ describe("codex parser", () => {
 
     // Instance B represents "daemon after restart": brand new maps, resumes
     // purely from the persisted byte offset with NO cumulative baseline.
-    const instanceB: typeof codex = { ...codex, seenTotals: new Map(), seenModel: new Map(), seenCwd: new Map() };
+    const instanceB: typeof codex = {
+      ...codex,
+      seenTotals: new Map(),
+      seenModel: new Map(),
+      seenCwd: new Map(),
+    };
     const resumedEvents = (await collect(instanceB.parse(file, cursorAfterFirstEvent)))
       .map((r) => r.event)
       .filter((e) => e !== null);

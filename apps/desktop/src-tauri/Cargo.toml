@@ -1,0 +1,20 @@
+[package]
+name = "skillkeep-desktop"
+version = "0.1.0"
+description = "skillkeep desktop shell (Tauri 2)"
+edition = "2021"
+rust-version = "1.77"
+
+# Desktop-only shell (macOS + Windows per plan) -- no mobile target, so a
+# plain binary crate is enough; no separate cdylib/staticlib lib.rs needed.
+[[bin]]
+name = "skillkeep-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+# Generates the `tauri::generate_context!()` glue from tauri.conf.json at build time.
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+# Core Tauri runtime: window/webview management, IPC, bundler config types.
+tauri = { version = "2" }
