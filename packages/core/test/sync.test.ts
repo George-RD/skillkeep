@@ -1,11 +1,14 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
 import { execSync } from "node:child_process";
 import * as fs from "node:fs";
+import * as fsp from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
 import YAML from "yaml";
 import { scopeDir, tildeCollapse } from "../src/paths";
-import { filterPersistentWorktrees, resolveLinkMode, runSync } from "../src/sync";
+import { hashSkillDir } from "../src/skill";
+import type { SyncReport } from "../src/sync";
+import { copyHashVerify, filterPersistentWorktrees, resolveLinkMode, runSync } from "../src/sync";
 import type { Config } from "../src/types";
 
 // --- resolveLinkMode tests ---
@@ -229,4 +232,90 @@ test("copy-mode sync produces identical hash at destination", async () => {
   );
   const destContent = fs.readFileSync(path.join(destDir, "SKILL.md"), "utf8");
   expect(destContent).toBe(srcContent);
+});
+
+test("copyHashVerify leaves the old destination intact and no temp dir when the copy fails mid-way", async () => {
+  const src = path.join(tmpDir, "cp-src");
+  const dest = path.join(tmpDir, "cp-dest", "my-skill");
+  fs.mkdirSync(src, { recursive: true });
+  fs.writeFileSync(
+    path.join(src, "SKILL.md"),
+    `---
+description: new
+---
+new body
+`,
+  );
+  fs.mkdirSync(dest, { recursive: true });
+  fs.writeFileSync(
+    path.join(dest, "SKILL.md"),
+    `---
+description: old
+---
+old body
+`,
+  );
+  const oldHash = await hashSkillDir(dest);
+  const report: SyncReport = {
+    created: [],
+    fixed: [],
+    pruned: [],
+    errors: [],
+    configReminders: [],
+  };
+  const failingCopy = async (_s: string, d: string): Promise<void> => {
+    await fsp.mkdir(d, { recursive: true });
+    await fsp.writeFile(path.join(d, "SKILL.md"), "half-written");
+    throw new Error("disk full");
+  };
+  await expect(
+    copyHashVerify(src, dest, { dryRun: false, prune: false }, report, failingCopy),
+  ).rejects.toThrow("disk full");
+  expect(await hashSkillDir(dest)).toBe(oldHash);
+  const siblings = fs.readdirSync(path.dirname(dest));
+  expect(siblings).toEqual(["my-skill"]);
+});
+
+test("copyHashVerify restores the old destination and cleans up when rename fails", async () => {
+  const src = path.join(tmpDir, "cp-src");
+  const dest = path.join(tmpDir, "cp-dest", "my-skill-rename-fail");
+  fs.mkdirSync(src, { recursive: true });
+  fs.writeFileSync(
+    path.join(src, "SKILL.md"),
+    `---
+description: new
+---
+new body
+`,
+  );
+  fs.mkdirSync(dest, { recursive: true });
+  fs.writeFileSync(
+    path.join(dest, "SKILL.md"),
+    `---
+description: old
+---
+old body
+`,
+  );
+  const oldHash = await hashSkillDir(dest);
+  const report: SyncReport = {
+    created: [],
+    fixed: [],
+    pruned: [],
+    errors: [],
+    configReminders: [],
+  };
+  // In this copy function, we simulate a successful copy, but delete the copied directory
+  // right before returning, causing the subsequent rename(tmpDir, destDir) to fail.
+  const failingRenameCopy = async (_s: string, d: string): Promise<void> => {
+    await fsp.mkdir(d, { recursive: true });
+    await fsp.writeFile(path.join(d, "SKILL.md"), "new body");
+    await fsp.rm(d, { recursive: true, force: true });
+  };
+  await expect(
+    copyHashVerify(src, dest, { dryRun: false, prune: false }, report, failingRenameCopy),
+  ).rejects.toThrow();
+  expect(await hashSkillDir(dest)).toBe(oldHash);
+  const siblings = fs.readdirSync(path.dirname(dest));
+  expect(siblings).toEqual(["my-skill-rename-fail"]);
 });
