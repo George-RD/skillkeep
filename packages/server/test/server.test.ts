@@ -94,6 +94,7 @@ beforeAll(async () => {
     linkMode: "symlink",
     inboxDirs: [],
     projects: {},
+    hub: null,
   };
   const seedDb = openDb(path.join(dataDir, "skillkeep.db"));
   setConfig(seedDb, config);
@@ -129,8 +130,8 @@ describe("auth", () => {
   test("GET /healthz needs no token", async () => {
     const res = await get("/healthz", { auth: false });
     expect(res.status).toBe(200);
-    const body = (await res.json()) as { ok: boolean; version: string };
-    expect(body).toEqual({ ok: true, version: "0.1.0" });
+    const body = (await res.json()) as { ok: boolean; version: string; mode: string };
+    expect(body).toEqual({ ok: true, version: "0.1.0", mode: "agent" });
   });
 
   test("protected route without a token is 401", async () => {

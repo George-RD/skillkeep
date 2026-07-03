@@ -82,6 +82,7 @@ beforeEach(() => {
         repos: [repoDir],
       },
     },
+    hub: null,
   };
 });
 

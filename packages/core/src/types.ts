@@ -34,6 +34,18 @@ export interface Config {
   inboxDirs: string[];
   /** Named projects, each mapping to one or more repos with a deployment mode. */
   projects: Record<string, ProjectConfig>;
+  /** Multi-device hub link (null when the agent runs standalone, no hub sync). */
+  hub: HubLink | null;
+}
+
+/** Agent→hub link: where to push/pull registry skills and usage from this device. */
+export interface HubLink {
+  /** Base URL of the hub daemon, e.g. https://skillkeep.example.com (no trailing slash). */
+  url: string;
+  /** Bearer token shared with the hub (operator-supplied via SKILLKEEP_TOKEN on the hub). */
+  token: string;
+  /** Human-readable name for this device, recorded in the hub's devices table on push. */
+  device: string;
 }
 
 /** rules.yml: scope name -> list of glob patterns. "archive" and "global" are scopes too. */

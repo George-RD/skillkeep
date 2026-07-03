@@ -173,3 +173,75 @@ test("queryUsageSummary excludes days outside the from/to boundary", () => {
     { key: "model-a", input: 1, output: 2, cacheRead: 0, cacheWrite: 0, costMicroUsd: null },
   ]);
 });
+
+test("two devices pushing the same (day, client, model, repo=NULL) usage_facts bucket accumulate as SEPARATE rows, not overwrite each other", () => {
+  // repo NULL matches gemini/opencode's real events (they never report a repo), and is exactly the
+  // shape most likely to collide across devices at a hub: every device's gemini usage shares the
+  // same (day, client, model, NULL) key unless `device` is also part of the match/PK.
+  const db = openDb(":memory:");
+  upsertUsageFact(
+    db,
+    "2026-01-01",
+    "gemini",
+    "model-a",
+    null,
+    { input: 100, output: 10, cacheRead: 0, cacheWrite: 0, costMicroUsd: 5 },
+    "laptop",
+  );
+  upsertUsageFact(
+    db,
+    "2026-01-01",
+    "gemini",
+    "model-a",
+    null,
+    { input: 200, output: 20, cacheRead: 0, cacheWrite: 0, costMicroUsd: 7 },
+    "desktop",
+  );
+
+  // Grouped by model, the hub summary must SUM both devices, not show only the last pusher.
+  const rows = queryUsageSummary(db, "model", "2026-01-01", "2026-01-01");
+  expect(rows).toEqual([
+    { key: "model-a", input: 300, output: 30, cacheRead: 0, cacheWrite: 0, costMicroUsd: 12 },
+  ]);
+
+  // Re-pushing "laptop"'s absolute state (idempotent SET semantics) must only touch its own row —
+  // "desktop"'s numbers stay untouched.
+  upsertUsageFact(
+    db,
+    "2026-01-01",
+    "gemini",
+    "model-a",
+    null,
+    { input: 150, output: 15, cacheRead: 0, cacheWrite: 0, costMicroUsd: 6 },
+    "laptop",
+  );
+  const after = queryUsageSummary(db, "model", "2026-01-01", "2026-01-01");
+  expect(after).toEqual([
+    { key: "model-a", input: 350, output: 35, cacheRead: 0, cacheWrite: 0, costMicroUsd: 13 },
+  ]);
+});
+
+test("two devices pushing the same skill_usage bucket accumulate as separate rows, and agent-mode (device NULL) accumulation is untouched by either", () => {
+  const db = openDb(":memory:");
+  upsertSkillUsage(db, "2026-01-01", "rtk", "omp", null, "model-a", 3, "laptop");
+  upsertSkillUsage(db, "2026-01-01", "rtk", "omp", null, "model-a", 5, "desktop");
+  // This machine's own agent-mode accumulation (device NULL) is a THIRD, independent row.
+  upsertSkillUsage(db, "2026-01-01", "rtk", "omp", null, "model-a", 2);
+  upsertSkillUsage(db, "2026-01-01", "rtk", "omp", null, "model-a", 1);
+
+  const rows = queryUsageSummary(db, "skill", "2026-01-01", "2026-01-01");
+  // 3 (laptop) + 5 (desktop) + 2 + 1 (this machine's own accumulated total) = 11.
+  expect(rows).toEqual([
+    { key: "rtk", input: 11, output: 0, cacheRead: 0, cacheWrite: 0, costMicroUsd: null },
+  ]);
+  const count = db
+    .prepare("SELECT SUM(count) as total FROM skill_usage WHERE skill = 'rtk'")
+    .get() as { total: number };
+  expect(count.total).toBe(11);
+  const rowCount = db
+    .prepare("SELECT COUNT(*) as n FROM skill_usage WHERE skill = 'rtk'")
+    .get() as {
+    n: number;
+  };
+  expect(rowCount.n).toBe(3); // laptop, desktop, and this machine's own NULL-device row
+});

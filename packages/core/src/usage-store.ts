@@ -53,28 +53,29 @@ export function setScanCursor(
 }
 
 /**
- * Additively upsert one (day, client, model, repo) `usage_facts` bucket: token
- * counts and cost accumulate across calls rather than being overwritten.
+ * Additively upsert one (day, client, model, repo, device) `usage_facts` bucket: token counts and
+ * cost accumulate across calls rather than being overwritten.
  *
- * `usage_facts`'s `PRIMARY KEY(day, client, model, repo)` is a composite
- * index, and SQLite treats a NULL in ANY primary-key column as distinct from
- * every other row (including another NULL) for uniqueness purposes — so a
- * naive `INSERT ... ON CONFLICT(day, client, model, repo) DO UPDATE ...` NEVER
- * fires when `repo IS NULL` (e.g. gemini events, which carry no repo); every
- * call would insert a fresh duplicate row instead of accumulating. This
- * function instead does a null-safe manual read-then-write, matching the
- * bucket with `repo IS ?` (SQLite's `IS` operator is NULL-safe equality), so
- * the additive semantics hold identically whether `repo` is a real value or
- * NULL.
+ * `device` is part of the logical key alongside `day, client, model, repo` (see {@link
+ * upsertSkillUsage} for the same shape): agent-mode calls always pass `device: null` (one bucket
+ * per machine's own local accumulation), while hub-ingest calls pass the pushing device's name, so
+ * two different devices pushing usage for the same (day, client, model, repo) never collapse into
+ * a single row and silently overwrite each other's numbers — every device gets its own row, and
+ * {@link queryUsageSummary}'s aggregates sum across all of them.
  *
- * Cost rule (deliberate, never relaxed): if EITHER the bucket's existing cost
- * or the incoming delta's cost is NULL (unknown), the bucket's cost becomes
- * NULL and stays NULL forever — a bucket only ever reports a total cost when
- * EVERY contributing event had a known cost. An unknown-cost event might have
- * cost anything, so summing just the known deltas and presenting that as the
- * bucket's cost would silently understate it; a later known-cost delta never
- * "resurrects" an already-poisoned bucket either, by the same logic in
- * reverse.
+ * `usage_facts`'s composite key spans several nullable columns (`repo` for agent mode, `device` for
+ * everyone), and SQLite treats a NULL in ANY key column as distinct from every other row (including
+ * another NULL) for uniqueness purposes — so a naive `INSERT ... ON CONFLICT(...) DO UPDATE ...`
+ * NEVER fires when `repo IS NULL` or `device IS NULL`. This function instead does a null-safe manual
+ * read-then-write, matching every key column with `IS ?` (SQLite's `IS` operator is NULL-safe
+ * equality), so the semantics hold identically whether `repo`/`device` are real values or NULL.
+ *
+ * Cost rule (deliberate, never relaxed): if EITHER the bucket's existing cost or the incoming
+ * delta's cost is NULL (unknown), the bucket's cost becomes NULL and stays NULL forever — a bucket
+ * only ever reports a total cost when EVERY contributing event had a known cost. An unknown-cost
+ * event might have cost anything, so summing just the known deltas and presenting that as the
+ * bucket's cost would silently understate it; a later known-cost delta never "resurrects" an
+ * already-poisoned bucket either, by the same logic in reverse.
  */
 export function upsertUsageFact(
   db: Database,
@@ -83,12 +84,13 @@ export function upsertUsageFact(
   model: string,
   repo: string | null,
   delta: UsageFactDelta,
+  device: string | null = null,
 ): void {
   const existing = db
     .prepare(
-      "SELECT input, output, cache_read, cache_write, cost_microusd FROM usage_facts WHERE day = ? AND client = ? AND model = ? AND repo IS ?",
+      "SELECT input, output, cache_read, cache_write, cost_microusd FROM usage_facts WHERE day = ? AND client = ? AND model = ? AND repo IS ? AND device IS ?",
     )
-    .get(day, client, model, repo) as
+    .get(day, client, model, repo, device) as
     | {
         input: number;
         output: number;
@@ -100,7 +102,7 @@ export function upsertUsageFact(
 
   if (!existing) {
     db.prepare(
-      "INSERT INTO usage_facts (day, client, model, repo, input, output, cache_read, cache_write, cost_microusd) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO usage_facts (day, client, model, repo, input, output, cache_read, cache_write, cost_microusd, device) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
     ).run(
       day,
       client,
@@ -111,16 +113,40 @@ export function upsertUsageFact(
       delta.cacheRead,
       delta.cacheWrite,
       delta.costMicroUsd,
+      device,
     );
     return;
   }
 
+  if (device !== null) {
+    // Hub ingest: the agent re-pushes its full current state, so SET absolute values (idempotent on
+    // re-push) for THIS device's row specifically — never accumulate, which would double-count on
+    // re-push, and never touch another device's row for the same bucket (matched via device IS ?).
+    db.prepare(
+      "UPDATE usage_facts SET input = ?, output = ?, cache_read = ?, cache_write = ?, cost_microusd = ? WHERE day = ? AND client = ? AND model = ? AND repo IS ? AND device IS ?",
+    ).run(
+      delta.input,
+      delta.output,
+      delta.cacheRead,
+      delta.cacheWrite,
+      delta.costMicroUsd,
+      day,
+      client,
+      model,
+      repo,
+      device,
+    );
+    return;
+  }
+
+  // Agent mode: additive accumulation (existing behaviour), scoped to this machine's own
+  // device IS NULL row so it never accumulates into a hub-tagged device's row.
   const cost =
     existing.cost_microusd === null || delta.costMicroUsd === null
       ? null
       : existing.cost_microusd + delta.costMicroUsd;
   db.prepare(
-    "UPDATE usage_facts SET input = input + ?, output = output + ?, cache_read = cache_read + ?, cache_write = cache_write + ?, cost_microusd = ? WHERE day = ? AND client = ? AND model = ? AND repo IS ?",
+    "UPDATE usage_facts SET input = input + ?, output = output + ?, cache_read = cache_read + ?, cache_write = cache_write + ?, cost_microusd = ? WHERE day = ? AND client = ? AND model = ? AND repo IS ? AND device IS ?",
   ).run(
     delta.input,
     delta.output,
@@ -131,14 +157,18 @@ export function upsertUsageFact(
     client,
     model,
     repo,
+    device,
   );
 }
 
 /**
- * Additively upsert one (day, skill, client, repo, model) `skill_usage` count.
- * Same NULL-PK caveat as {@link upsertUsageFact} applies (`repo` is nullable
- * here too), so this also matches via a null-safe manual read-then-write
- * rather than `ON CONFLICT`.
+ * Additively upsert one (day, skill, client, repo, model, device) `skill_usage` count. Same
+ * multi-device key shape as {@link upsertUsageFact}: `device` is matched alongside the other
+ * columns so two devices' counts for the same (day, skill, client, repo, model) bucket never
+ * collapse into one overwritten row. Same NULL-PK caveat also applies (`repo`/`device` are
+ * nullable), so this matches via a null-safe manual read-then-write rather than `ON CONFLICT`.
+ * When `device` is non-null (hub ingest) the count is SET to the pushed absolute value instead of
+ * accumulated, making re-push idempotent.
  */
 export function upsertSkillUsage(
   db: Database,
@@ -148,23 +178,72 @@ export function upsertSkillUsage(
   repo: string | null,
   model: string,
   count = 1,
+  device: string | null = null,
 ): void {
   const existing = db
     .prepare(
-      "SELECT count FROM skill_usage WHERE day = ? AND skill = ? AND client = ? AND repo IS ? AND model = ?",
+      "SELECT count FROM skill_usage WHERE day = ? AND skill = ? AND client = ? AND repo IS ? AND model = ? AND device IS ?",
     )
-    .get(day, skill, client, repo, model) as { count: number } | undefined;
+    .get(day, skill, client, repo, model, device) as { count: number } | undefined;
 
   if (!existing) {
     db.prepare(
-      "INSERT INTO skill_usage (day, skill, client, repo, model, count) VALUES (?, ?, ?, ?, ?, ?)",
-    ).run(day, skill, client, repo, model, count);
+      "INSERT INTO skill_usage (day, skill, client, repo, model, count, device) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    ).run(day, skill, client, repo, model, count, device);
     return;
   }
 
+  if (device !== null) {
+    // Hub ingest: SET the absolute count (idempotent re-push) for THIS device's row.
+    db.prepare(
+      "UPDATE skill_usage SET count = ? WHERE day = ? AND skill = ? AND client = ? AND repo IS ? AND model = ? AND device IS ?",
+    ).run(count, day, skill, client, repo, model, device);
+    return;
+  }
+
+  // Agent mode: additive accumulation (existing behaviour), scoped to this machine's own
+  // device IS NULL row.
   db.prepare(
-    "UPDATE skill_usage SET count = count + ? WHERE day = ? AND skill = ? AND client = ? AND repo IS ? AND model = ?",
-  ).run(count, day, skill, client, repo, model);
+    "UPDATE skill_usage SET count = count + ? WHERE day = ? AND skill = ? AND client = ? AND repo IS ? AND model = ? AND device IS ?",
+  ).run(count, day, skill, client, repo, model, device);
+}
+/** One full `usage_facts` row, as pushed by an agent to the hub or returned for listing. */
+export interface UsageFactRow {
+  day: string;
+  client: string;
+  model: string;
+  repo: string | null;
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  costMicroUsd: number | null;
+}
+
+/** One full `skill_usage` row, as pushed by an agent to the hub or returned for listing. */
+export interface SkillUsageRow {
+  day: string;
+  skill: string;
+  client: string;
+  repo: string | null;
+  model: string;
+  count: number;
+}
+
+/** Return every `usage_facts` row (for agent→hub push: the full local usage snapshot). */
+export function listUsageFacts(db: Database): UsageFactRow[] {
+  return db
+    .prepare(
+      "SELECT day, client, model, repo, input, output, cache_read AS cacheRead, cache_write AS cacheWrite, cost_microusd AS costMicroUsd FROM usage_facts",
+    )
+    .all() as UsageFactRow[];
+}
+
+/** Return every `skill_usage` row (for agent→hub push: the full local skill-read snapshot). */
+export function listSkillUsage(db: Database): SkillUsageRow[] {
+  return db
+    .prepare("SELECT day, skill, client, repo, model, count FROM skill_usage")
+    .all() as SkillUsageRow[];
 }
 
 /** Column each non-"skill" {@link queryUsageSummary} group maps to 1:1 in `usage_facts`. */

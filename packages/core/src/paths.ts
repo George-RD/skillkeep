@@ -86,7 +86,15 @@ export function scopeDir(registryRoot: string, scope: string): string {
   return path.join(registryRoot, "skills", scope);
 }
 
-/** Absolute path to a named skill within a registry scope. */
+/**
+ * Absolute path to a named skill within a registry scope. Throws on an empty name, `.`/`..`, or
+ * any path separator — every skill-name query/body param (including the network-exposed hub API's
+ * `PUT /api/v1/registry/skill?name=`) flows through here before touching disk, so this is the
+ * traversal chokepoint for the whole registry subsystem.
+ */
 export function skillDirInScope(registryRoot: string, scope: string, name: string): string {
+  if (!name || name === "." || name === ".." || /[\\/]/.test(name)) {
+    throw new Error(`invalid skill name "${name}"`);
+  }
   return path.join(scopeDir(registryRoot, scope), name);
 }

@@ -12,6 +12,7 @@ import {
   type ClientId,
   type Config,
   type DetectedSkill,
+  type Detection,
   findInRegistry,
   getConfig,
   globalOnlyTokenEstimate,
@@ -26,9 +27,21 @@ import {
   setConfig,
   symlinkProbe,
   tildeExpand,
+  upsertSkillUsage,
+  upsertUsageFact,
 } from "@skillkeep/core";
 import { requireAuth } from "./auth";
 import { emit, sseResponse } from "./events";
+import { pullFromHub, pushToHub } from "./hub-link";
+import {
+  archiveSkillDir,
+  buildManifest,
+  createSkillTar,
+  extractSkillTar,
+  getSkillRev,
+  resolveSkillDir,
+  setSkillRev,
+} from "./registry-sync";
 import { getScan, resetScanCache } from "./scan-cache";
 import { runUsageIngest } from "./usage-ingest";
 
@@ -38,8 +51,8 @@ export interface RouterContext {
   token: string;
   dataDir: string;
   version: string;
+  mode: "agent" | "hub";
 }
-
 const UI_DIST_DIR = path.join(import.meta.dir, "../../ui/dist");
 const ALL_CLIENT_IDS = Object.keys(CLIENT_DIRS) as ClientId[];
 
@@ -61,7 +74,7 @@ async function readJsonBody<T>(req: Request): Promise<T | null> {
 // --- /healthz ----------------------------------------------------------------
 
 function handleHealthz(ctx: RouterContext): Response {
-  return jsonResponse({ ok: true, version: ctx.version });
+  return jsonResponse({ ok: true, version: ctx.version, mode: ctx.mode });
 }
 
 // --- /api/scan -----------------------------------------------------------------
@@ -315,6 +328,7 @@ async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
     repoClients: config.repoClients,
     linkMode: config.linkMode,
     inboxDirs: config.inboxDirs,
+    hub: config.hub ? { url: config.hub.url, device: config.hub.device } : null,
     linkModeProbe,
   });
 }
@@ -345,8 +359,28 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
   if (!Array.isArray(inboxDirs) || !inboxDirs.every((d) => typeof d === "string")) {
     return jsonResponse({ error: "inboxDirs must be an array of strings" }, 422);
   }
-
   const current = getConfig(ctx.db);
+
+  // Hub link: accepts { url, token, device } or null. An empty/absent token preserves the existing
+  // one (the UI's password field is never populated on load, so re-saving must not blank it).
+  let hub: Config["hub"] = null;
+  if (body.hub !== null && body.hub !== undefined) {
+    const h = body.hub as Record<string, unknown>;
+    if (
+      typeof h.url !== "string" ||
+      typeof h.device !== "string" ||
+      (h.token !== undefined && typeof h.token !== "string")
+    ) {
+      return jsonResponse(
+        { error: "hub must be { url: string, device: string, token?: string } or null" },
+        422,
+      );
+    }
+    const token =
+      typeof h.token === "string" && h.token !== "" ? h.token : (current.hub?.token ?? "");
+    hub = { url: h.url, token, device: h.device };
+  }
+
   const merged: Config = {
     ...current,
     registryRoot,
@@ -355,6 +389,7 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     repoClients: filterClientIds(body.repoClients),
     linkMode,
     inboxDirs,
+    hub,
   };
   setConfig(ctx.db, merged);
   resetScanCache();
@@ -395,6 +430,165 @@ async function serveIndexHtml(req: Request, ctx: RouterContext): Promise<Respons
   );
   return new Response(injected, { headers: { "Content-Type": "text/html" } });
 }
+// --- /api/v1/* (hub mode only) --------------------------------------------------
+
+/** Minimal server-side ingest body types — a subset of the usage_facts/skill_usage row shapes. */
+interface IngestUsageRow {
+  day: string;
+  client: string;
+  model: string;
+  repo: string | null;
+  input: number;
+  output: number;
+  cacheRead: number;
+  cacheWrite: number;
+  costMicroUsd: number | null;
+}
+
+interface IngestSkillUsageRow {
+  day: string;
+  skill: string;
+  client: string;
+  repo: string | null;
+  model: string;
+  count: number;
+}
+
+interface IngestBody {
+  device: string;
+  snapshot?: Detection;
+  usage?: IngestUsageRow[];
+  skillUsage?: IngestSkillUsageRow[];
+}
+
+async function handleIngest(ctx: RouterContext, req: Request): Promise<Response> {
+  const body = await readJsonBody<IngestBody>(req);
+  if (!body || typeof body.device !== "string" || body.device.trim() === "") {
+    return jsonResponse(
+      { error: "expected { device: string, snapshot?, usage?, skillUsage? }" },
+      400,
+    );
+  }
+  const now = Date.now();
+  ctx.db
+    .prepare("INSERT OR REPLACE INTO devices (name, last_seen) VALUES (?, ?)")
+    .run(body.device, now);
+
+  if (Array.isArray(body.usage)) {
+    for (const row of body.usage) {
+      upsertUsageFact(
+        ctx.db,
+        row.day,
+        row.client,
+        row.model,
+        row.repo ?? null,
+        {
+          input: row.input,
+          output: row.output,
+          cacheRead: row.cacheRead,
+          cacheWrite: row.cacheWrite,
+          costMicroUsd: row.costMicroUsd ?? null,
+        },
+        body.device,
+      );
+    }
+  }
+  if (Array.isArray(body.skillUsage)) {
+    for (const row of body.skillUsage) {
+      upsertSkillUsage(
+        ctx.db,
+        row.day,
+        row.skill,
+        row.client,
+        row.repo ?? null,
+        row.model,
+        row.count,
+        body.device,
+      );
+    }
+  }
+  emit("usage:updated", {});
+  return jsonResponse({ ok: true });
+}
+
+async function handleManifest(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const manifest = await buildManifest(ctx.db, config.registryRoot);
+  return jsonResponse(manifest);
+}
+
+async function handleSkillTarGet(ctx: RouterContext, url: URL): Promise<Response> {
+  const scope = url.searchParams.get("scope");
+  const name = url.searchParams.get("name");
+  if (!scope || !name) return jsonResponse({ error: "missing scope or name query param" }, 400);
+  const config = getConfig(ctx.db);
+  let dir: string;
+  try {
+    dir = resolveSkillDir(config.registryRoot, scope, name);
+  } catch {
+    return jsonResponse({ error: "invalid scope" }, 400);
+  }
+  if (!existsSync(dir)) return jsonResponse({ error: "not found" }, 404);
+  const tar = await createSkillTar(dir);
+  return new Response(tar, { headers: { "Content-Type": "application/x-tar" } });
+}
+
+async function handleSkillTarPut(ctx: RouterContext, req: Request, url: URL): Promise<Response> {
+  const scope = url.searchParams.get("scope");
+  const name = url.searchParams.get("name");
+  const parentRevStr = url.searchParams.get("parentRev");
+  if (!scope || !name || parentRevStr === null) {
+    return jsonResponse({ error: "missing scope, name, or parentRev query param" }, 400);
+  }
+  const parentRev = Number(parentRevStr);
+  if (!Number.isFinite(parentRev) || parentRev < 0) {
+    return jsonResponse({ error: "parentRev must be a non-negative integer" }, 400);
+  }
+  const config = getConfig(ctx.db);
+  let dir: string;
+  try {
+    dir = resolveSkillDir(config.registryRoot, scope, name);
+  } catch {
+    return jsonResponse({ error: "invalid scope" }, 400);
+  }
+
+  const currentRev = getSkillRev(ctx.db, scope, name);
+  if (currentRev !== parentRev) {
+    return jsonResponse({ error: "conflict", currentRev }, 409);
+  }
+
+  if (parentRev > 0 && existsSync(dir)) {
+    await archiveSkillDir(ctx.dataDir, name, parentRev, dir);
+  }
+  const tarBytes = await req.arrayBuffer();
+  await extractSkillTar(dir, tarBytes);
+  const newRev = parentRev + 1;
+  setSkillRev(ctx.db, scope, name, newRev);
+  return jsonResponse({ ok: true, rev: newRev });
+}
+
+function handleDevices(ctx: RouterContext): Response {
+  const rows = ctx.db
+    .prepare("SELECT name, last_seen AS lastSeen FROM devices ORDER BY last_seen DESC")
+    .all() as { name: string; lastSeen: number }[];
+  return jsonResponse(rows);
+}
+
+// --- /api/hub/* (agent mode only) -----------------------------------------------
+
+async function handleHubPush(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  if (!config.hub) return jsonResponse({ error: "hub is not configured" }, 400);
+  const result = await pushToHub(ctx.db, config);
+  return jsonResponse(result);
+}
+
+async function handleHubPull(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  if (!config.hub) return jsonResponse({ error: "hub is not configured" }, 400);
+  const result = await pullFromHub(config);
+  return jsonResponse(result);
+}
 
 // --- router --------------------------------------------------------------------
 
@@ -421,6 +615,40 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
     if (pathname.startsWith("/api/")) {
       if (!requireAuth(req, ctx.token)) return jsonResponse({ error: "unauthorized" }, 401);
       try {
+        // Hub mode: agent-only write/detect routes are unavailable.
+        if (ctx.mode === "hub") {
+          if (
+            (pathname === "/api/scan" && method === "GET") ||
+            (pathname === "/api/adopt" && method === "POST") ||
+            (pathname === "/api/sync" && method === "POST")
+          ) {
+            return jsonResponse({ error: "not available in hub mode" }, 501);
+          }
+          if (pathname === "/api/v1/ingest" && method === "POST") {
+            return await handleIngest(ctx, req);
+          }
+          if (pathname === "/api/v1/registry/manifest" && method === "GET") {
+            return await handleManifest(ctx);
+          }
+          if (pathname === "/api/v1/registry/skill" && method === "GET") {
+            return await handleSkillTarGet(ctx, url);
+          }
+          if (pathname === "/api/v1/registry/skill" && method === "PUT") {
+            return await handleSkillTarPut(ctx, req, url);
+          }
+          if (pathname === "/api/v1/devices" && method === "GET") return handleDevices(ctx);
+        }
+
+        // Agent mode: hub-link routes (delegate to the shared push/pull logic).
+        if (ctx.mode === "agent") {
+          if (pathname === "/api/hub/push" && method === "POST") {
+            return await handleHubPush(ctx);
+          }
+          if (pathname === "/api/hub/pull" && method === "POST") {
+            return await handleHubPull(ctx);
+          }
+        }
+
         if (pathname === "/api/scan" && method === "GET") return await handleScan(ctx, url);
         if (pathname === "/api/adopt" && method === "POST") return await handleAdopt(ctx, req);
         if (pathname === "/api/registry" && method === "GET") return await handleRegistryList(ctx);

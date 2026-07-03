@@ -1,3 +1,4 @@
+import type { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
@@ -18,7 +19,13 @@ import {
   runSync,
   tildeExpand,
 } from "@skillkeep/core";
-import { DaemonAlreadyRunningError, DEFAULT_PORT, startServer } from "@skillkeep/server";
+import {
+  DaemonAlreadyRunningError,
+  DEFAULT_PORT,
+  pullFromHub,
+  pushToHub,
+  startServer,
+} from "@skillkeep/server";
 import { report } from "./output";
 
 type Writer = (line: string) => void;
@@ -33,6 +40,7 @@ const SUBCOMMANDS = [
   "doctor",
   "daemon",
   "ui",
+  "hub",
 ];
 
 function printHelp(write: Writer): void {
@@ -48,8 +56,10 @@ function printHelp(write: Writer): void {
   write("  triage [--apply]    route inbox skills matched by rules.yml");
   write("  check               drift/dangling-link/dead-config diagnostics");
   write("  doctor              environment diagnosis (registry, link mode, clients)");
-  write("  daemon              run the HTTP API in the foreground");
+  write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
+  write("  hub push            push this device's registry/usage snapshot to its hub");
+  write("  hub pull            pull registry skills that changed on the hub");
 }
 
 // --- status --------------------------------------------------------------------
@@ -223,23 +233,53 @@ export async function runDoctorCommand(config: Config, write: Writer = report): 
 
 // --- daemon ----------------------------------------------------------------------
 
-function resolveConfiguredPort(): number | undefined {
-  const envPort = process.env.SKILLKEEP_PORT;
-  if (!envPort) return undefined;
-  const parsed = Number(envPort);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+/** Parsed `daemon` subcommand flags: `--mode agent|hub`, `--data <path>`, `--port <n>`. */
+interface DaemonArgs {
+  mode: "agent" | "hub";
+  dataDir?: string;
+  port?: number;
 }
 
-export async function runDaemonCommand(write: Writer = report): Promise<void> {
+function parseDaemonArgs(args: string[]): DaemonArgs {
+  let mode: "agent" | "hub" = "agent";
+  let dataDirFlag: string | undefined;
+  let port: number | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--mode") {
+      const value = args[++i];
+      if (value === "agent" || value === "hub") mode = value;
+    } else if (arg === "--data") {
+      dataDirFlag = args[++i];
+    } else if (arg === "--port") {
+      const value = Number(args[++i]);
+      if (Number.isFinite(value) && value > 0) port = value;
+    }
+  }
+  return { mode, dataDir: dataDirFlag, port };
+}
+
+/**
+ * Run the daemon in the foreground. Port resolution order: `--port` flag, then `PORT` (Railway
+ * sets this for hub deploys), then `SKILLKEEP_PORT`, then the default — all handled by
+ * `bindServer` when no explicit port is passed here. A hub-mode start with no `SKILLKEEP_TOKEN`
+ * fails fast (before binding anything): `startServer` throws, and this is the one place that
+ * reports it and exits non-zero.
+ */
+export async function runDaemonCommand(args: string[] = [], write: Writer = report): Promise<void> {
+  const { mode, dataDir: dataDirFlag, port } = parseDaemonArgs(args);
   try {
-    const { port } = await startServer({ mode: "agent", port: resolveConfiguredPort() });
-    write(`skillkeep daemon ready on http://127.0.0.1:${port}`);
+    const started = await startServer({ mode, port, dataDir: dataDirFlag });
+    const host = mode === "hub" ? "0.0.0.0" : "127.0.0.1";
+    write(`skillkeep daemon ready on http://${host}:${started.port} (mode: ${mode})`);
   } catch (err) {
     if (err instanceof DaemonAlreadyRunningError) {
       write(err.message);
       return;
     }
-    throw err;
+    process.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+    process.exitCode = 1;
+    return;
   }
   // The bound server owns the event loop; block forever so this stays the foreground daemon.
   await new Promise<void>(() => {});
@@ -291,8 +331,16 @@ async function openBrowser(url: string): Promise<boolean> {
   }
 }
 
+/** Guess which port a locally-running agent-mode daemon might be on, before falling back to the port file. */
+function guessConfiguredPort(): number | undefined {
+  const envPort = process.env.SKILLKEEP_PORT;
+  if (!envPort) return undefined;
+  const parsed = Number(envPort);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+}
+
 export async function runUiCommand(write: Writer = report): Promise<void> {
-  const guessedPort = resolveConfiguredPort() ?? (await readDaemonPort(DEFAULT_PORT));
+  const guessedPort = guessConfiguredPort() ?? (await readDaemonPort(DEFAULT_PORT));
   let port: number | null = (await probeHealthz(guessedPort)) ? guessedPort : null;
 
   if (port === null) {
@@ -326,6 +374,40 @@ export async function runUiCommand(write: Writer = report): Promise<void> {
   const url = `http://127.0.0.1:${port}/${token ? `?token=${encodeURIComponent(token)}` : ""}`;
   if (!(await openBrowser(url))) write(`open this URL in your browser: ${url}`);
 }
+// --- hub -------------------------------------------------------------------------
+
+/** `skillkeep hub push` — push this device's full registry/usage snapshot to its configured hub. */
+export async function runHubPushCommand(
+  db: Database,
+  config: Config,
+  write: Writer = report,
+): Promise<void> {
+  if (!config.hub) {
+    write("hub is not configured. Set hub url/token/device in Settings first.");
+    process.exitCode = 1;
+    return;
+  }
+  const result = await pushToHub(db, config);
+  write(
+    `pushed to ${config.hub.url} as "${result.device}": ${result.usageRows} usage row(s), ${result.skillUsageRows} skill-usage row(s)`,
+  );
+  if (result.skillsPushed.length > 0) write(`skills pushed: ${result.skillsPushed.join(", ")}`);
+  for (const name of result.conflicts) {
+    write(`conflict: "${name}" changed on the hub since the last sync — resolve manually`);
+  }
+}
+
+/** `skillkeep hub pull` — pull registry skills that changed on the hub into the local registry. */
+export async function runHubPullCommand(config: Config, write: Writer = report): Promise<void> {
+  if (!config.hub) {
+    write("hub is not configured. Set hub url/token/device in Settings first.");
+    process.exitCode = 1;
+    return;
+  }
+  const result = await pullFromHub(config);
+  write(`pulled from ${config.hub.url}: ${result.skillsPulled.length} skill(s)`);
+  if (result.skillsPulled.length > 0) write(`skills pulled: ${result.skillsPulled.join(", ")}`);
+}
 
 // --- dispatch --------------------------------------------------------------------
 
@@ -341,7 +423,7 @@ export async function main(
   }
 
   if (command === "daemon") {
-    await runDaemonCommand(write);
+    await runDaemonCommand(rest, write);
     return;
   }
   if (command === "ui") {
@@ -381,6 +463,18 @@ export async function main(
     case "doctor":
       await runDoctorCommand(config, write);
       break;
+    case "hub": {
+      const [subcommand] = rest;
+      if (subcommand === "push") {
+        await runHubPushCommand(db, config, write);
+      } else if (subcommand === "pull") {
+        await runHubPullCommand(config, write);
+      } else {
+        write(`unknown hub subcommand: ${subcommand ?? "(none)"}. usage: skillkeep hub push|pull`);
+        process.exitCode = 1;
+      }
+      break;
+    }
   }
 }
 

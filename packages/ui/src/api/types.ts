@@ -88,6 +88,19 @@ export interface LinkModeProbe {
   reason: string;
 }
 
+/** Hub link as returned by GET /api/settings — never carries the token. */
+export interface HubSettings {
+  url: string;
+  device: string;
+}
+
+/** Hub link as PUT to /api/settings — the token is write-only (empty string keeps the existing one). */
+export interface HubInput {
+  url: string;
+  token: string;
+  device: string;
+}
+
 export interface Settings {
   registryRoot: string;
   repoRoots: string[];
@@ -95,11 +108,14 @@ export interface Settings {
   repoClients: string[];
   linkMode: "symlink" | "copy";
   inboxDirs: string[];
+  hub: HubSettings | null;
   linkModeProbe?: LinkModeProbe;
 }
 
-/** Shape PUT to /api/settings — same as Settings without the read-only probe. */
-export type SettingsInput = Omit<Settings, "linkModeProbe">;
+/** Shape PUT to /api/settings — same as Settings without the read-only probe, and hub carries a token. */
+export type SettingsInput = Omit<Settings, "linkModeProbe" | "hub"> & {
+  hub: HubInput | null;
+};
 
 export interface OpResult {
   ok: boolean;
@@ -109,6 +125,27 @@ export interface OpResult {
 export interface Health {
   ok: boolean;
   version: string;
+  mode?: "agent" | "hub";
+}
+
+/** One device known to a hub, from GET /api/v1/devices. */
+export interface Device {
+  name: string;
+  lastSeen: number;
+}
+
+/** Result of an agent→hub push (POST /api/hub/push). */
+export interface HubPushResult {
+  device: string;
+  usageRows: number;
+  skillUsageRows: number;
+  skillsPushed: string[];
+  conflicts: string[];
+}
+
+/** Result of a hub→agent pull (POST /api/hub/pull). */
+export interface HubPullResult {
+  skillsPulled: string[];
 }
 
 export interface SkillkeepGlobal {

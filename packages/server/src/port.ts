@@ -27,13 +27,15 @@ export interface BindResult {
   port: number;
 }
 
-/** Resolve the port to try first: an explicit override, then `SKILLKEEP_PORT`, then `DEFAULT_PORT`. */
+/** Resolve the port to try first: explicit override, then `PORT` (Railway), then `SKILLKEEP_PORT`, then default. */
 function resolveRequestedPort(explicit: number | undefined): number {
   if (explicit !== undefined) return explicit;
-  const envPort = process.env.SKILLKEEP_PORT;
-  if (envPort !== undefined) {
-    const parsed = Number(envPort);
-    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  for (const key of ["PORT", "SKILLKEEP_PORT"]) {
+    const envPort = process.env[key];
+    if (envPort !== undefined) {
+      const parsed = Number(envPort);
+      if (Number.isFinite(parsed) && parsed > 0) return parsed;
+    }
   }
   return DEFAULT_PORT;
 }
@@ -53,27 +55,30 @@ async function probeHealthy(port: number): Promise<boolean> {
 }
 
 /**
- * Bind the daemon's HTTP server to `127.0.0.1`. Tries the requested port (explicit override,
- * `SKILLKEEP_PORT`, or 4517) first. On `EADDRINUSE`: if that port already answers a healthy
- * `/healthz`, throws `DaemonAlreadyRunningError` (another instance owns it — don't steal it).
- * Otherwise it's a stale/foreign listener, so falls back to an ephemeral port (`port: 0`) and
- * records the actual bound port at `<dataDir>/daemon.port` for the desktop shell to read.
+ * Bind the daemon's HTTP server. Tries the requested port (explicit override, `PORT` env for
+ * Railway, `SKILLKEEP_PORT`, or 4517) first. On `EADDRINUSE`: if that port already answers a
+ * healthy `/healthz`, throws `DaemonAlreadyRunningError` (another instance owns it — don't steal
+ * it). Otherwise it's a stale/foreign listener, so falls back to an ephemeral port (`port: 0`) and
+ * records the actual bound port at `<dataDir>/daemon.port` for the desktop shell to read. The
+ * `host` option defaults to `127.0.0.1` (agent mode); hub mode passes `0.0.0.0`.
  */
 export async function bindServer(opts: {
   port?: number;
   dataDir: string;
   fetch: (req: Request) => Promise<Response> | Response;
+  host?: string;
 }): Promise<BindResult> {
   const requestedPort = resolveRequestedPort(opts.port);
+  const hostname = opts.host ?? "127.0.0.1";
   let server: Server<undefined>;
   try {
-    server = Bun.serve({ hostname: "127.0.0.1", port: requestedPort, fetch: opts.fetch });
+    server = Bun.serve({ hostname, port: requestedPort, fetch: opts.fetch });
   } catch (err) {
     const isAddrInUse =
       typeof err === "object" && err !== null && "code" in err && err.code === "EADDRINUSE";
     if (!isAddrInUse) throw err;
     if (await probeHealthy(requestedPort)) throw new DaemonAlreadyRunningError(requestedPort);
-    server = Bun.serve({ hostname: "127.0.0.1", port: 0, fetch: opts.fetch });
+    server = Bun.serve({ hostname, port: 0, fetch: opts.fetch });
   }
   // `server.port` is `number | undefined` only for unix-socket servers; bindServer always binds TCP.
   const boundPort = server.port;

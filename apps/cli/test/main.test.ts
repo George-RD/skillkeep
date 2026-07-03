@@ -92,6 +92,7 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
       linkMode: "symlink",
       inboxDirs: [],
       projects: {},
+      hub: null,
     };
   });
 

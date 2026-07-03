@@ -55,10 +55,13 @@ export async function findInRegistry(
   return (await scanRegistry(registryRoot)).find((e) => e.skill.name === name);
 }
 
-/** Validate that a scope string conforms to global / archive / project/<name> / profile/<name>. */
+const SCOPE_RE = /^(?:global|archive|(?:project|profile)\/([^/\\]+))$/;
+
+/** Validate that a scope string conforms to global / archive / project/<name> / profile/<name> — exact match, so `project/../../etc` or a bare `..` group is rejected, not merely prefix-matched. */
 export function ensureScopeDirName(scope: string): void {
-  if (scope === "global" || scope === "archive") return;
-  if (scope.startsWith("project/") || scope.startsWith("profile/")) return;
+  const match = SCOPE_RE.exec(scope);
+  const group = match?.[1];
+  if (match && group !== "." && group !== "..") return;
   throw new Error(
     `invalid scope "${scope}" (expected global, archive, project/<name>, or profile/<name>)`,
   );

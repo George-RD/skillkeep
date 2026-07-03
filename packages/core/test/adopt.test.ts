@@ -29,6 +29,7 @@ beforeEach(() => {
     linkMode: "symlink",
     inboxDirs: [],
     projects: {},
+    hub: null,
   };
 });
 
