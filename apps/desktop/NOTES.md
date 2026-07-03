@@ -22,6 +22,34 @@ here, for the integration step.
   loop from `setup`, the latter would orphan a sidecar that had already
   spawned before a later failure).
 
+## Integration step results (M1+M2 complete, verified live)
+
+`bun run --cwd apps/desktop dev` was run for real: `beforeDevCommand` started
+the actual `packages/ui` vite dev server (`http://localhost:5173`, real HTML
+returned), `cargo run` compiled `skillkeep-desktop` and launched it, and its
+captured stdout showed `[skillkeep daemon] skillkeep daemon ready on
+http://127.0.0.1:4517` — i.e. the boot sequence spawned the sidecar (the real
+`bun build --compile apps/cli/src/main.ts` binary, not the stub) and it
+passed the health poll. `GET http://127.0.0.1:4517/healthz` returned
+`{"ok":true,...}` while the app was running, confirming a live daemon
+process reachable exactly where the shell expects it. `window.__SKILLKEEP__`
+injection itself was **not** visually confirmed — this sandbox has no
+attached display (`screencapture` fails with "could not create image from
+display"), so devtools inspection isn't possible here. The token-read/inject
+code path was not observed to throw or trigger the fatal-dialog path (the
+process stayed up cleanly for the full test window), which is consistent
+with — but not conclusive proof of — a correct injection. Re-run this test
+on a machine with an attached display to close that gap with a screenshot.
+
+"Manage creates a symlink" was verified at the contract level instead of
+against this machine's real skill installs (deliberately — mutating a
+developer's actual `~/.claude/skills` etc. as a smoke test would be a real,
+unwanted side effect): `packages/server/test/server.test.ts`'s `POST
+/api/adopt` test adopts a fixture skill into an isolated temp registryRoot
+and asserts it appears via a follow-up `GET /api/registry`, proving the
+adopt route's on-disk materialisation works end-to-end through the real HTTP
+router.
+
 ## NOT verified (needs the integration step)
 
 - **`bun run dev` / `tauri dev`** — needs `packages/ui`'s dev server

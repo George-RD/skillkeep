@@ -17,7 +17,7 @@ tauri-build = { version = "2", features = [] }
 
 [dependencies]
 # Core Tauri runtime: window/webview management, IPC, bundler config types.
-tauri = { version = "2" }
+tauri = { version = "2", features = [] }
 # Spawns the compiled `skillkeep` CLI as the daemon sidecar (Command::sidecar) and manages its lifecycle.
 tauri-plugin-shell = "2"
 # Native error dialogs for boot-sequence failures (sidecar spawn/health-check failure).
