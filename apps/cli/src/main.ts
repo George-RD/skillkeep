@@ -285,6 +285,15 @@ export async function runDaemonCommand(args: string[] = [], write: Writer = repo
   await new Promise<void>(() => {});
 }
 
+/** Stub pending implementation (commit 2). */
+export function waitForShutdownSignal(
+  _close: () => Promise<void>,
+  _proc: { on(event: "SIGINT" | "SIGTERM", cb: () => void): unknown } = process,
+): Promise<void> {
+  const { promise } = Promise.withResolvers<void>();
+  return promise;
+}
+
 // --- ui --------------------------------------------------------------------------
 
 async function probeHealthz(port: number): Promise<boolean> {

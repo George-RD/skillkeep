@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { execSync } from "node:child_process";
+import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -13,6 +14,7 @@ import {
   runStatusCommand,
   runSyncCommand,
   runTriageCommand,
+  waitForShutdownSignal,
 } from "../src/main";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
@@ -161,5 +163,32 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
     await runDoctorCommand(config, (l) => lines.push(l));
     expect(lines.some((l) => l.startsWith("registry:"))).toBe(true);
     expect(lines.some((l) => l.startsWith("link mode:"))).toBe(true);
+  });
+});
+
+describe("waitForShutdownSignal", () => {
+  test("resolves and calls close() once on SIGINT", async () => {
+    const proc = new EventEmitter();
+    let closeCalls = 0;
+    const close = async (): Promise<void> => {
+      closeCalls++;
+    };
+    const promise = waitForShutdownSignal(close, proc);
+    proc.emit("SIGINT");
+    await promise;
+    expect(closeCalls).toBe(1);
+  });
+
+  test("a second signal after the first is a no-op", async () => {
+    const proc = new EventEmitter();
+    let closeCalls = 0;
+    const close = async (): Promise<void> => {
+      closeCalls++;
+    };
+    const promise = waitForShutdownSignal(close, proc);
+    proc.emit("SIGINT");
+    proc.emit("SIGTERM");
+    await promise;
+    expect(closeCalls).toBe(1);
   });
 });
