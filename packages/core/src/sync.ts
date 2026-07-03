@@ -239,30 +239,36 @@ async function syncCommittedMode(
   report.configReminders.push(`${repoDir}: review + commit .agents/skills (committed mode)`);
 }
 
-/** Stub pending implementation (commit 2). */
+/** Worktrees to materialise farms into: only those under a configured repoRoot — never scratch/ephemeral worktrees. */
 export function filterPersistentWorktrees(
   worktrees: string[],
-  _repoRoot: string,
-  _repoRoots: string[],
-  _platform: NodeJS.Platform = process.platform,
+  repoRoot: string,
+  repoRoots: string[],
+  platform: NodeJS.Platform = process.platform,
 ): string[] {
-  return worktrees;
-}
-
-/** Worktrees to materialise farms into: only those under a configured repoRoot — never scratch/ephemeral worktrees. */
-async function persistentWorktrees(repoRoot: string, repoRoots: string[]): Promise<string[]> {
   // `git worktree list --porcelain` emits forward-slash paths even on Windows (git normalises
   // its own porcelain output for cross-platform consistency), while `tildeExpand` + `path.sep`
   // builds a backslash-separated prefix there — a literal `startsWith` never matched a single
   // worktree on win32, silently producing an empty result (see packages/core/test/sync.test.ts's
   // Windows CI failures: `report.created` came back `[]` for every repo-scoped sync). Route both
   // sides through `path.normalize`, which converts `/` to the platform separator on win32 and is
-  // a no-op on POSIX, before comparing.
+  // a no-op on POSIX, before comparing. The comparison also case-folds on win32 because NTFS is
+  // case-insensitive (drive-letter/segment casing from git porcelain vs configured repoRoots can
+  // legitimately differ).
+  const fold = (s: string): string => (platform === "win32" ? s.toLowerCase() : s);
   const expanded = repoRoots.map((r) => path.normalize(`${tildeExpand(r)}${path.sep}`));
   const normalizedRoot = path.normalize(repoRoot);
-  return (await gitWorktrees(repoRoot))
+  return worktrees
     .map((wt) => path.normalize(wt))
-    .filter((wt) => expanded.some((prefix) => wt.startsWith(prefix)) || wt === normalizedRoot);
+    .filter(
+      (wt) =>
+        expanded.some((prefix) => fold(wt).startsWith(fold(prefix))) ||
+        fold(wt) === fold(normalizedRoot),
+    );
+}
+
+async function persistentWorktrees(repoRoot: string, repoRoots: string[]): Promise<string[]> {
+  return filterPersistentWorktrees(await gitWorktrees(repoRoot), repoRoot, repoRoots);
 }
 
 async function syncProject(
