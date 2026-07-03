@@ -15,6 +15,7 @@ import {
   runSyncCommand,
   runTriageCommand,
   waitForShutdownSignal,
+  windowsSymlinkHint,
 } from "../src/main";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
@@ -190,5 +191,17 @@ describe("waitForShutdownSignal", () => {
     proc.emit("SIGTERM");
     await promise;
     expect(closeCalls).toBe(1);
+  });
+});
+
+describe("windowsSymlinkHint", () => {
+  test("returns the Developer Mode hint on win32 when symlinks are unsupported", () => {
+    expect(windowsSymlinkHint(false, "win32")).toContain("Developer Mode");
+  });
+  test("returns null on win32 when symlinks work", () => {
+    expect(windowsSymlinkHint(true, "win32")).toBeNull();
+  });
+  test("returns null on non-Windows platforms even when the probe fails", () => {
+    expect(windowsSymlinkHint(false, "darwin")).toBeNull();
   });
 });
