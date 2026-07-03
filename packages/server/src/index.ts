@@ -15,11 +15,19 @@ export type { ManifestEntry } from "./registry-sync";
 const VERSION = "0.1.0";
 const USAGE_RESCAN_INTERVAL_MS = 5 * 60 * 1000;
 
-/** Outcome of `startServer`: the running Bun server, its bearer token, and the port it bound to. */
+/**
+ * Outcome of `startServer`: the running Bun server, its bearer token, and the port it bound to.
+ * `close()` stops the server, clears the agent-mode rescan interval, and closes the underlying
+ * SQLite handle — call it for any deterministic shutdown (tests, or a future CLI signal handler);
+ * skipping it just leaks the handle/timer until the process itself exits, which is harmless for a
+ * long-running daemon but leaves the data dir's `.db`/`.db-wal`/`.db-shm` files open, which is
+ * fatal to a same-process cleanup on Windows (no unlink-of-open-file semantics there).
+ */
 export interface StartedServer {
   server: Server<undefined>;
   token: string;
   port: number;
+  close: () => void;
 }
 
 /**
@@ -74,14 +82,24 @@ export async function startServer(opts: {
     host: opts.mode === "hub" ? "0.0.0.0" : "127.0.0.1",
   });
 
+  let rescanTimer: Timer | undefined;
   if (opts.mode === "agent") {
     const rescan = () =>
       runUsageIngest(db, { dataDir: resolvedDataDir, roots: opts.usageRoots })
         .then(() => emit("usage:updated", {}))
         .catch(() => {});
     void rescan();
-    setInterval(rescan, USAGE_RESCAN_INTERVAL_MS);
+    rescanTimer = setInterval(rescan, USAGE_RESCAN_INTERVAL_MS);
   }
 
-  return { server, token, port };
+  return {
+    server,
+    token,
+    port,
+    close: () => {
+      clearInterval(rescanTimer);
+      server.stop(true);
+      db.close();
+    },
+  };
 }

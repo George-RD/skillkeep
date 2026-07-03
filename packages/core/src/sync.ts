@@ -241,10 +241,18 @@ async function syncCommittedMode(
 
 /** Worktrees to materialise farms into: only those under a configured repoRoot — never scratch/ephemeral worktrees. */
 async function persistentWorktrees(repoRoot: string, repoRoots: string[]): Promise<string[]> {
-  const expanded = repoRoots.map((r) => `${tildeExpand(r)}${path.sep}`);
-  return (await gitWorktrees(repoRoot)).filter(
-    (wt) => expanded.some((prefix) => wt.startsWith(prefix)) || wt === repoRoot,
-  );
+  // `git worktree list --porcelain` emits forward-slash paths even on Windows (git normalises
+  // its own porcelain output for cross-platform consistency), while `tildeExpand` + `path.sep`
+  // builds a backslash-separated prefix there — a literal `startsWith` never matched a single
+  // worktree on win32, silently producing an empty result (see packages/core/test/sync.test.ts's
+  // Windows CI failures: `report.created` came back `[]` for every repo-scoped sync). Route both
+  // sides through `path.normalize`, which converts `/` to the platform separator on win32 and is
+  // a no-op on POSIX, before comparing.
+  const expanded = repoRoots.map((r) => path.normalize(`${tildeExpand(r)}${path.sep}`));
+  const normalizedRoot = path.normalize(repoRoot);
+  return (await gitWorktrees(repoRoot))
+    .map((wt) => path.normalize(wt))
+    .filter((wt) => expanded.some((prefix) => wt.startsWith(prefix)) || wt === normalizedRoot);
 }
 
 async function syncProject(

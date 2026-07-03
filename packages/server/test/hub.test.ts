@@ -2,7 +2,6 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Server } from "bun";
 import { requireHubToken, startServer } from "../src/index";
 
 describe("requireHubToken", () => {
@@ -34,7 +33,7 @@ test("startServer refuses hub mode without SKILLKEEP_TOKEN in the environment", 
 });
 
 describe("hub mode server", () => {
-  let server: Server<undefined>;
+  let close: () => void;
   let baseUrl: string;
   const token = "hub-test-token-abc123";
   const savedEnvToken = process.env.SKILLKEEP_TOKEN;
@@ -76,13 +75,13 @@ describe("hub mode server", () => {
     // in afterAll so it never leaks into a sibling test file's process.env.
     process.env.SKILLKEEP_TOKEN = token;
     const started = await startServer({ mode: "hub", port: 0, dataDir });
-    server = started.server;
+    close = started.close;
     baseUrl = `http://127.0.0.1:${started.port}`;
     expect(started.token).toBe(token);
   });
 
   afterAll(() => {
-    server?.stop(true);
+    close();
     if (savedEnvToken !== undefined) process.env.SKILLKEEP_TOKEN = savedEnvToken;
     else {
       delete process.env.SKILLKEEP_TOKEN;

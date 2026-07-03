@@ -5,7 +5,6 @@ import * as os from "node:os";
 import * as path from "node:path";
 import type { Config } from "@skillkeep/core";
 import { openDb, setConfig } from "@skillkeep/core";
-import type { Server } from "bun";
 import { startServer } from "../src/index";
 import { resetScanCache } from "../src/scan-cache";
 
@@ -14,9 +13,9 @@ let dataDir: string;
 let registryRoot: string;
 let reposRoot: string;
 let repoDir: string;
-let server: Server<undefined>;
 let token: string;
 let baseUrl: string;
+let close: () => void;
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -117,13 +116,13 @@ beforeAll(async () => {
       omp: path.join(tmpDir, "no-omp"),
     },
   });
-  server = started.server;
   token = started.token;
+  close = started.close;
   baseUrl = `http://127.0.0.1:${started.port}`;
 });
 
 afterAll(() => {
-  server.stop(true);
+  close();
   fs.rmSync(tmpDir, { recursive: true, force: true });
 });
 
@@ -154,7 +153,12 @@ describe("auth", () => {
 
   test("hands out a 0600 token file", () => {
     const stat = fs.statSync(path.join(dataDir, "daemon.token"));
-    expect(stat.mode & 0o777).toBe(0o600);
+    // NTFS has no POSIX permission-bit model -- fs.chmod on win32 only ever toggles the
+    // read-only attribute, so stat.mode never reflects 0600 there regardless of what
+    // ensureToken() requests. Confidentiality on Windows instead comes from the token file
+    // living under the per-user AppData directory, which already has default ACLs scoped to
+    // that user. Only assert the POSIX bits on platforms where they're actually enforced.
+    if (process.platform !== "win32") expect(stat.mode & 0o777).toBe(0o600);
     const fileToken = fs.readFileSync(path.join(dataDir, "daemon.token"), "utf8").trim();
     expect(fileToken).toBe(token);
   });
