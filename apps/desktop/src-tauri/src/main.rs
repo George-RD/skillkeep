@@ -39,6 +39,7 @@ fn main() {
         .manage(SidecarState {
             child: Mutex::new(None),
         })
+        .invoke_handler(tauri::generate_handler![get_ai_key, set_ai_key])
         .setup(|app| {
             let handle = app.handle().clone();
             // Runs synchronously on the main thread during startup, before any
@@ -248,4 +249,43 @@ fn show_fatal_dialog(app: &AppHandle, message: String) {
         .kind(MessageDialogKind::Error)
         .title("skillkeep")
         .show(move |_ok| handle.exit(1));
+}
+
+/// Reads the BYOK AI key for `provider` ("anthropic" | "openai" | "openrouter")
+/// from the OS keychain (service `"skillkeep-ai"`, account = `provider`). The
+/// key never touches SQLite, the daemon's config, or any log line -- it is
+/// read here and attached to outgoing requests as the `X-Skillkeep-AI-Key`
+/// header by `packages/ui`. A missing entry is a normal, expected state (the
+/// user hasn't linked that provider yet), so it resolves to `Ok(None)`
+/// rather than an error; only genuine backend failures reject the promise.
+#[tauri::command]
+fn get_ai_key(provider: String) -> Result<Option<String>, String> {
+    let entry = keyring::Entry::new("skillkeep-ai", &provider).map_err(|e| e.to_string())?;
+    match entry.get_password() {
+        Ok(secret) => Ok(Some(secret)),
+        Err(keyring::Error::NoEntry) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
+/// Writes (or clears) the BYOK AI key for `provider` in the OS keychain.
+/// An empty `key` deletes the stored entry rather than persisting an empty
+/// secret -- "leave blank to clear" -- which is intentionally simpler than
+/// the hub token's write-only-blank-keeps-existing semantics: that rule
+/// exists because the hub token round-trips through the daemon's HTTP API
+/// (a blank field can't tell "clear it" from "didn't touch it" apart from
+/// "leave it alone"), whereas this command talks to the OS keychain
+/// directly with no server in between, so blank can unambiguously mean
+/// "delete".
+#[tauri::command]
+fn set_ai_key(provider: String, key: String) -> Result<(), String> {
+    let entry = keyring::Entry::new("skillkeep-ai", &provider).map_err(|e| e.to_string())?;
+    if key.is_empty() {
+        return match entry.delete_credential() {
+            Ok(()) => Ok(()),
+            Err(keyring::Error::NoEntry) => Ok(()),
+            Err(e) => Err(e.to_string()),
+        };
+    }
+    entry.set_password(&key).map_err(|e| e.to_string())
 }

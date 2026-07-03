@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  getAiStatus,
   getDevices,
   getHealth,
   getRegistry,
@@ -9,6 +10,9 @@ import {
   getStatus,
   getUsage,
   postAdopt,
+  postAiDedupe,
+  postAiDescribe,
+  postAiTriage,
   postArchive,
   postHubPull,
   postHubPush,
@@ -17,7 +21,7 @@ import {
   putSettings,
   putSkill,
 } from "../api/client";
-import type { AdoptItem, SettingsInput, UsageGroup } from "../api/types";
+import type { AdoptItem, AiLink, AiSkillContext, SettingsInput, UsageGroup } from "../api/types";
 
 export const queryKeys = {
   health: ["health"] as const,
@@ -28,6 +32,7 @@ export const queryKeys = {
   settings: ["settings"] as const,
   devices: ["devices"] as const,
   usage: (group: UsageGroup, from: string, to: string) => ["usage", group, from, to] as const,
+  aiStatus: (provider: AiLink["provider"] | null) => ["aiStatus", provider] as const,
 };
 
 export function useHealth() {
@@ -159,5 +164,41 @@ export function useHubPullMutation() {
       qc.invalidateQueries({ queryKey: queryKeys.scan });
       qc.invalidateQueries({ queryKey: queryKeys.status });
     },
+  });
+}
+
+/** Short `staleTime`: the underlying key can change any time the user edits it in Settings. */
+export function useAiStatus() {
+  const settings = useSettings();
+  const provider = settings.data?.ai?.provider ?? null;
+  return useQuery({
+    queryKey: queryKeys.aiStatus(provider),
+    queryFn: () => getAiStatus(provider),
+    staleTime: 5_000,
+  });
+}
+
+export function useAiTriageMutation() {
+  const settings = useSettings();
+  const provider = settings.data?.ai?.provider ?? null;
+  return useMutation({
+    mutationFn: (names: string[]) => postAiTriage(names, provider),
+  });
+}
+
+export function useAiDescribeMutation() {
+  const settings = useSettings();
+  const provider = settings.data?.ai?.provider ?? null;
+  return useMutation({
+    mutationFn: (skill: AiSkillContext) => postAiDescribe(skill, provider),
+  });
+}
+
+export function useAiDedupeMutation() {
+  const settings = useSettings();
+  const provider = settings.data?.ai?.provider ?? null;
+  return useMutation({
+    mutationFn: (vars: { a: AiSkillContext; b: AiSkillContext }) =>
+      postAiDedupe(vars.a, vars.b, provider),
   });
 }

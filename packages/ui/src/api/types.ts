@@ -101,6 +101,19 @@ export interface HubInput {
   device: string;
 }
 
+/**
+ * BYOK AI link: provider + model only. There is no key field here on purpose
+ * -- the API key is never persisted to SQLite, config, or logs; it is
+ * resolved per-request from the OS keychain (desktop, via the Tauri
+ * `get_ai_key` bridge) or the `SKILLKEEP_AI_KEY` env var (CLI/hub). Same
+ * shape for GET and PUT, unlike `hub`, since there is no secret to split
+ * write-only.
+ */
+export interface AiLink {
+  provider: "anthropic" | "openai" | "openrouter";
+  model: string;
+}
+
 export interface Settings {
   registryRoot: string;
   repoRoots: string[];
@@ -109,6 +122,7 @@ export interface Settings {
   linkMode: "symlink" | "copy";
   inboxDirs: string[];
   hub: HubSettings | null;
+  ai: AiLink | null;
   linkModeProbe?: LinkModeProbe;
 }
 
@@ -148,6 +162,37 @@ export interface HubPullResult {
   skillsPulled: string[];
 }
 
+/** One caller-visible skill body, shared by the describe/dedupe request shapes. */
+export interface AiSkillContext {
+  name: string;
+  description: string;
+  body: string;
+}
+
+/** GET /api/ai/status result. Gated the same way as the mutation endpoints, so a 200 with `configured: false` and a 503 both mean "not usable" -- the client normalises both into this shape (see `getAiStatus`). */
+export interface AiStatus {
+  configured: boolean;
+}
+
+/** POST /api/ai/triage result item. `scope` is validated server-side against the real, current scope list -- never trust it blindly. */
+export interface TriageSuggestion {
+  name: string;
+  scope: string;
+  rationale: string;
+}
+
+/** POST /api/ai/describe result: a proposed description only. The caller applies it via the existing PUT /api/skill. */
+export interface DescribeSuggestion {
+  name: string;
+  suggestion: string;
+}
+
+/** POST /api/ai/dedupe result: a proposed resolution only. The caller applies it via the existing adopt/archive endpoints. */
+export interface DedupeAdvice {
+  recommendation: "keep-a" | "keep-b" | "merge";
+  rationale: string;
+}
+
 export interface SkillkeepGlobal {
   port: number;
   token: string;
@@ -161,4 +206,24 @@ export interface SkillkeepGlobal {
  */
 declare global {
   var __SKILLKEEP__: SkillkeepGlobal | undefined;
+}
+
+/**
+ * Minimal shape of `window.__TAURI__` this app relies on: just enough to
+ * invoke the `get_ai_key`/`set_ai_key` commands (see `apps/desktop`'s
+ * `main.rs`). Exposed by `withGlobalTauri: true` in the desktop shell's
+ * `tauri.conf.json` -- deliberately NOT the full `@tauri-apps/api` surface,
+ * so this package can add zero Tauri dependencies and stay a plain,
+ * import-safe browser build for standalone `skillkeep ui`.
+ */
+export interface TauriGlobal {
+  core: {
+    invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown>;
+  };
+}
+
+declare global {
+  interface Window {
+    __TAURI__?: TauriGlobal;
+  }
 }

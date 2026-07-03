@@ -1,6 +1,6 @@
 import { describe, expect, it } from "bun:test";
 import type { Settings, SettingsInput } from "../src/api/types";
-import { toInput, withHubEnabled } from "../src/screens/Settings";
+import { toInput, withAiEnabled, withHubEnabled } from "../src/screens/Settings";
 
 const baseSettings: Settings = {
   registryRoot: "/reg",
@@ -10,6 +10,7 @@ const baseSettings: Settings = {
   linkMode: "symlink",
   inboxDirs: ["/inbox"],
   hub: null,
+  ai: null,
 };
 
 describe("toInput", () => {
@@ -24,6 +25,19 @@ describe("toInput", () => {
       hub: { url: "https://hub.example.com", device: "laptop" },
     });
     expect(input.hub).toEqual({ url: "https://hub.example.com", token: "", device: "laptop" });
+  });
+
+  it("maps a null ai link to null", () => {
+    const input = toInput(baseSettings);
+    expect(input.ai).toBeNull();
+  });
+
+  it("maps an existing ai link through unchanged (there is no secret to strip)", () => {
+    const input = toInput({
+      ...baseSettings,
+      ai: { provider: "anthropic", model: "claude-sonnet-4-5" },
+    });
+    expect(input.ai).toEqual({ provider: "anthropic", model: "claude-sonnet-4-5" });
   });
 });
 
@@ -53,5 +67,27 @@ describe("withHubEnabled", () => {
     };
     const result = withHubEnabled(withHub, true);
     expect(result.hub).toEqual({ url: "https://hub.example.com", token: "", device: "laptop" });
+  });
+});
+
+describe("withAiEnabled", () => {
+  const form: SettingsInput = toInput(baseSettings);
+
+  it("nulls the whole ai object when disabled, leaving other fields untouched", () => {
+    const withAi: SettingsInput = { ...form, ai: { provider: "openai", model: "gpt-5" } };
+    const result = withAiEnabled(withAi, false);
+    expect(result.ai).toBeNull();
+    expect(result.registryRoot).toBe(form.registryRoot);
+  });
+
+  it("seeds a default anthropic provider with a blank model when enabled from null", () => {
+    const result = withAiEnabled(form, true);
+    expect(result.ai).toEqual({ provider: "anthropic", model: "" });
+  });
+
+  it("keeps the existing ai link untouched when already enabled", () => {
+    const withAi: SettingsInput = { ...form, ai: { provider: "openrouter", model: "x-ai/grok" } };
+    const result = withAiEnabled(withAi, true);
+    expect(result.ai).toEqual({ provider: "openrouter", model: "x-ai/grok" });
   });
 });

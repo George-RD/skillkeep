@@ -1,5 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from "bun:test";
-import { ApiRequestError, apiFetch, baseUrl, getConnection } from "../src/api/client";
+import {
+  ApiRequestError,
+  aiKeyHeaders,
+  apiFetch,
+  baseUrl,
+  getConnection,
+  resolveAiKey,
+} from "../src/api/client";
 
 const originalFetch = globalThis.fetch;
 let lastInit: RequestInit | undefined;
@@ -79,5 +86,44 @@ describe("api client", () => {
     const headers = new Headers(lastInit?.headers);
     expect(headers.get("Content-Type")).toBe("application/json");
     expect(headers.get("Authorization")).toBe("Bearer abc");
+  });
+});
+
+describe("resolveAiKey", () => {
+  it("resolves null without invoking anything when there is no Tauri bridge", async () => {
+    let called = false;
+    const invoke = async () => {
+      called = true;
+      return "should-not-be-used";
+    };
+    const key = await resolveAiKey("anthropic", false, invoke);
+    expect(key).toBeNull();
+    expect(called).toBe(false);
+  });
+
+  it("delegates to the injected invoker, passing the provider through, when a Tauri bridge is present", async () => {
+    let seenProvider: string | null = null;
+    const invoke = async (provider: "anthropic" | "openai" | "openrouter") => {
+      seenProvider = provider;
+      return "sk-test-key";
+    };
+    const key = await resolveAiKey("openai", true, invoke);
+    expect(key).toBe("sk-test-key");
+    expect(seenProvider).toBe("openai");
+  });
+
+  it("passes through a null result from the invoker (no key stored yet)", async () => {
+    const key = await resolveAiKey("openrouter", true, async () => null);
+    expect(key).toBeNull();
+  });
+});
+
+describe("aiKeyHeaders", () => {
+  it("attaches the X-Skillkeep-AI-Key header when a key is present", () => {
+    expect(aiKeyHeaders("sk-test")).toEqual({ "X-Skillkeep-AI-Key": "sk-test" });
+  });
+
+  it("sends no header at all when there is no key", () => {
+    expect(aiKeyHeaders(null)).toEqual({});
   });
 });

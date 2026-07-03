@@ -29,3 +29,7 @@ serde_json = "1"
 dirs = "6"
 # Minimal HTTP client for polling the sidecar's GET /healthz; no TLS features needed (loopback http only).
 reqwest = { version = "0.13", default-features = false, features = ["blocking", "json"] }
+# Cross-platform OS-keychain wrapper (macOS Keychain / Windows Credential
+# Manager / Linux Secret Service) for the BYOK AI key -- keeps the key out of
+# SQLite, config files, and logs entirely; it never leaves the client.
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }

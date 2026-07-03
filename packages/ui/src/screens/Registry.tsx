@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
-import type { HubPullResult, HubPushResult } from "../api/types";
+import type { AiSkillContext, HubPullResult, HubPushResult, RegistryScope } from "../api/types";
 import { ErrorCard } from "../components/ErrorCard";
 import { useToast } from "../components/Toast";
 import {
+  useAiDescribeMutation,
+  useAiStatus,
   useArchiveMutation,
   useHubPullMutation,
   useHubPushMutation,
@@ -29,6 +31,35 @@ export function formatPullSummary(result: HubPullResult): string {
   return `Pulled ${pulled} skill${pulled === 1 ? "" : "s"}`;
 }
 
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
+const DESCRIPTION_LINE_RE = /^description:.*$/m;
+
+/**
+ * Splice a suggested description into the SKILL.md frontmatter's
+ * `description:` line, preserving everything else untouched. Returns
+ * `content` unchanged when there is no frontmatter block or no existing
+ * `description:` line to replace, rather than guessing at YAML structure --
+ * callers should tell the user to edit manually in that case.
+ */
+export function applyDescriptionSuggestion(content: string, suggestion: string): string {
+  const match = FRONTMATTER_RE.exec(content);
+  if (!match) return content;
+  const frontmatter = match[1] ?? "";
+  if (!DESCRIPTION_LINE_RE.test(frontmatter)) return content;
+  const value = /[:#"']/.test(suggestion) ? JSON.stringify(suggestion) : suggestion;
+  const updatedFrontmatter = frontmatter.replace(DESCRIPTION_LINE_RE, `description: ${value}`);
+  return match[0].replace(frontmatter, updatedFrontmatter) + content.slice(match[0].length);
+}
+
+function currentDescription(registry: RegistryScope[], name: string | null): string {
+  if (name === null) return "";
+  for (const scope of registry) {
+    const found = scope.skills.find((s) => s.name === name);
+    if (found) return found.description ?? "";
+  }
+  return "";
+}
+
 export function RegistryScreen() {
   const toast = useToast();
   const registry = useRegistry();
@@ -40,12 +71,17 @@ export function RegistryScreen() {
   const settings = useSettings();
   const push = useHubPushMutation();
   const pull = useHubPullMutation();
+  const aiStatus = useAiStatus();
+  const describeMutation = useAiDescribeMutation();
+  const [suggestion, setSuggestion] = useState<string | null>(null);
+  const aiConfigured = aiStatus.data?.configured === true;
 
   const [content, setContent] = useState("");
   const [moveScope, setMoveScope] = useState("");
 
   useEffect(() => {
     setContent(skill.data?.content ?? "");
+    setSuggestion(null);
   }, [skill.data]);
 
   const allScopes = (registry.data ?? []).map((r) => r.scope);
@@ -93,6 +129,25 @@ export function RegistryScreen() {
       },
       onError: (e) => toast.show(`Archive failed: ${errorMessage(e)}`, "error"),
     });
+  }
+
+  function suggestDescription() {
+    if (selected === null) return;
+    const skillContext: AiSkillContext = {
+      name: selected,
+      description: currentDescription(registry.data ?? [], selected),
+      body: content,
+    };
+    describeMutation.mutate(skillContext, {
+      onSuccess: (result) => setSuggestion(result.suggestion),
+      onError: (e) => toast.show(`Suggestion failed: ${errorMessage(e)}`, "error"),
+    });
+  }
+
+  function applySuggestion() {
+    if (suggestion === null) return;
+    setContent((prev) => applyDescriptionSuggestion(prev, suggestion));
+    setSuggestion(null);
   }
 
   function doPush() {
@@ -203,8 +258,39 @@ export function RegistryScreen() {
                   >
                     Archive
                   </button>
+                  {aiConfigured && (
+                    <button
+                      type="button"
+                      className="rounded border border-slate-300 px-3 py-1 text-sm text-slate-700 disabled:opacity-50"
+                      disabled={describeMutation.isPending}
+                      onClick={suggestDescription}
+                    >
+                      Suggest description
+                    </button>
+                  )}
                 </div>
               </div>
+              {suggestion !== null && (
+                <div className="flex flex-col gap-2 rounded border border-indigo-200 bg-indigo-50 p-3 text-sm">
+                  <p className="text-slate-700">{suggestion}</p>
+                  <div className="flex justify-end gap-2">
+                    <button
+                      type="button"
+                      className="rounded border border-slate-300 px-3 py-1 text-sm text-slate-700"
+                      onClick={() => setSuggestion(null)}
+                    >
+                      Dismiss
+                    </button>
+                    <button
+                      type="button"
+                      className="rounded bg-indigo-600 px-3 py-1 text-sm text-white"
+                      onClick={applySuggestion}
+                    >
+                      Apply
+                    </button>
+                  </div>
+                </div>
+              )}
               {skill.isLoading && <p className="text-sm text-slate-500">Loading SKILL.md…</p>}
               {skill.isError && (
                 <ErrorCard message={`Could not load skill: ${errorMessage(skill.error)}`} />

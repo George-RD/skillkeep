@@ -1,16 +1,62 @@
 import { useMemo, useState } from "react";
 import { errorMessage } from "../api/client";
-import type { AdoptItem, DetectedSkill, Detection } from "../api/types";
+import type {
+  AdoptItem,
+  AiSkillContext,
+  DetectedSkill,
+  Detection,
+  RegistryScope,
+} from "../api/types";
 import { StateBadge } from "../components/Badge";
 import { ErrorCard } from "../components/ErrorCard";
 import { useToast } from "../components/Toast";
-import { useAdoptMutation, useRegistry, useScan } from "../hooks/api";
+import {
+  useAdoptMutation,
+  useAiDedupeMutation,
+  useAiStatus,
+  useAiTriageMutation,
+  useRegistry,
+  useScan,
+} from "../hooks/api";
+
+/** Placeholder for the missing `body` field: neither a freshly detected skill (read from an arbitrary filesystem path) nor a registry listing entry carries the full SKILL.md markdown here, so both dedupe sides degrade to their `description` -- proposals are advisory only. */
+function toAiContext(name: string, description: string | null): AiSkillContext {
+  const text = description ?? "";
+  return { name, description: text, body: text };
+}
+
+/**
+ * The other half of a dedupe comparison for `skill`, or `null` when none can
+ * be found: for a "duplicate" skill, another detected instance sharing the
+ * name; for a "drifted" skill, the registry's current version of it.
+ */
+export function findDedupeCounterpart(
+  skill: DetectedSkill,
+  skills: DetectedSkill[],
+  registryScopes: RegistryScope[],
+): AiSkillContext | null {
+  if (skill.state === "duplicate") {
+    const other = skills.find(
+      (s) => s.state === "duplicate" && s.name === skill.name && s.path !== skill.path,
+    );
+    return other ? toAiContext(other.name, other.description) : null;
+  }
+  if (skill.state === "drifted" && skill.registryScope) {
+    const scope = registryScopes.find((r) => r.scope === skill.registryScope);
+    const regSkill = scope?.skills.find((s) => s.name === skill.name);
+    return regSkill ? toAiContext(regSkill.name, regSkill.description) : null;
+  }
+  return null;
+}
 
 export function DetectScreen() {
   const toast = useToast();
   const scan = useScan();
   const registry = useRegistry();
   const adopt = useAdoptMutation();
+  const aiStatus = useAiStatus();
+  const triage = useAiTriageMutation();
+  const dedupe = useAiDedupeMutation();
 
   const skills = scan.data?.skills ?? [];
   const estimate = scan.data?.tokenEstimate;
@@ -21,6 +67,39 @@ export function DetectScreen() {
   const [scopes, setScopes] = useState<Record<string, string>>({});
   function selectedScope(skill: DetectedSkill): string {
     return scopes[skill.path] ?? skill.registryScope ?? "global";
+  }
+
+  const aiConfigured = aiStatus.data?.configured === true;
+
+  function suggestScope(skill: DetectedSkill) {
+    triage.mutate([skill.name], {
+      onSuccess: (suggestions) => {
+        const suggestion = suggestions[0];
+        if (!suggestion) return;
+        setScopes((prev) => ({ ...prev, [skill.path]: suggestion.scope }));
+        toast.show(
+          `Suggested ${suggestion.scope} for ${skill.name}: ${suggestion.rationale}`,
+          "success",
+        );
+      },
+      onError: (e) => toast.show(`Suggestion failed: ${errorMessage(e)}`, "error"),
+    });
+  }
+
+  function suggestDedupe(skill: DetectedSkill) {
+    const counterpart = findDedupeCounterpart(skill, skills, registry.data ?? []);
+    if (!counterpart) {
+      toast.show(`No counterpart found to compare ${skill.name} against`, "error");
+      return;
+    }
+    dedupe.mutate(
+      { a: toAiContext(skill.name, skill.description), b: counterpart },
+      {
+        onSuccess: (advice) =>
+          toast.show(`${skill.name}: ${advice.recommendation} — ${advice.rationale}`, "success"),
+        onError: (e) => toast.show(`Dedupe advice failed: ${errorMessage(e)}`, "error"),
+      },
+    );
   }
 
   const grouped = useMemo(() => {
@@ -119,6 +198,15 @@ export function DetectScreen() {
                         disabled={adopt.isPending}
                         onScopeChange={(s) => setScopes((prev) => ({ ...prev, [skill.path]: s }))}
                         onManage={() => manageOne(skill)}
+                        showSuggestScope={
+                          aiConfigured && (skill.state === "unmanaged" || skill.state === "invalid")
+                        }
+                        showDedupe={
+                          aiConfigured && (skill.state === "duplicate" || skill.state === "drifted")
+                        }
+                        aiPending={triage.isPending || dedupe.isPending}
+                        onSuggestScope={() => suggestScope(skill)}
+                        onDedupe={() => suggestDedupe(skill)}
                       />
                     ))}
                   </tbody>
@@ -158,6 +246,11 @@ function SkillRow({
   disabled,
   onScopeChange,
   onManage,
+  showSuggestScope,
+  showDedupe,
+  aiPending,
+  onSuggestScope,
+  onDedupe,
 }: {
   skill: DetectedSkill;
   scope: string;
@@ -165,6 +258,11 @@ function SkillRow({
   disabled: boolean;
   onScopeChange: (scope: string) => void;
   onManage: () => void;
+  showSuggestScope: boolean;
+  showDedupe: boolean;
+  aiPending: boolean;
+  onSuggestScope: () => void;
+  onDedupe: () => void;
 }) {
   return (
     <tr className="border-t border-slate-100">
@@ -191,14 +289,36 @@ function SkillRow({
         </select>
       </td>
       <td className="px-3 py-2 text-right align-top">
-        <button
-          type="button"
-          className="rounded bg-slate-800 px-3 py-1 text-sm text-white disabled:opacity-50"
-          disabled={disabled}
-          onClick={onManage}
-        >
-          Manage
-        </button>
+        <div className="flex justify-end gap-2">
+          {showSuggestScope && (
+            <button
+              type="button"
+              className="rounded border border-slate-300 px-3 py-1 text-sm text-slate-700 disabled:opacity-50"
+              disabled={aiPending}
+              onClick={onSuggestScope}
+            >
+              Suggest scope
+            </button>
+          )}
+          {showDedupe && (
+            <button
+              type="button"
+              className="rounded border border-slate-300 px-3 py-1 text-sm text-slate-700 disabled:opacity-50"
+              disabled={aiPending}
+              onClick={onDedupe}
+            >
+              Dedupe advice
+            </button>
+          )}
+          <button
+            type="button"
+            className="rounded bg-slate-800 px-3 py-1 text-sm text-white disabled:opacity-50"
+            disabled={disabled}
+            onClick={onManage}
+          >
+            Manage
+          </button>
+        </div>
       </td>
     </tr>
   );

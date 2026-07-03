@@ -1,12 +1,13 @@
 import { type ReactNode, useEffect, useState } from "react";
-import { errorMessage } from "../api/client";
-import type { HubInput, Settings, SettingsInput } from "../api/types";
+import { errorMessage, getAiKey, hasTauriGlobal, setAiKey } from "../api/client";
+import type { AiLink, HubInput, Settings, SettingsInput } from "../api/types";
 import { ErrorCard } from "../components/ErrorCard";
 import { StringListEditor } from "../components/ListEditor";
 import { useToast } from "../components/Toast";
 import { usePutSettingsMutation, useSettings } from "../hooks/api";
 
 const KNOWN_CLIENTS = ["claude", "codex", "opencode", "gemini", "omp", "cursor"];
+const AI_PROVIDERS: AiLink["provider"][] = ["anthropic", "openai", "openrouter"];
 
 export function toInput(d: Settings): SettingsInput {
   return {
@@ -17,6 +18,7 @@ export function toInput(d: Settings): SettingsInput {
     linkMode: d.linkMode,
     inboxDirs: [...d.inboxDirs],
     hub: d.hub ? { url: d.hub.url, token: "", device: d.hub.device } : null,
+    ai: d.ai ? { provider: d.ai.provider, model: d.ai.model } : null,
   };
 }
 
@@ -24,6 +26,12 @@ export function toInput(d: Settings): SettingsInput {
 export function withHubEnabled(form: SettingsInput, enabled: boolean): SettingsInput {
   if (!enabled) return { ...form, hub: null };
   return { ...form, hub: form.hub ?? { url: "", token: "", device: "" } };
+}
+
+/** Toggling AI assist off nulls the whole object; toggling on seeds a default provider/model (or keeps them). */
+export function withAiEnabled(form: SettingsInput, enabled: boolean): SettingsInput {
+  if (!enabled) return { ...form, ai: null };
+  return { ...form, ai: form.ai ?? { provider: "anthropic", model: "" } };
 }
 
 function clientOptions(...lists: string[][]): string[] {
@@ -38,6 +46,8 @@ export function SettingsScreen() {
   const put = usePutSettingsMutation();
   const [form, setForm] = useState<SettingsInput | null>(null);
   const [original, setOriginal] = useState<SettingsInput | null>(null);
+  const [aiKey, setAiKeyValue] = useState("");
+  const hasTauri = hasTauriGlobal();
 
   useEffect(() => {
     if (settings.data && form === null) {
@@ -46,6 +56,28 @@ export function SettingsScreen() {
       setOriginal(snapshot);
     }
   }, [settings.data, form]);
+
+  // Prefills the password input from the OS keychain whenever the linked
+  // provider changes; a no-op (resolves "") outside Tauri or with AI assist
+  // disabled, since there is nowhere client-side to read a key from.
+  const aiProvider = form?.ai?.provider ?? null;
+
+  useEffect(() => {
+    if (!hasTauri || aiProvider === null) {
+      setAiKeyValue("");
+      return;
+    }
+    const provider = aiProvider;
+    let cancelled = false;
+    async function load() {
+      const key = await getAiKey(provider);
+      if (!cancelled) setAiKeyValue(key ?? "");
+    }
+    void load();
+    return () => {
+      cancelled = true;
+    };
+  }, [hasTauri, aiProvider]);
 
   if (settings.isLoading) return <p className="text-sm text-slate-500">Loading settings…</p>;
   if (settings.isError)
@@ -71,6 +103,23 @@ export function SettingsScreen() {
       },
       onError: (e) => toast.show(`Could not save settings: ${errorMessage(e)}`, "error"),
     });
+  }
+
+  function updateAi(patch: Partial<AiLink>) {
+    setForm((prev) => (prev?.ai ? { ...prev, ai: { ...prev.ai, ...patch } } : prev));
+  }
+
+  async function persistAiKey(provider: AiLink["provider"], key: string) {
+    try {
+      await setAiKey(provider, key);
+    } catch (e) {
+      toast.show(`Could not update the stored key: ${errorMessage(e)}`, "error");
+    }
+  }
+
+  function updateAiKey(key: string) {
+    setAiKeyValue(key);
+    if (form?.ai) void persistAiKey(form.ai.provider, key);
   }
 
   const probe = settings.data?.linkModeProbe;
@@ -193,6 +242,66 @@ export function SettingsScreen() {
                   onChange={(e) => updateHub({ device: e.target.value })}
                 />
               </label>
+            </div>
+          )}
+        </div>
+      </Field>
+
+      <Field label="AI assist">
+        <div className="flex flex-col gap-2">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.ai !== null}
+              onChange={(e) => setForm(withAiEnabled(form, e.target.checked))}
+            />
+            Enable AI assist (bring your own key)
+          </label>
+          {form.ai !== null && (
+            <div className="flex flex-col gap-2 pl-6">
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-slate-500">Provider</span>
+                <select
+                  className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={form.ai.provider}
+                  onChange={(e) => updateAi({ provider: e.target.value as AiLink["provider"] })}
+                >
+                  {AI_PROVIDERS.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-sm">
+                <span className="text-xs text-slate-500">Model</span>
+                <input
+                  className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                  value={form.ai.model}
+                  placeholder="e.g. claude-sonnet-4-5"
+                  onChange={(e) => updateAi({ model: e.target.value })}
+                />
+              </label>
+              {hasTauri ? (
+                <label className="flex flex-col gap-1 text-sm">
+                  <span className="text-xs text-slate-500">
+                    API key (stored in the OS keychain; sent to the daemon per request, never
+                    persisted)
+                  </span>
+                  <input
+                    type="password"
+                    className="w-full rounded border border-slate-300 px-2 py-1 text-sm"
+                    value={aiKey}
+                    placeholder="Leave blank to clear"
+                    onChange={(e) => updateAiKey(e.target.value)}
+                  />
+                </label>
+              ) : (
+                <p className="text-xs text-slate-500">
+                  Set the API key from the desktop app, or via the SKILLKEEP_AI_KEY environment
+                  variable.
+                </p>
+              )}
             </div>
           )}
         </div>
