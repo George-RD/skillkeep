@@ -30,6 +30,14 @@ import {
   upsertSkillUsage,
   upsertUsageFact,
 } from "@skillkeep/core";
+import {
+  adviseDedupe,
+  type DedupeCandidate,
+  resolveAiKey,
+  resolveModel,
+  suggestTriage,
+  tuneDescription,
+} from "./ai";
 import { requireAuth } from "./auth";
 import { emit, sseResponse } from "./events";
 import { pullFromHub, pushToHub } from "./hub-link";
@@ -329,6 +337,7 @@ async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
     linkMode: config.linkMode,
     inboxDirs: config.inboxDirs,
     hub: config.hub ? { url: config.hub.url, device: config.hub.device } : null,
+    ai: config.ai,
     linkModeProbe,
   });
 }
@@ -337,6 +346,23 @@ function filterClientIds(values: unknown): ClientId[] {
   if (!Array.isArray(values)) return [];
   const allowed: string[] = ALL_CLIENT_IDS;
   return values.filter((v): v is ClientId => typeof v === "string" && allowed.includes(v));
+}
+
+/** Parse the settings PUT body's `ai` field: `{ provider, model } | null`. No key field exists on
+ * this shape by design (see Config.ai's doc comment) — there is nothing to preserve across saves
+ * the way hub's token is, so unlike `hub` this is a pure parse, not a merge with the current value. */
+function parseAiLink(value: unknown): { ok: true; ai: Config["ai"] } | { ok: false } {
+  if (value === null || value === undefined) return { ok: true, ai: null };
+  if (typeof value !== "object") return { ok: false };
+  const v = value as Record<string, unknown>;
+  if (
+    (v.provider !== "anthropic" && v.provider !== "openai" && v.provider !== "openrouter") ||
+    typeof v.model !== "string" ||
+    v.model.trim() === ""
+  ) {
+    return { ok: false };
+  }
+  return { ok: true, ai: { provider: v.provider, model: v.model } };
 }
 
 async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Response> {
@@ -381,6 +407,16 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     hub = { url: h.url, token, device: h.device };
   }
 
+  const parsedAi = parseAiLink(body.ai);
+  if (!parsedAi.ok) {
+    return jsonResponse(
+      {
+        error: "ai must be { provider: 'anthropic'|'openai'|'openrouter', model: string } or null",
+      },
+      422,
+    );
+  }
+
   const merged: Config = {
     ...current,
     registryRoot,
@@ -390,10 +426,113 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     linkMode,
     inboxDirs,
     hub,
+    ai: parsedAi.ai,
   };
   setConfig(ctx.db, merged);
   resetScanCache();
   return jsonResponse({ ok: true });
+}
+
+// --- /api/ai/* ---------------------------------------------------------------
+
+/** Body shape accepted by every mutation endpoint below: one skill's name/description/SKILL.md
+ * body, enough context for the model to reason about it without any storage access of its own. */
+interface AiSkillContextInput {
+  name: unknown;
+  description: unknown;
+  body: unknown;
+}
+
+function parseAiSkillContext(value: unknown): DedupeCandidate | null {
+  if (!value || typeof value !== "object") return null;
+  const v = value as AiSkillContextInput;
+  if (
+    typeof v.name !== "string" ||
+    typeof v.description !== "string" ||
+    typeof v.body !== "string"
+  ) {
+    return null;
+  }
+  return { name: v.name, description: v.description, body: v.body };
+}
+
+/** Every scope a triage suggestion is allowed to land in: whatever scopes are actually deployed in
+ * the registry right now, plus "global" and "archive" (always valid destinations, even empty). */
+async function listAiScopes(config: Config): Promise<string[]> {
+  const entries = await scanRegistry(config.registryRoot);
+  const scopes = new Set<string>(["global", "archive"]);
+  for (const entry of entries) scopes.add(entry.scope);
+  return [...scopes];
+}
+
+/** GET /api/ai/status never itself gates on configuration — reporting "not configured" IS its
+ * job, so it always returns 200 with the same resolveAiKey gate reduced to a boolean. The 503
+ * gate below is for the three endpoints that actually attempt a provider call. */
+async function handleAiStatus(ctx: RouterContext, req: Request): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const key = resolveAiKey(req, config);
+  return jsonResponse({ configured: key !== null });
+}
+
+async function handleAiTriage(ctx: RouterContext, req: Request): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const key = resolveAiKey(req, config);
+  if (config.ai === null || key === null) return jsonResponse({ error: "AI not configured" }, 503);
+
+  const body = await readJsonBody<{ names?: unknown }>(req);
+  if (
+    !body ||
+    !Array.isArray(body.names) ||
+    body.names.length === 0 ||
+    !body.names.every((n) => typeof n === "string")
+  ) {
+    return jsonResponse({ error: "expected { names: string[] } (non-empty)" }, 400);
+  }
+
+  const scopes = await listAiScopes(config);
+  const model = resolveModel(config.ai, key);
+  const suggestions = await suggestTriage(model, body.names, scopes);
+  return jsonResponse(suggestions);
+}
+
+async function handleAiDescribe(ctx: RouterContext, req: Request): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const key = resolveAiKey(req, config);
+  if (config.ai === null || key === null) return jsonResponse({ error: "AI not configured" }, 503);
+
+  const body = await readJsonBody<Partial<AiSkillContextInput>>(req);
+  if (
+    !body ||
+    typeof body.name !== "string" ||
+    typeof body.description !== "string" ||
+    typeof body.body !== "string"
+  ) {
+    return jsonResponse(
+      { error: "expected { name: string, description: string, body: string }" },
+      400,
+    );
+  }
+
+  const model = resolveModel(config.ai, key);
+  const suggestion = await tuneDescription(model, body.name, body.description, body.body);
+  return jsonResponse({ name: body.name, suggestion });
+}
+
+async function handleAiDedupe(ctx: RouterContext, req: Request): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const key = resolveAiKey(req, config);
+  if (config.ai === null || key === null) return jsonResponse({ error: "AI not configured" }, 503);
+
+  const body = await readJsonBody<{ a?: unknown; b?: unknown }>(req);
+  const a = body ? parseAiSkillContext(body.a) : null;
+  const b = body ? parseAiSkillContext(body.b) : null;
+  if (!a || !b) {
+    return jsonResponse({ error: "expected { a: SkillContext, b: SkillContext }" }, 400);
+  }
+
+  const model = resolveModel(config.ai, key);
+  const advice = await adviseDedupe(model, a, b);
+  return jsonResponse(advice);
 }
 
 // --- static UI (packages/ui/dist) ---------------------------------------------
@@ -671,6 +810,18 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
         if (pathname === "/api/settings" && method === "GET") return await handleSettingsGet(ctx);
         if (pathname === "/api/settings" && method === "PUT")
           return await handleSettingsPut(ctx, req);
+        if (pathname === "/api/ai/status" && method === "GET") {
+          return await handleAiStatus(ctx, req);
+        }
+        if (pathname === "/api/ai/triage" && method === "POST") {
+          return await handleAiTriage(ctx, req);
+        }
+        if (pathname === "/api/ai/describe" && method === "POST") {
+          return await handleAiDescribe(ctx, req);
+        }
+        if (pathname === "/api/ai/dedupe" && method === "POST") {
+          return await handleAiDedupe(ctx, req);
+        }
       } catch (err) {
         return jsonResponse({ error: err instanceof Error ? err.message : String(err) }, 500);
       }

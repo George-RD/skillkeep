@@ -104,6 +104,7 @@ export function defaultConfig(dd: string = dataDir()): Config {
     inboxDirs,
     projects: {},
     hub: null,
+    ai: null,
   };
 }
 

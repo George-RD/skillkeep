@@ -95,6 +95,7 @@ beforeAll(async () => {
     inboxDirs: [],
     projects: {},
     hub: null,
+    ai: null,
   };
   const seedDb = openDb(path.join(dataDir, "skillkeep.db"));
   setConfig(seedDb, config);
@@ -442,6 +443,50 @@ describe("GET/PUT /api/settings", () => {
     const after = await get("/api/settings");
     const body = (await after.json()) as { globalClients: string[] };
     expect(body.globalClients).toEqual(["claude"]);
+  });
+});
+
+describe("GET/POST /api/ai/*", () => {
+  // Config.ai is seeded null (see beforeAll) and no SKILLKEEP_AI_KEY is set for this process, so
+  // every request below exercises the "AI not configured" gate end-to-end (real startServer +
+  // fetch, not a unit test of resolveAiKey) — proving the routes are actually wired into the
+  // dispatch chain, not just that the gate function itself behaves. The generation functions'
+  // own behaviour (a configured, successful call) is unit-tested against a fake model in
+  // ai.test.ts, which needs no network and no persisted key.
+  test("GET /api/ai/status returns { configured: false } when no ai config is set", async () => {
+    const res = await get("/api/ai/status");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ configured: false });
+  });
+
+  test("POST /api/ai/triage is 503 when AI is not configured", async () => {
+    const res = await send("POST", "/api/ai/triage", { names: ["some-skill"] });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "AI not configured" });
+  });
+
+  test("POST /api/ai/describe is 503 when AI is not configured", async () => {
+    const res = await send("POST", "/api/ai/describe", {
+      name: "some-skill",
+      description: "old",
+      body: "# some-skill",
+    });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "AI not configured" });
+  });
+
+  test("POST /api/ai/dedupe is 503 when AI is not configured", async () => {
+    const res = await send("POST", "/api/ai/dedupe", {
+      a: { name: "a", description: "d-a", body: "b-a" },
+      b: { name: "b", description: "d-b", body: "b-b" },
+    });
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "AI not configured" });
+  });
+
+  test("routes reject a missing/wrong bearer token like every other /api/* route", async () => {
+    const res = await get("/api/ai/status", { auth: false });
+    expect(res.status).toBe(401);
   });
 });
 

@@ -93,6 +93,7 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
       inboxDirs: [],
       projects: {},
       hub: null,
+      ai: null,
     };
   });
 

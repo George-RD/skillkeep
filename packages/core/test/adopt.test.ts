@@ -30,6 +30,7 @@ beforeEach(() => {
     inboxDirs: [],
     projects: {},
     hub: null,
+    ai: null,
   };
 });
 

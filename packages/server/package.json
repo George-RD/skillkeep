@@ -5,7 +5,10 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
+    "@ai-sdk/anthropic": "^2",
+    "@ai-sdk/openai": "^2",
     "@skillkeep/core": "workspace:*",
-    "@skillkeep/usage": "workspace:*"
+    "@skillkeep/usage": "workspace:*",
+    "ai": "^5"
   }
 }

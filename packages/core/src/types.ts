@@ -36,6 +36,10 @@ export interface Config {
   projects: Record<string, ProjectConfig>;
   /** Multi-device hub link (null when the agent runs standalone, no hub sync). */
   hub: HubLink | null;
+  /** BYOK AI-assist link (null when no provider/model is configured). The API key is NEVER part
+   * of this shape — it is resolved per-request server-side from a header or env var, and is never
+   * persisted to SQLite, config, or logs. See packages/server/src/ai.ts. */
+  ai: AiLink | null;
 }
 
 /** Agent→hub link: where to push/pull registry skills and usage from this device. */
@@ -46,6 +50,14 @@ export interface HubLink {
   token: string;
   /** Human-readable name for this device, recorded in the hub's devices table on push. */
   device: string;
+}
+
+/** BYOK AI-assist provider/model selection. No key field by design — see {@link Config.ai}. */
+export interface AiLink {
+  /** Which SDK-supported provider to route generation requests through. */
+  provider: "anthropic" | "openai" | "openrouter";
+  /** Provider-specific model identifier, e.g. "claude-sonnet-4-5" or "gpt-4o". */
+  model: string;
 }
 
 /** rules.yml: scope name -> list of glob patterns. "archive" and "global" are scopes too. */

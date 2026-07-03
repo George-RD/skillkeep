@@ -83,6 +83,7 @@ beforeEach(() => {
       },
     },
     hub: null,
+    ai: null,
   };
 });
 
