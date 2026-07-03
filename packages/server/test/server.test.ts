@@ -99,7 +99,22 @@ beforeAll(async () => {
   setConfig(seedDb, config);
   seedDb.close();
 
-  const started = await startServer({ mode: "agent", port: 0, dataDir });
+  // Point every usage source at a nonexistent dir under tmpDir so the boot-time/scheduled usage
+  // ingest (startServer's automatic rescan) never walks this machine's real ~/.claude, ~/.codex,
+  // ~/.omp, etc. — this test suite is about the registry/sync/settings routes, not usage ingest
+  // (that has its own dedicated, hermetic usage-ingest.test.ts).
+  const started = await startServer({
+    mode: "agent",
+    port: 0,
+    dataDir,
+    usageRoots: {
+      claude: path.join(tmpDir, "no-claude"),
+      codex: path.join(tmpDir, "no-codex"),
+      opencode: path.join(tmpDir, "no-opencode"),
+      gemini: path.join(tmpDir, "no-gemini"),
+      omp: path.join(tmpDir, "no-omp"),
+    },
+  });
   server = started.server;
   token = started.token;
   baseUrl = `http://127.0.0.1:${started.port}`;
@@ -338,10 +353,39 @@ describe("GET /api/status", () => {
 });
 
 describe("GET /api/usage/summary", () => {
-  test("is a deliberate 501 until M3 wires usage into the daemon", async () => {
+  test("400s without the required group/from/to query params", async () => {
+    const res = await get("/api/usage/summary");
+    expect(res.status).toBe(400);
+  });
+
+  test("200s with a rows array against the real db", async () => {
     const res = await get("/api/usage/summary?group=model&from=2026-01-01&to=2026-01-31");
-    expect(res.status).toBe(501);
-    expect(await res.json()).toEqual({ error: "usage not available yet" });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { rows: unknown[] };
+    expect(Array.isArray(body.rows)).toBe(true);
+  });
+});
+
+describe("POST /api/usage/rescan", () => {
+  test("runs ingestion and reports ok", async () => {
+    // Redirect every source's home/data-dir env var at an empty tmp dir so the real
+    // ingestion pipeline runs (proving the route wires auth -> runUsageIngest ->
+    // {ok:true}) without scanning this machine's actual transcript history, which
+    // would be slow and non-hermetic. Full ingestion correctness is covered by
+    // usage-ingest.test.ts.
+    const ENV_KEYS = ["HOME", "CODEX_HOME", "XDG_DATA_HOME", "GEMINI_CLI_HOME"] as const;
+    const saved = Object.fromEntries(ENV_KEYS.map((k) => [k, process.env[k]]));
+    for (const k of ENV_KEYS) process.env[k] = tmpDir;
+    try {
+      const res = await send("POST", "/api/usage/rescan", {});
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true });
+    } finally {
+      for (const k of ENV_KEYS) {
+        if (saved[k] === undefined) delete process.env[k];
+        else process.env[k] = saved[k];
+      }
+    }
   });
 });
 

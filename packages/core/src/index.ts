@@ -37,3 +37,5 @@ export * from "./tokens";
 export * from "./triage";
 // Types and config shape
 export * from "./types";
+// Usage-fact and skill-usage SQLite store (additive upserts, scan cursors, summary queries)
+export * from "./usage-store";

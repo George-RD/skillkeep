@@ -19,7 +19,9 @@ export type PriceTable = Record<
   }
 >;
 
-const bundled = snapshot as PriceTable;
+/** The bundled offline snapshot, exported so the daemon's `loadPriceTable` can `mergePrices(bundledPrices, live)` without duplicating the JSON import. */
+export const bundledPrices = snapshot as PriceTable;
+const bundled = bundledPrices;
 
 /**
  * Look up a model's per-token price in `table` (defaults to the bundled offline

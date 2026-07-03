@@ -57,6 +57,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@skillkeep/core": "workspace:*",
+        "@skillkeep/usage": "workspace:*",
       },
     },
     "packages/ui": {

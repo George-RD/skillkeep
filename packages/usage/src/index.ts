@@ -7,7 +7,9 @@ export { gemini } from "./gemini.ts";
 export { omp } from "./omp.ts";
 export { opencode } from "./opencode.ts";
 export type { Price, PriceTable } from "./pricing.ts";
-export { lookupPrice, mergePrices } from "./pricing.ts";
+export { bundledPrices, lookupPrice, mergePrices } from "./pricing.ts";
+export type { SkillReadEvent } from "./skill-reads.ts";
+export { claudeSkillReads, ompSkillReads } from "./skill-reads.ts";
 export type { ParseYield, UsageEvent, UsageSource } from "./types.ts";
 export {
   decodeCwdSlug,

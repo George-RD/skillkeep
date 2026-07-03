@@ -18,6 +18,7 @@ import {
   hashSkillDir,
   loadRules,
   moveSkill,
+  queryUsageSummary,
   readSkillMeta,
   resolveLinkMode,
   runSync,
@@ -29,6 +30,7 @@ import {
 import { requireAuth } from "./auth";
 import { emit, sseResponse } from "./events";
 import { getScan, resetScanCache } from "./scan-cache";
+import { runUsageIngest } from "./usage-ingest";
 
 /** Everything a route handler needs: the state store, the bearer token, and the daemon's data dir. */
 export interface RouterContext {
@@ -256,6 +258,30 @@ async function handleStatus(ctx: RouterContext): Promise<Response> {
   });
 }
 
+// --- /api/usage ------------------------------------------------------------
+
+const USAGE_GROUPS: Record<string, true> = { model: true, repo: true, client: true, skill: true };
+
+function handleUsageSummary(ctx: RouterContext, url: URL): Response {
+  const group = url.searchParams.get("group");
+  const from = url.searchParams.get("from");
+  const to = url.searchParams.get("to");
+  if (!group || !USAGE_GROUPS[group] || !from || !to) {
+    return jsonResponse(
+      { error: "expected ?group=model|repo|client|skill&from=YYYY-MM-DD&to=YYYY-MM-DD" },
+      400,
+    );
+  }
+  const rows = queryUsageSummary(ctx.db, group as "model" | "repo" | "client" | "skill", from, to);
+  return jsonResponse({ rows });
+}
+
+async function handleUsageRescan(ctx: RouterContext): Promise<Response> {
+  await runUsageIngest(ctx.db, { dataDir: ctx.dataDir });
+  emit("usage:updated", {});
+  return jsonResponse({ ok: true });
+}
+
 // --- /api/settings ---------------------------------------------------------------
 
 async function buildLinkModeProbe(
@@ -409,7 +435,10 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
         if (pathname === "/api/sync" && method === "POST") return await handleSync(ctx, req);
         if (pathname === "/api/status" && method === "GET") return await handleStatus(ctx);
         if (pathname === "/api/usage/summary" && method === "GET") {
-          return jsonResponse({ error: "usage not available yet" }, 501);
+          return handleUsageSummary(ctx, url);
+        }
+        if (pathname === "/api/usage/rescan" && method === "POST") {
+          return await handleUsageRescan(ctx);
         }
         if (pathname === "/api/settings" && method === "GET") return await handleSettingsGet(ctx);
         if (pathname === "/api/settings" && method === "PUT")
