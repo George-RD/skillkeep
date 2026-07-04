@@ -112,18 +112,24 @@ export function buildIssueUrl(
   return `https://github.com/${repo}/issues/new?${params.toString()}`;
 }
 
-/** Inputs for {@link buildCronLogLine}. */
+/** Inputs for {@link buildCronLogLine}. `routed`/`pushed` are set only for `--auto` runs; when
+ * `routed` is undefined the line keeps the original sync+check shape. */
 export interface CronLogLineInput {
   timestamp: string;
   syncOk: boolean;
   syncError?: string;
   findings: number;
+  routed?: number;
+  pushed?: boolean;
 }
 
-/** Build the exact one-line cron.log entry for a sync + check run. */
+/** Build the exact one-line cron.log entry for a sync (+ optional auto-triage/push) and check run. */
 export function buildCronLogLine(input: CronLogLineInput): string {
   const sync = input.syncOk
     ? "ok"
     : `failed(${(input.syncError ?? "unknown").replace(/[\r\n]+/g, " ")})`;
-  return `${input.timestamp} sync ${sync} check ${input.findings} finding(s)`;
+  const triage = input.routed !== undefined ? ` triage ${input.routed} routed` : "";
+  const push =
+    input.routed !== undefined && input.routed > 0 ? ` push ${input.pushed ? "ok" : "failed"}` : "";
+  return `${input.timestamp} sync ${sync}${triage} check ${input.findings} finding(s)${push}`;
 }
