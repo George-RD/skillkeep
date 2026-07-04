@@ -121,6 +121,42 @@ describe("buildCronLogLine", () => {
     expect(line.split("\n")).toHaveLength(1);
     expect(line).toContain("failed(boom stack line 1 stack line 2)");
   });
+
+  test("adds triage + push segments for an --auto run", () => {
+    const line = buildCronLogLine({
+      timestamp: "2026-07-04T10:00:00.000Z",
+      syncOk: true,
+      findings: 1,
+      routed: 2,
+      pushed: true,
+    });
+    expect(line).toBe(
+      "2026-07-04T10:00:00.000Z sync ok triage 2 routed check 1 finding(s) push ok",
+    );
+  });
+
+  test("an --auto run that routed nothing shows triage 0 and no push segment", () => {
+    const line = buildCronLogLine({
+      timestamp: "2026-07-04T10:00:00.000Z",
+      syncOk: true,
+      findings: 0,
+      routed: 0,
+    });
+    expect(line).toBe("2026-07-04T10:00:00.000Z sync ok triage 0 routed check 0 finding(s)");
+  });
+
+  test("a failed --auto push is recorded as push failed", () => {
+    const line = buildCronLogLine({
+      timestamp: "2026-07-04T10:00:00.000Z",
+      syncOk: false,
+      syncError: "registry push failed: rejected",
+      findings: 0,
+      routed: 1,
+      pushed: false,
+    });
+    expect(line).toContain("triage 1 routed");
+    expect(line).toContain("push failed");
+  });
 });
 
 describe("reportHasProblems", () => {

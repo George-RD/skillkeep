@@ -13,6 +13,8 @@ import {
   dataDir,
   detectAll,
   getConfig,
+  gitPullFf,
+  gitPush,
   globalOnlyTokenEstimate,
   installLaunchAgent,
   loadRules,
@@ -67,8 +69,8 @@ function printHelp(write: Writer): void {
   write("  check               drift/dangling-link/dead-config diagnostics");
   write("  doctor              environment diagnosis (registry, link mode, clients)");
   write("  report              print a diagnostic summary and a prefilled GitHub issue URL");
-  write("  cron                run a sync and check, logging the result");
-  write("  setup               install the weekly launch agent that runs cron");
+  write("  cron [--auto]       run a sync and check (--auto also pulls, runs auto-triage, pushes)");
+  write("  setup [--auto]      install the weekly launch agent (--auto for full automation)");
   write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
@@ -345,6 +347,8 @@ export interface CronDeps {
   dataDir?: string;
   exec?: NotifyExec;
   platform?: NodeJS.Platform;
+  /** --auto: also git-pull, auto-triage rule-matched inbox skills, and push what this run committed. */
+  auto?: boolean;
 }
 
 export async function runCronCommand(
@@ -352,6 +356,12 @@ export async function runCronCommand(
   _write: Writer = report,
   deps?: CronDeps,
 ): Promise<void> {
+  const auto = deps?.auto ?? false;
+
+  // --auto: fast-forward the registry first (best-effort). A diverged history is not overwritten
+  // here — the non-force push below fails loudly instead.
+  if (auto) await gitPullFf(config.registryRoot);
+
   let syncResult: SyncReport;
   try {
     syncResult = await runSync(config, { dryRun: false, prune: false });
@@ -360,18 +370,59 @@ export async function runCronCommand(
     syncResult = { created: [], fixed: [], pruned: [], configReminders: [], errors: [message] };
   }
 
+  const firstInbox = config.inboxDirs[0];
+  let routed: string[] = [];
+  if (auto && syncResult.errors.length === 0 && firstInbox) {
+    try {
+      const rules = await loadRules(config.registryRoot);
+      const plan = await planTriage(rules, config.inboxDirs);
+      const result = await applyTriageMoves(
+        config.registryRoot,
+        plan.filter((item) => item.scope),
+        tildeExpand(firstInbox),
+      );
+      routed = result.routed;
+    } catch (err) {
+      syncResult.errors.push(`triage failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   let findings: Awaited<ReturnType<typeof runCheck>> = [];
   try {
     findings = await runCheck(config);
   } catch (err) {
     syncResult.errors.push(`check failed: ${err instanceof Error ? err.message : String(err)}`);
   }
+
+  // Publish only when this run routed something (routed > 0); the push advances the branch like
+  // skillctl's weekly job (any unrelated local commits ride along too), never force. Push the
+  // registry first and advance the inbox remote only if that succeeded — otherwise the inbox remote
+  // would publish the skill's *deletion* while the registry never received the routed skill, losing
+  // it for any other machine. Both advance together, or neither does; local commits survive the next
+  // run. A rejected non-ff push is recorded as a failure (logged + notified).
+  let pushed: boolean | undefined;
+  if (auto && routed.length > 0) {
+    const registryPush = await gitPush(config.registryRoot);
+    const inboxPush =
+      registryPush.ok && firstInbox
+        ? await gitPush(tildeExpand(firstInbox))
+        : { ok: true, message: "" };
+    pushed = registryPush.ok && inboxPush.ok;
+    if (!registryPush.ok) {
+      syncResult.errors.push(`registry push failed: ${registryPush.message.trim() || "rejected"}`);
+    } else if (!inboxPush.ok) {
+      syncResult.errors.push(`inbox push failed: ${inboxPush.message.trim() || "rejected"}`);
+    }
+  }
+
   const syncFailed = syncResult.errors.length > 0;
   const logLine = buildCronLogLine({
     timestamp: new Date().toISOString(),
     syncOk: !syncFailed,
     syncError: syncResult.errors[0],
     findings: findings.length,
+    routed: auto ? routed.length : undefined,
+    pushed: auto ? pushed : undefined,
   });
 
   const baseDir = deps?.dataDir ?? dataDir();
@@ -394,21 +445,24 @@ export async function runCronCommand(
 /** Absolute `[execPath, script?, "cron"]` for the weekly launch agent. Unlike selfInvocation (used
  * for same-cwd spawns) this resolves the script to an absolute path, because launchd calendar jobs
  * run with cwd=/ where a relative script would never resolve. */
-function launchAgentProgramArguments(): string[] {
+function launchAgentProgramArguments(auto: boolean): string[] {
+  const cronArgs = auto ? ["cron", "--auto"] : ["cron"];
   const scriptArg = process.argv[1];
   const isCompiledBinary = scriptArg?.startsWith("/$bunfs/") ?? false;
-  if (isCompiledBinary) return [process.execPath, "cron"];
-  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), "cron"];
+  if (isCompiledBinary) return [process.execPath, ...cronArgs];
+  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), ...cronArgs];
 }
 
-/** `skillkeep setup` — install (or refresh) the weekly launch agent that runs `cron`. */
-export async function runSetupCommand(write: Writer = report): Promise<void> {
-  const result = await installLaunchAgent(launchAgentProgramArguments());
+/** `skillkeep setup [--auto]` — install (or refresh) the weekly launch agent. Bare runs `cron`
+ * (sync + check); `--auto` runs `cron --auto` (also pull, auto-triage, and push). */
+export async function runSetupCommand(write: Writer = report, auto = false): Promise<void> {
+  const result = await installLaunchAgent(launchAgentProgramArguments(auto));
   if (result.skipped) {
     write(`launch agent not installed: ${result.reason ?? "unsupported platform"}`);
     return;
   }
-  write("weekly launch agent installed — skillkeep will sync and self-check every Sunday at 10:00");
+  const does = auto ? "sync, auto-triage, and self-check" : "sync and self-check";
+  write(`weekly launch agent installed — skillkeep will ${does} every Sunday at 10:00`);
 }
 
 // --- daemon ----------------------------------------------------------------------
@@ -637,7 +691,7 @@ export async function main(
     return;
   }
   if (command === "setup") {
-    await runSetupCommand(write);
+    await runSetupCommand(write, rest.includes("--auto"));
     return;
   }
 
@@ -677,7 +731,7 @@ export async function main(
       await runReportCommand(config, write);
       break;
     case "cron":
-      await runCronCommand(config, write);
+      await runCronCommand(config, write, { auto: rest.includes("--auto") });
       break;
     case "hub": {
       const [subcommand] = rest;
