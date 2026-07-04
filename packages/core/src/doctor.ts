@@ -56,18 +56,15 @@ export async function symlinkProbe(dir: string): Promise<boolean> {
   }
 }
 
-/** Install the macOS launchd agent to run `scriptPath sync` weekly. No-op on non-darwin (skipped result, never throws). */
-export async function installLaunchAgent(scriptPath: string): Promise<InstallResult> {
-  if (process.platform !== "darwin") {
-    return {
-      installed: false,
-      skipped: true,
-      reason: `launch agent not supported on ${process.platform}`,
-    };
-  }
-  const logDir = path.join(os.homedir(), ".skillkeep", "logs");
-  await fs.mkdir(logDir, { recursive: true });
-  const plist = `<?xml version="1.0" encoding="UTF-8"?>
+/** The launchd agent's log directory (also where cron.log lives). */
+function getLogDir(): string {
+  return path.join(os.homedir(), ".skillkeep", "logs");
+}
+
+/** Build the macOS launchd plist XML that runs `<scriptPath> cron` weekly at Sunday 10:00. */
+export function buildLaunchAgentPlist(scriptPath: string): string {
+  const logDir = getLogDir();
+  return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
@@ -76,7 +73,7 @@ export async function installLaunchAgent(scriptPath: string): Promise<InstallRes
 	<key>ProgramArguments</key>
 	<array>
 		<string>${scriptPath}</string>
-		<string>sync</string>
+		<string>cron</string>
 	</array>
 	<key>StartCalendarInterval</key>
 	<dict>
@@ -94,6 +91,20 @@ export async function installLaunchAgent(scriptPath: string): Promise<InstallRes
 </dict>
 </plist>
 `;
+}
+
+/** Install the macOS launchd agent to run `scriptPath cron` weekly. No-op on non-darwin (skipped result, never throws). */
+export async function installLaunchAgent(scriptPath: string): Promise<InstallResult> {
+  if (process.platform !== "darwin") {
+    return {
+      installed: false,
+      skipped: true,
+      reason: `launch agent not supported on ${process.platform}`,
+    };
+  }
+  const logDir = getLogDir();
+  await fs.mkdir(logDir, { recursive: true });
+  const plist = buildLaunchAgentPlist(scriptPath);
   await fs.mkdir(plistDir(), { recursive: true });
   await fs.writeFile(plistPath(), plist, "utf8");
   await $`launchctl bootout gui/${process.getuid?.() ?? 0}/${PLIST_LABEL}`.quiet().nothrow();

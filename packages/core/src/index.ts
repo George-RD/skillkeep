@@ -25,6 +25,8 @@ export * from "./match";
 export * from "./paths";
 // Registry enumeration and scope validation
 export * from "./registry";
+// Diagnostic-report and issue-URL helpers
+export * from "./report";
 // SKILL.md parsing, directory scanning, content hashing
 export * from "./skill";
 // Census / status (counts, duplicates, misplacements, drift)

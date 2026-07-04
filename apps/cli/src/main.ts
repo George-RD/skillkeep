@@ -5,6 +5,9 @@ import * as path from "node:path";
 import {
   adoptDetected,
   applyTriageMoves,
+  buildCronLogLine,
+  buildDiagnosticMarkdown,
+  buildIssueUrl,
   buildStatus,
   type Config,
   dataDir,
@@ -14,9 +17,11 @@ import {
   loadRules,
   openDb,
   planTriage,
+  reportHasProblems,
   runCheck,
   runDoctor,
   runSync,
+  type SyncReport,
   tildeExpand,
 } from "@skillkeep/core";
 import {
@@ -26,6 +31,7 @@ import {
   pushToHub,
   startServer,
 } from "@skillkeep/server";
+import { version as SKILLKEEP_VERSION } from "../package.json";
 import { report } from "./output";
 
 type Writer = (line: string) => void;
@@ -38,6 +44,8 @@ const SUBCOMMANDS = [
   "triage",
   "check",
   "doctor",
+  "report",
+  "cron",
   "daemon",
   "ui",
   "hub",
@@ -56,6 +64,8 @@ function printHelp(write: Writer): void {
   write("  triage [--apply]    route inbox skills matched by rules.yml");
   write("  check               drift/dangling-link/dead-config diagnostics");
   write("  doctor              environment diagnosis (registry, link mode, clients)");
+  write("  report              print a diagnostic summary and a prefilled GitHub issue URL");
+  write("  cron                run a sync and check, logging the result");
   write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
@@ -239,6 +249,140 @@ export async function runDoctorCommand(config: Config, write: Writer = report): 
     write(
       `launch agent: ${result.plistInstalled ? "installed" : "not installed"}, ${result.plistLoaded ? "loaded" : "not loaded"}`,
     );
+  }
+}
+
+// --- report ----------------------------------------------------------------------
+
+export interface ReportDeps {
+  dataDir?: string;
+  now?: Date;
+}
+
+export async function runReportCommand(
+  config: Config,
+  write: Writer = report,
+  deps?: ReportDeps,
+): Promise<void> {
+  const result = await runDoctor(config);
+  const findings = await runCheck(config);
+
+  write(`registry: ${result.registryPresent && result.registryValid ? "ok" : "not ok"}`);
+  write(`link mode: ${result.linkMode}`);
+  write(
+    `clients found: ${result.clientsFound.length > 0 ? result.clientsFound.join(", ") : "none"}`,
+  );
+  if (process.platform === "darwin") {
+    write(
+      `launch agent: ${result.plistInstalled ? "installed" : "not installed"}, ${result.plistLoaded ? "loaded" : "not loaded"}`,
+    );
+  }
+  for (const finding of findings) {
+    write(`${finding.kind}: ${finding.detail}`);
+  }
+
+  const problems = reportHasProblems(result, findings, config.linkMode, process.platform);
+
+  if (!problems) {
+    return;
+  }
+
+  const stamp = (deps?.now ?? new Date()).toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  const baseDir = deps?.dataDir ?? dataDir();
+  const reportDir = path.join(baseDir, "reports");
+  await fs.mkdir(reportDir, { recursive: true });
+  const markdown = buildDiagnosticMarkdown({
+    version: SKILLKEEP_VERSION,
+    platform: process.platform,
+    doctor: result,
+    findings,
+  });
+  const reportPath = path.join(reportDir, `report-${stamp}.md`);
+  await fs.writeFile(reportPath, markdown, "utf8");
+  write(`report written to ${reportPath}`);
+
+  const issueUrl = buildIssueUrl({
+    title: "skillkeep diagnostic report",
+    body: markdown,
+  });
+  write(issueUrl);
+  process.exitCode = 1;
+}
+
+// --- cron ------------------------------------------------------------------------
+
+export type NotifyExec = (cmd: string[]) => Promise<{ exitCode: number; stderr?: string }>;
+
+async function defaultNotifyExec(cmd: string[]): Promise<{ exitCode: number; stderr?: string }> {
+  try {
+    const proc = Bun.spawn({ cmd, stdio: ["ignore", "ignore", "ignore"] });
+    await proc.exited;
+    return { exitCode: proc.exitCode ?? 0 };
+  } catch {
+    return { exitCode: -1 };
+  }
+}
+
+export async function sendMacNotification(
+  message: string,
+  exec: NotifyExec = defaultNotifyExec,
+  platform: NodeJS.Platform = process.platform,
+): Promise<void> {
+  if (platform !== "darwin") return;
+  const title = "skillkeep";
+  const script = `display notification ${JSON.stringify(message)} with title ${JSON.stringify(title)}`;
+  try {
+    await exec(["osascript", "-e", script]);
+  } catch {
+    // swallow all notification errors
+  }
+}
+
+export interface CronDeps {
+  dataDir?: string;
+  exec?: NotifyExec;
+  platform?: NodeJS.Platform;
+}
+
+export async function runCronCommand(
+  config: Config,
+  _write: Writer = report,
+  deps?: CronDeps,
+): Promise<void> {
+  let syncResult: SyncReport;
+  try {
+    syncResult = await runSync(config, { dryRun: false, prune: false });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    syncResult = { created: [], fixed: [], pruned: [], configReminders: [], errors: [message] };
+  }
+
+  let findings: Awaited<ReturnType<typeof runCheck>> = [];
+  try {
+    findings = await runCheck(config);
+  } catch (err) {
+    syncResult.errors.push(`check failed: ${err instanceof Error ? err.message : String(err)}`);
+  }
+  const syncFailed = syncResult.errors.length > 0;
+  const logLine = buildCronLogLine({
+    timestamp: new Date().toISOString(),
+    syncOk: !syncFailed,
+    syncError: syncResult.errors[0],
+    findings: findings.length,
+  });
+
+  const baseDir = deps?.dataDir ?? dataDir();
+  const logDir = path.join(baseDir, "logs");
+  await fs.mkdir(logDir, { recursive: true });
+  await fs.appendFile(path.join(logDir, "cron.log"), `${logLine}\n`, "utf8");
+
+  const platform = deps?.platform ?? process.platform;
+  if (platform === "darwin" && (syncFailed || findings.length > 0)) {
+    await sendMacNotification(logLine, deps?.exec, platform);
+  }
+
+  if (syncFailed || findings.length > 0) {
+    process.exitCode = 1;
   }
 }
 
@@ -499,6 +643,12 @@ export async function main(
       break;
     case "doctor":
       await runDoctorCommand(config, write);
+      break;
+    case "report":
+      await runReportCommand(config, write);
+      break;
+    case "cron":
+      await runCronCommand(config, write);
       break;
     case "hub": {
       const [subcommand] = rest;
