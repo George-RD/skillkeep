@@ -1,47 +1,80 @@
 # skillkeep
 
-A self-hostable, cross-platform manager for AI coding-agent skills (Claude Code, OMP, Codex, opencode, Gemini CLI, …). One local daemon scans every client's skill install on your machine, lets you take skills under management with one click, keeps them in sync across clients and repos, and reports deterministic token/skill-usage metrics — all locally by default, with an optional self-hosted hub for multi-device sync and optional BYOK AI assist (triage suggestions, description tuning, dedupe advice — every suggestion applies only on explicit accept).
+skillkeep is a free, self-hosted tool that keeps your AI coding skills in one place.
 
-## Why
+Your AI coding tools — Claude Code, OMP, Codex, Gemini CLI, and others — each store their own folder of skills. skillkeep puts them all in one registry, syncs them across tools, and gives you a simple dashboard to manage them. Everything runs locally by default. You can also add an optional hub for syncing between devices, or switch on AI help for suggestions.
 
-Coding-agent skills live scattered across `~/.claude/skills`, `~/.omp/agent/managed-skills`, per-repo `.agents/skills`, and more. skillkeep gives you one registry, one sync engine, and one dashboard for all of it — no vendor lock-in, no cloud dependency required.
+## Why use it
 
-## Components
+AI coding skills are spread across folders like `~/.claude/skills`, `~/.omp/agent/managed-skills`, and per-repo `.agents/skills`. It is easy to lose track of them, keep old copies, or redo the same work in different tools.
 
-| Piece | What it is |
+skillkeep gives you one place to:
+
+- see every skill on your machine
+- bring a skill under management with one click
+- keep skills in sync across clients and repos
+- see clear usage numbers per skill and tool
+
+No cloud is required. No single vendor locks you in.
+
+## Parts of skillkeep
+
+| Part | What it does |
 |---|---|
-| `skillkeep` CLI + daemon | Local core: scan, adopt, sync. Exposes a localhost HTTP API every other surface talks to. |
-| Desktop app (macOS/Windows) | Tauri 2 shell around the same API; detects installs on startup, one-click "take over management". |
-| TUI | `@skillkeep/tui` — the same screens over SSH/terminal, run from a repo clone (see [TUI](#tui) below). |
-| Hub (optional) | Docker image / one-click Railway deploy; multi-device registry sync, usage dashboard, BYOK AI proxy. Never scans your machine — you push to it. |
+| CLI + daemon | The local core. It scans, adopts, and syncs skills. It also serves a small HTTP API that the desktop app and TUI talk to. |
+| Desktop app | The same dashboard, wrapped in a small native window for macOS or Windows. It starts and manages its own background daemon for you. |
+| TUI | The same screens, but in a terminal. Good for SSH or quick keyboard use. |
+| Hub (optional) | A Docker image or one-click Railway deploy. It lets you sync skills across multiple devices. It never scans your machine — you push to it. |
+| AI assist (optional) | Off by default. With your own API key, it can suggest triage, description tuning, or duplicate-skill advice. |
 
 ## Quick start (local, no hub)
 
+This is the fastest way to see the dashboard. The web dashboard is built from the `packages/ui` folder, so skillkeep needs to run from the cloned repo.
+
 ```sh
+git clone https://github.com/George-RD/skillkeep && cd skillkeep
 bun install
-bun run --cwd apps/cli build   # or: bun build --compile apps/cli/src/main.ts --outfile skillkeep
+bun run --cwd packages/ui build
+bun apps/cli/src/main.ts ui   # starts the daemon and opens the dashboard in your browser
+```
+
+From the same repo clone you can also run commands like:
+
+```sh
+bun apps/cli/src/main.ts scan   # find skills on your machine
+bun apps/cli/src/main.ts sync   # sync the managed ones
+```
+
+## Compiled binary for CLI and daemon only
+
+You can also build a single compiled binary. It is useful for running `scan`, `sync`, and the API without needing the repo around. It does **not** include the web dashboard, because the dashboard is read from the `packages/ui` build files at runtime. `./skillkeep ui` from a compiled binary will show a "UI not built" page.
+
+```sh
+bun build --compile apps/cli/src/main.ts --outfile skillkeep
 ./skillkeep scan
-./skillkeep ui                 # opens the dashboard in your browser
+./skillkeep sync
 ```
 
 ## Desktop app
 
-Download the latest `.dmg` (macOS) or `.msi` (Windows) from [Releases](../../releases). Installers are **unsigned in v1** — code-signing/notarisation is a later, paid decision.
+The desktop app is the same dashboard you see in the browser, but it runs in its own native window. It also handles its own background daemon, so you do not need to start one yourself.
 
-- **macOS**: Gatekeeper will block the unsigned app. Right-click → Open the first time, or `xattr -d com.apple.quarantine /Applications/skillkeep.app`.
-- **Windows**: SmartScreen will warn "unknown publisher" — click "More info" → "Run anyway".
+Download the latest `.dmg` for macOS or `.msi` for Windows from [Releases](../../releases). The installers are **unsigned in v1** — code-signing and notarisation will come later.
+
+- **macOS**: Gatekeeper may block the app the first time. Right-click it and choose **Open**, or run `xattr -d com.apple.quarantine /Applications/skillkeep.app`.
+- **Windows**: SmartScreen will show "unknown publisher". Click **More info**, then **Run anyway**.
 
 ## TUI
 
-`@skillkeep/tui` is an unpublished workspace package (not a standalone compiled binary — ink's WASM layout engine, `yoga-wasm-web`, doesn't survive `bun build --compile`'s static asset bundling), so it runs from a repo clone against an already-running daemon:
+`@skillkeep/tui` is a workspace package inside the repo. It runs from a clone against an already-running daemon:
 
 ```sh
 bun install
-./skillkeep daemon &                              # or use an already-running desktop/CLI daemon
-bun run --cwd apps/tui start -- --token "$(cat "$HOME/Library/Application Support/skillkeep/daemon.token")"
+bun apps/cli/src/main.ts daemon &                 # or use a running desktop or CLI daemon
+bun run --cwd apps/tui start                       # auto-reads the local daemon token; add --token <t> for a remote hub
 ```
 
-Pass `--url` to point it at a remote hub instead of the local daemon (defaults to `http://127.0.0.1:4517`).
+Pass `--url` to point it at a remote hub instead of the local daemon. It defaults to `http://127.0.0.1:4517`.
 
 ## Self-hosting the hub
 
@@ -57,15 +90,22 @@ docker run -v /path/to/data:/data -e SKILLKEEP_TOKEN=<random-32-byte-token> -p 8
 
 Set `SKILLKEEP_TOKEN` when prompted, mount the `/data` volume (the template does this for you), then point your local agents at the hub in Settings → Hub.
 
-## AI assist (BYOK)
+## AI assist (bring your own key)
 
-Optional, off by default. Enable in Settings → AI assist: pick a provider (`anthropic`, `openai`, or `openrouter`) and model. The API key is attached per-request to the local daemon (which makes the actual provider call) and is never persisted — not in SQLite, not in config, not in logs. Desktop stores it in the OS keychain; the CLI/hub reads it from the `SKILLKEEP_AI_KEY` environment variable instead. Every suggestion (registry-scope triage, description tuning, duplicate-skill advice) is a proposal only — nothing is written until you explicitly accept it. Without a configured provider/key, the AI endpoints return `503` and the UI hides the AI buttons.
+AI assist is off by default. Switch it on in Settings → AI assist: pick a provider (`anthropic`, `openai`, or `openrouter`) and a model.
+
+Your API key is attached to each request by the local daemon. It is never saved — not in SQLite, not in config, not in logs. The desktop app stores it in the OS keychain. The CLI and hub read it from the `SKILLKEEP_AI_KEY` environment variable.
+
+Every AI suggestion is a proposal. Nothing is written until you explicitly accept it. If no provider or key is set, the AI endpoints return `503` and the UI hides the AI buttons.
 
 ## Development
 
-- Bun workspaces monorepo: `packages/core`, `packages/usage`, `packages/server`, `packages/ui`; `apps/cli`, `apps/desktop`, `apps/tui`.
-- `bun test` — full test suite. `bun run lint` — biome strict (zero warnings).
-- Conventions: TypeScript strict, async/await only, no `console.*` in committed code, British spelling in user-facing copy, no new dependency without a one-line justification in the PR.
+skillkeep is a Bun workspaces monorepo: `packages/core`, `packages/usage`, `packages/server`, `packages/ui`; and `apps/cli`, `apps/desktop`, `apps/tui`.
+
+- `bun test` — run the full test suite.
+- `bun run lint` — run the biome strict linter (zero warnings).
+
+Conventions: TypeScript strict, async/await only, no `console.*` in committed code, British spelling in user-facing copy, and no new dependency without a one-line justification in the PR.
 
 ## License
 
