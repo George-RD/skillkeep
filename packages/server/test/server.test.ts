@@ -449,6 +449,120 @@ describe("GET/PUT /api/settings", () => {
     const body = (await after.json()) as { globalClients: string[] };
     expect(body.globalClients).toEqual(["claude"]);
   });
+
+  test("GET includes projects in the response", async () => {
+    const res = await get("/api/settings");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { projects: unknown };
+    expect(typeof body.projects).toBe("object");
+    expect(body.projects).not.toBeNull();
+  });
+
+  test("PUT with valid projects persists and round-trips via GET", async () => {
+    const projects = {
+      "yarnling-ios": { repos: [repoDir], mode: "committed" as const, local_config: true },
+    };
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+      projects,
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const after = await get("/api/settings");
+    const body = (await after.json()) as { projects: typeof projects };
+    expect(body.projects).toEqual(projects);
+  });
+
+  test("PUT omitting projects preserves existing ones", async () => {
+    const before = await get("/api/settings");
+    const beforeBody = (await before.json()) as { projects: Record<string, unknown> };
+
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ ok: true });
+
+    const after = await get("/api/settings");
+    const afterBody = (await after.json()) as { projects: Record<string, unknown> };
+    expect(afterBody.projects).toEqual(beforeBody.projects);
+  });
+
+  test("PUT rejects invalid projects with 422 and leaves config unchanged", async () => {
+    const before = await get("/api/settings");
+    const beforeBody = (await before.json()) as { projects: Record<string, unknown> };
+
+    const badCases = [
+      {
+        projects: { foo: { repos: "not-an-array" } },
+        error: "must be an array of strings",
+      },
+      {
+        projects: { foo: { repos: [repoDir], mode: "copy" } },
+        error: "mode must be 'link' or 'committed'",
+      },
+      {
+        projects: { foo: { repos: ["relative/path"] } },
+        error: "must be absolute",
+      },
+      {
+        projects: { "bad/name": { repos: [repoDir] } },
+        error: "path separators",
+      },
+      {
+        projects: { "bad\\name": { repos: [repoDir] } },
+        error: "path separators",
+      },
+      {
+        projects: { "..": { repos: [repoDir] } },
+        error: "not allowed",
+      },
+      {
+        projects: { ".": { repos: [repoDir] } },
+        error: "not allowed",
+      },
+      // A real own-enumerable "__proto__" key, exactly as an HTTP client sends it: an
+      // object literal would hit the prototype setter and never reach the wire.
+      {
+        projects: JSON.parse(`{"__proto__":{"repos":[${JSON.stringify(repoDir)}]}}`),
+        error: "not allowed",
+      },
+      {
+        projects: { constructor: { repos: [repoDir] } },
+        error: "not allowed",
+      },
+    ];
+
+    for (const bad of badCases) {
+      const res = await send("PUT", "/api/settings", {
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: [],
+        repoClients: [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        projects: bad.projects,
+      });
+      expect(res.status).toBe(422);
+      const err = (await res.json()) as { error: string };
+      expect(err.error).toContain(bad.error);
+    }
+
+    const after = await get("/api/settings");
+    const afterBody = (await after.json()) as { projects: Record<string, unknown> };
+    expect(afterBody.projects).toEqual(beforeBody.projects);
+  });
 });
 
 describe("GET/POST /api/ai/*", () => {

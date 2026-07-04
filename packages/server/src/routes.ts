@@ -19,6 +19,7 @@ import {
   hashSkillDir,
   loadRules,
   moveSkill,
+  type ProjectConfig,
   queryUsageSummary,
   readSkillMeta,
   resolveLinkMode,
@@ -336,6 +337,7 @@ async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
     repoClients: config.repoClients,
     linkMode: config.linkMode,
     inboxDirs: config.inboxDirs,
+    projects: config.projects,
     hub: config.hub ? { url: config.hub.url, device: config.hub.device } : null,
     ai: config.ai,
     linkModeProbe,
@@ -346,6 +348,69 @@ function filterClientIds(values: unknown): ClientId[] {
   if (!Array.isArray(values)) return [];
   const allowed: string[] = ALL_CLIENT_IDS;
   return values.filter((v): v is ClientId => typeof v === "string" && allowed.includes(v));
+}
+
+/** Project names we refuse to store: `.`/`..` would escape the `project/<name>` registry path, and
+ * `__proto__`/`constructor`/`prototype` are prototype-polluting object keys (`__proto__` assigned as a
+ * key even hits the setter and silently drops the entry). Reject them all with a clear 422. */
+const RESERVED_PROJECT_NAMES = new Set([".", "..", "__proto__", "constructor", "prototype"]);
+
+/** Parse the settings PUT body's `projects` field: a `Record<string, ProjectConfig>` that replaces
+ * the current value, or `undefined` to preserve it. When present, the field is validated
+ * strictly and replaces the old map entirely; project names must be non-empty strings without
+ * path separators, and every repo must be absolute (or ~/-relative). */
+function parseProjects(
+  value: unknown,
+):
+  | { ok: true; projects: Record<string, ProjectConfig> | undefined }
+  | { ok: false; error: string } {
+  if (value === undefined) return { ok: true, projects: undefined };
+  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+    return { ok: false, error: "projects must be an object" };
+  }
+  const projects: Record<string, ProjectConfig> = {};
+  for (const [name, project] of Object.entries(value as Record<string, unknown>)) {
+    if (name.trim() === "" || name.includes("/") || name.includes("\\")) {
+      return {
+        ok: false,
+        error: `project name must be non-empty and contain no path separators: ${name}`,
+      };
+    }
+    if (RESERVED_PROJECT_NAMES.has(name)) {
+      return { ok: false, error: `project name is not allowed: ${name}` };
+    }
+    if (project === null || typeof project !== "object" || Array.isArray(project)) {
+      return { ok: false, error: `project ${name} must be an object` };
+    }
+    const p = project as Record<string, unknown>;
+    if (!Array.isArray(p.repos) || !p.repos.every((r) => typeof r === "string")) {
+      return { ok: false, error: `project ${name}.repos must be an array of strings` };
+    }
+    if (p.repos.length === 0) {
+      return { ok: false, error: `project ${name}.repos must contain at least one repo` };
+    }
+    if (p.repos.some((r) => (r as string).trim() === "")) {
+      return { ok: false, error: `project ${name}.repos entries must be non-empty strings` };
+    }
+    if (!p.repos.every((r) => path.isAbsolute(tildeExpand(r as string)))) {
+      return {
+        ok: false,
+        error: `project ${name}.repos entries must be absolute (or ~/-relative)`,
+      };
+    }
+    if (p.mode !== undefined && p.mode !== "link" && p.mode !== "committed") {
+      return { ok: false, error: `project ${name}.mode must be 'link' or 'committed'` };
+    }
+    if (p.local_config !== undefined && typeof p.local_config !== "boolean") {
+      return { ok: false, error: `project ${name}.local_config must be a boolean` };
+    }
+    projects[name] = {
+      repos: p.repos as string[],
+      mode: p.mode as "link" | "committed" | undefined,
+      local_config: p.local_config as boolean | undefined,
+    };
+  }
+  return { ok: true, projects };
 }
 
 /** Parse the settings PUT body's `ai` field: `{ provider, model } | null`. No key field exists on
@@ -417,6 +482,11 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     );
   }
 
+  const parsedProjects = parseProjects(body.projects);
+  if (!parsedProjects.ok) {
+    return jsonResponse({ error: parsedProjects.error }, 422);
+  }
+
   const merged: Config = {
     ...current,
     registryRoot,
@@ -425,6 +495,7 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     repoClients: filterClientIds(body.repoClients),
     linkMode,
     inboxDirs,
+    projects: parsedProjects.projects ?? current.projects,
     hub,
     ai: parsedAi.ai,
   };
