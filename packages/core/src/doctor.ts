@@ -56,14 +56,22 @@ export async function symlinkProbe(dir: string): Promise<boolean> {
   }
 }
 
-/** The launchd agent's log directory (also where cron.log lives). */
+/** The launchd agent's stdout/stderr log directory (the plist's StandardOutPath). */
 function getLogDir(): string {
   return path.join(os.homedir(), ".skillkeep", "logs");
 }
 
-/** Build the macOS launchd plist XML that runs `<scriptPath> cron` weekly at Sunday 10:00. */
-export function buildLaunchAgentPlist(scriptPath: string): string {
+/** Escape a value for safe inclusion inside plist XML text. */
+function xmlEscape(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+/** Build the macOS launchd plist XML that runs the given program arguments weekly at Sunday 10:00.
+ * A conservative PATH is set because launchd calendar jobs run with a minimal environment and the
+ * weekly job shells out to `git`. */
+export function buildLaunchAgentPlist(programArguments: string[]): string {
   const logDir = getLogDir();
+  const argsXml = programArguments.map((a) => `\t\t<string>${xmlEscape(a)}</string>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -72,9 +80,13 @@ export function buildLaunchAgentPlist(scriptPath: string): string {
 	<string>${PLIST_LABEL}</string>
 	<key>ProgramArguments</key>
 	<array>
-		<string>${scriptPath}</string>
-		<string>cron</string>
+${argsXml}
 	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
 	<key>StartCalendarInterval</key>
 	<dict>
 		<key>Weekday</key>
@@ -93,8 +105,9 @@ export function buildLaunchAgentPlist(scriptPath: string): string {
 `;
 }
 
-/** Install the macOS launchd agent to run `scriptPath cron` weekly. No-op on non-darwin (skipped result, never throws). */
-export async function installLaunchAgent(scriptPath: string): Promise<InstallResult> {
+/** Install the macOS launchd agent to run the given program arguments weekly. No-op on non-darwin
+ * (skipped result); a failed bootstrap throws. */
+export async function installLaunchAgent(programArguments: string[]): Promise<InstallResult> {
   if (process.platform !== "darwin") {
     return {
       installed: false,
@@ -104,14 +117,18 @@ export async function installLaunchAgent(scriptPath: string): Promise<InstallRes
   }
   const logDir = getLogDir();
   await fs.mkdir(logDir, { recursive: true });
-  const plist = buildLaunchAgentPlist(scriptPath);
+  const plist = buildLaunchAgentPlist(programArguments);
   await fs.mkdir(plistDir(), { recursive: true });
   await fs.writeFile(plistPath(), plist, "utf8");
   await $`launchctl bootout gui/${process.getuid?.() ?? 0}/${PLIST_LABEL}`.quiet().nothrow();
   const bootstrap = await $`launchctl bootstrap gui/${process.getuid?.() ?? 0} ${plistPath()}`
     .quiet()
     .nothrow();
-  if (bootstrap.exitCode !== 0) throw new Error(`launchctl bootstrap failed: ${bootstrap.text()}`);
+  if (bootstrap.exitCode !== 0) {
+    throw new Error(
+      `launchctl bootstrap failed: ${bootstrap.stderr.toString().trim() || bootstrap.text().trim()}`,
+    );
+  }
   return { installed: true, skipped: false };
 }
 

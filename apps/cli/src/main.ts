@@ -14,6 +14,7 @@ import {
   detectAll,
   getConfig,
   globalOnlyTokenEstimate,
+  installLaunchAgent,
   loadRules,
   openDb,
   planTriage,
@@ -46,6 +47,7 @@ const SUBCOMMANDS = [
   "doctor",
   "report",
   "cron",
+  "setup",
   "daemon",
   "ui",
   "hub",
@@ -66,6 +68,7 @@ function printHelp(write: Writer): void {
   write("  doctor              environment diagnosis (registry, link mode, clients)");
   write("  report              print a diagnostic summary and a prefilled GitHub issue URL");
   write("  cron                run a sync and check, logging the result");
+  write("  setup               install the weekly launch agent that runs cron");
   write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
@@ -386,6 +389,28 @@ export async function runCronCommand(
   }
 }
 
+// --- setup -----------------------------------------------------------------------
+
+/** Absolute `[execPath, script?, "cron"]` for the weekly launch agent. Unlike selfInvocation (used
+ * for same-cwd spawns) this resolves the script to an absolute path, because launchd calendar jobs
+ * run with cwd=/ where a relative script would never resolve. */
+function launchAgentProgramArguments(): string[] {
+  const scriptArg = process.argv[1];
+  const isCompiledBinary = scriptArg?.startsWith("/$bunfs/") ?? false;
+  if (isCompiledBinary) return [process.execPath, "cron"];
+  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), "cron"];
+}
+
+/** `skillkeep setup` — install (or refresh) the weekly launch agent that runs `cron`. */
+export async function runSetupCommand(write: Writer = report): Promise<void> {
+  const result = await installLaunchAgent(launchAgentProgramArguments());
+  if (result.skipped) {
+    write(`launch agent not installed: ${result.reason ?? "unsupported platform"}`);
+    return;
+  }
+  write("weekly launch agent installed — skillkeep will sync and self-check every Sunday at 10:00");
+}
+
 // --- daemon ----------------------------------------------------------------------
 
 /** Parsed `daemon` subcommand flags: `--mode agent|hub`, `--data <path>`, `--port <n>`. */
@@ -609,6 +634,10 @@ export async function main(
   }
   if (command === "ui") {
     await runUiCommand(write);
+    return;
+  }
+  if (command === "setup") {
+    await runSetupCommand(write);
     return;
   }
 
