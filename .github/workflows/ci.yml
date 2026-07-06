@@ -19,6 +19,8 @@ jobs:
           bun-version: latest
       - name: install
         run: bun install
+      - name: build ui
+        run: bun run --cwd packages/ui build
       - name: biome ci
         run: bunx biome ci .
       - name: test
