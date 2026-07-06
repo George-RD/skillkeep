@@ -45,6 +45,16 @@ bun apps/cli/src/main.ts scan   # find skills on your machine
 bun apps/cli/src/main.ts sync   # sync the managed ones
 ```
 
+## Keep it running
+
+`skillkeep ui` starts the daemon for one browser session; it stops when you close your terminal. To keep it running in the background and have it maintain itself:
+
+```sh
+bun apps/cli/src/main.ts setup   # installs a login service (macOS launchd) that keeps the daemon alive
+```
+
+By default the daemon runs a maintenance pass (sync + drift check) every 24 hours; the interval and full automation (pull, auto-triage, push) are configurable in Settings, or via `setup --auto`. Run `bun apps/cli/src/main.ts cron --auto` any time for a one-off pass, or `setup --remove` to uninstall the service.
+
 ## Compiled binary for CLI and daemon only
 
 You can also build a single compiled binary. It is useful for running `scan`, `sync`, and the API without needing the repo around. It does **not** include the web dashboard, because the dashboard is read from the `packages/ui` build files at runtime. `./skillkeep ui` from a compiled binary will show a "UI not built" page.
@@ -88,7 +98,17 @@ docker run -v /path/to/data:/data -e SKILLKEEP_TOKEN=<random-32-byte-token> -p 8
 
 [![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/new/template?template=https://github.com/George-RD/skillkeep)
 
-Set `SKILLKEEP_TOKEN` when prompted, mount the `/data` volume (the template does this for you), then point your local agents at the hub in Settings → Hub.
+Set `SKILLKEEP_TOKEN` when prompted, mount the `/data` volume (the template does this for you), then link your devices as below.
+
+### Link a device
+
+From each machine you want synced, either run:
+
+```sh
+bun apps/cli/src/main.ts connect http://<hub-host>:<port> --token <token> [--device <name>]
+```
+
+or open Settings → Hub in the dashboard and enter the same URL and token. `connect --remove` unlinks the device. Once linked, `cron --auto` (run manually or by the daemon's own scheduled maintenance — see "Keep it running" above) pushes this device's registry/usage snapshot to the hub and pulls back any skills that changed elsewhere.
 
 ## AI assist (bring your own key)
 
