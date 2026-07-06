@@ -94,6 +94,8 @@ beforeEach(() => {
     projects: {},
     hub: null,
     ai: null,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 });
 

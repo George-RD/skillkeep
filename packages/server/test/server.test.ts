@@ -96,6 +96,8 @@ beforeAll(async () => {
     projects: {},
     hub: null,
     ai: null,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
   const seedDb = openDb(path.join(dataDir, "skillkeep.db"));
   setConfig(seedDb, config);
