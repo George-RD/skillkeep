@@ -294,9 +294,10 @@ describe("report command against a redirected data dir", () => {
 describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
   test("sets process.exitCode = 1 when the maintenance pass reports a check finding", async () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cron-wrapper-test-"));
+    let db: Database | undefined;
     try {
       const dd = path.join(tmpDir, "data");
-      const db = openDb(path.join(dd, "skillkeep.db"));
+      db = openDb(path.join(dd, "skillkeep.db"));
       const registryRoot = path.join(tmpDir, "registry");
       fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
       execSync("git init", { cwd: registryRoot, stdio: "ignore" });
@@ -315,8 +316,8 @@ describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
       };
       await runCronCommand(db, config, () => {}, { dataDir: dd, platform: "linux" });
       expect(process.exitCode).toBe(1);
-      db.close();
     } finally {
+      db?.close();
       await rmrfRetry(tmpDir);
     }
   });

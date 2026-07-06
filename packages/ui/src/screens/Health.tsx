@@ -182,7 +182,14 @@ export function HealthScreen({ setScreen }: { setScreen: (screen: "detect") => v
     if (!a || !b) return;
     setDedupePendingId(rec.id);
     try {
-      const [contentA, contentB] = await Promise.all([getSkill(a), getSkill(b)]);
+      let contentA: { content: string };
+      let contentB: { content: string };
+      try {
+        [contentA, contentB] = await Promise.all([getSkill(a), getSkill(b)]);
+      } catch (e) {
+        toast.show(`Could not load skill content: ${errorMessage(e)}`, "error");
+        return;
+      }
       const contextA: AiSkillContext = {
         name: a,
         description: descriptionFor(registry.data ?? [], a),
@@ -193,15 +200,12 @@ export function HealthScreen({ setScreen }: { setScreen: (screen: "detect") => v
         description: descriptionFor(registry.data ?? [], b),
         body: contentB.content,
       };
-      dedupe.mutate(
-        { a: contextA, b: contextB },
-        {
-          onSuccess: (advice) => setDedupeAdvice((prev) => ({ ...prev, [rec.id]: advice })),
-          onError: (e) => toast.show(`Dedupe advice failed: ${errorMessage(e)}`, "error"),
-        },
-      );
-    } catch (e) {
-      toast.show(`Could not load skill content: ${errorMessage(e)}`, "error");
+      try {
+        const advice = await dedupe.mutateAsync({ a: contextA, b: contextB });
+        setDedupeAdvice((prev) => ({ ...prev, [rec.id]: advice }));
+      } catch (e) {
+        toast.show(`Dedupe advice failed: ${errorMessage(e)}`, "error");
+      }
     } finally {
       setDedupePendingId(null);
     }

@@ -107,6 +107,7 @@ export function useArchiveMutation() {
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ["registry"] });
       qc.invalidateQueries({ queryKey: ["scan"] });
+      qc.invalidateQueries({ queryKey: queryKeys.recommendations });
     },
   });
 }

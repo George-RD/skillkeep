@@ -66,10 +66,10 @@ function xmlEscape(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
-/** Build the macOS launchd plist XML that runs the given program arguments weekly at Sunday 10:00.
- * A conservative PATH is set because launchd calendar jobs run with a minimal environment and the
- * weekly job shells out to `git`. */
-export function buildLaunchAgentPlist(programArguments: string[]): string {
+/** Shared plist XML scaffold for both schedule variants (weekly cron vs always-on daemon);
+ * `scheduleXml` supplies the schedule-specific keys (StartCalendarInterval vs RunAtLoad+KeepAlive)
+ * inserted between the common EnvironmentVariables block and the StandardOut/ErrorPath keys. */
+function buildPlistXml(programArguments: string[], scheduleXml: string): string {
   const logDir = getLogDir();
   const argsXml = programArguments.map((a) => `\t\t<string>${xmlEscape(a)}</string>`).join("\n");
   return `<?xml version="1.0" encoding="UTF-8"?>
@@ -87,15 +87,7 @@ ${argsXml}
 		<key>PATH</key>
 		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
 	</dict>
-	<key>StartCalendarInterval</key>
-	<dict>
-		<key>Weekday</key>
-		<integer>0</integer>
-		<key>Hour</key>
-		<integer>10</integer>
-		<key>Minute</key>
-		<integer>0</integer>
-	</dict>
+${scheduleXml}
 	<key>StandardOutPath</key>
 	<string>${path.join(logDir, "skillkeep.log")}</string>
 	<key>StandardErrorPath</key>
@@ -105,37 +97,34 @@ ${argsXml}
 `;
 }
 
+/** Build the macOS launchd plist XML that runs the given program arguments weekly at Sunday 10:00.
+ * A conservative PATH is set because launchd calendar jobs run with a minimal environment and the
+ * weekly job shells out to `git`. */
+export function buildLaunchAgentPlist(programArguments: string[]): string {
+  return buildPlistXml(
+    programArguments,
+    `\t<key>StartCalendarInterval</key>
+\t<dict>
+\t\t<key>Weekday</key>
+\t\t<integer>0</integer>
+\t\t<key>Hour</key>
+\t\t<integer>10</integer>
+\t\t<key>Minute</key>
+\t\t<integer>0</integer>
+\t</dict>`,
+  );
+}
+
 /** Build the macOS launchd plist XML that keeps the given program running continuously
  * (RunAtLoad + KeepAlive), used for `skillkeep daemon` instead of the weekly `cron` schedule. */
 export function buildDaemonLaunchAgentPlist(programArguments: string[]): string {
-  const logDir = getLogDir();
-  const argsXml = programArguments.map((a) => `\t\t<string>${xmlEscape(a)}</string>`).join("\n");
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>Label</key>
-	<string>${PLIST_LABEL}</string>
-	<key>ProgramArguments</key>
-	<array>
-${argsXml}
-	</array>
-	<key>EnvironmentVariables</key>
-	<dict>
-		<key>PATH</key>
-		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
-	</dict>
-	<key>RunAtLoad</key>
-	<true/>
-	<key>KeepAlive</key>
-	<true/>
-	<key>StandardOutPath</key>
-	<string>${path.join(logDir, "skillkeep.log")}</string>
-	<key>StandardErrorPath</key>
-	<string>${path.join(logDir, "skillkeep.log")}</string>
-</dict>
-</plist>
-`;
+  return buildPlistXml(
+    programArguments,
+    `\t<key>RunAtLoad</key>
+\t<true/>
+\t<key>KeepAlive</key>
+\t<true/>`,
+  );
 }
 
 /** Install the macOS launchd agent to run the given program arguments (weekly cron by default,
