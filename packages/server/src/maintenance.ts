@@ -7,6 +7,7 @@ import {
   type CheckFinding,
   type Config,
   dataDir,
+  getConfig,
   gitPullFf,
   gitPush,
   loadRules,
@@ -184,4 +185,82 @@ export async function runMaintenancePass(
   };
   setJsonSetting(db, "lastMaintenance", result);
   return result;
+}
+
+/** One millisecond per hour, named so `maintenanceIntervalHours * MS_PER_HOUR` reads as intended
+ * at both call sites (the scheduler's interval and its tests). */
+const MS_PER_HOUR = 3_600_000;
+
+export interface MaintenanceSchedulerDeps {
+  /** Injectable for tests: defaults to the real runMaintenancePass. */
+  runPass?: (db: Database, config: Config, deps?: MaintenanceDeps) => Promise<MaintenanceResult>;
+  /** Forwarded as-is to every pass (dataDir/exec/platform overrides for tests). `auto` is always
+   * taken from the freshly-read config instead, since Settings can flip it without a restart. */
+  passDeps?: Omit<MaintenanceDeps, "auto">;
+  /** Called after each completed pass (used to broadcast the `maintenance` SSE event). */
+  onTick?: (result: MaintenanceResult) => void;
+}
+
+export interface MaintenanceScheduler {
+  /** Run one pass immediately, skipped if a previous tick is still in flight. Exposed for tests;
+   * the running interval calls this on the same cadence. */
+  tick: () => Promise<void>;
+  /** Stop the interval. Any in-flight tick is left to run -- await `waitForIdle()` afterward
+   * before tearing down anything the tick depends on (e.g. the db handle). */
+  stop: () => void;
+  /** Resolves once any currently in-flight tick finishes; already resolved if none is running.
+   * Callers (startServer's close()) must await this after `stop()` and before closing the db --
+   * otherwise a tick still inside runMaintenancePass can have its db handle closed out from under
+   * it mid-write (the same shutdown race `inFlightRescan` guards against for the usage rescan). */
+  waitForIdle: () => Promise<void>;
+}
+
+/**
+ * Agent-mode-only daemon scheduler: re-reads Config on every tick (so a Settings change to
+ * `autoMaintenance` takes effect on the next tick without a restart) and runs one maintenance
+ * pass, skipping the tick entirely if the previous one hasn't finished yet. No pass runs at
+ * startup — the first one fires after one full `intervalMs`.
+ */
+export function startMaintenanceScheduler(
+  db: Database,
+  intervalMs: number,
+  deps: MaintenanceSchedulerDeps = {},
+): MaintenanceScheduler {
+  const runPass = deps.runPass ?? runMaintenancePass;
+  let running = false;
+  let inFlight: Promise<void> = Promise.resolve();
+
+  function tick(): Promise<void> {
+    if (running) return Promise.resolve();
+    running = true;
+    inFlight = (async () => {
+      try {
+        const config = getConfig(db);
+        const result = await runPass(db, config, {
+          ...deps.passDeps,
+          auto: config.autoMaintenance,
+        });
+        deps.onTick?.(result);
+      } finally {
+        running = false;
+      }
+    })();
+    return inFlight;
+  }
+
+  const timer = setInterval(() => {
+    void tick();
+  }, intervalMs);
+
+  return {
+    tick,
+    stop: () => clearInterval(timer),
+    waitForIdle: () => inFlight,
+  };
+}
+
+/** Hours-to-milliseconds conversion for `Config.maintenanceIntervalHours`, named so the scheduler
+ * wiring and its tests share one source of truth for the unit. */
+export function maintenanceIntervalMs(hours: number): number {
+  return hours * MS_PER_HOUR;
 }

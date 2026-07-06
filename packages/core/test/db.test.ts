@@ -59,6 +59,19 @@ test("config round-trips through setConfig/getConfig", () => {
   expect(loaded).toEqual(config);
 });
 
+test("getConfig fills in maintenanceIntervalHours/autoMaintenance defaults for a config persisted before those fields existed", () => {
+  const db = openDb(":memory:");
+  const { maintenanceIntervalHours, autoMaintenance, ...preExisting } = defaultConfig();
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(
+    "config",
+    JSON.stringify(preExisting),
+  );
+  const loaded = getConfig(db);
+  expect(loaded.maintenanceIntervalHours).toBe(24);
+  expect(loaded.autoMaintenance).toBe(false);
+  expect(loaded.registryRoot).toBe(preExisting.registryRoot);
+});
+
 test("recordAdoption inserts an auditable row", () => {
   const db: Database = openDb(":memory:");
   recordAdoption(db, "my-skill", "global", "/source/path");

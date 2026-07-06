@@ -340,6 +340,8 @@ async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
     projects: config.projects,
     hub: config.hub ? { url: config.hub.url, device: config.hub.device } : null,
     ai: config.ai,
+    maintenanceIntervalHours: config.maintenanceIntervalHours,
+    autoMaintenance: config.autoMaintenance,
     linkModeProbe,
   });
 }
@@ -452,6 +454,30 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
   }
   const current = getConfig(ctx.db);
 
+  const { maintenanceIntervalHours: rawInterval, autoMaintenance: rawAuto } = body;
+  let maintenanceIntervalHours = current.maintenanceIntervalHours;
+  if (rawInterval !== undefined) {
+    if (
+      typeof rawInterval !== "number" ||
+      !Number.isInteger(rawInterval) ||
+      rawInterval < 1 ||
+      rawInterval > 168
+    ) {
+      return jsonResponse(
+        { error: "maintenanceIntervalHours must be an integer between 1 and 168" },
+        422,
+      );
+    }
+    maintenanceIntervalHours = rawInterval;
+  }
+  let autoMaintenance = current.autoMaintenance;
+  if (rawAuto !== undefined) {
+    if (typeof rawAuto !== "boolean") {
+      return jsonResponse({ error: "autoMaintenance must be a boolean" }, 422);
+    }
+    autoMaintenance = rawAuto;
+  }
+
   // Hub link: accepts { url, token, device } or null. An empty/absent token preserves the existing
   // one (the UI's password field is never populated on load, so re-saving must not blank it).
   let hub: Config["hub"] = null;
@@ -498,6 +524,8 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     projects: parsedProjects.projects ?? current.projects,
     hub,
     ai: parsedAi.ai,
+    maintenanceIntervalHours,
+    autoMaintenance,
   };
   setConfig(ctx.db, merged);
   resetScanCache();

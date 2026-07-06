@@ -19,6 +19,8 @@ export function toInput(d: Settings): SettingsInput {
     inboxDirs: [...d.inboxDirs],
     hub: d.hub ? { url: d.hub.url, token: "", device: d.hub.device } : null,
     ai: d.ai ? { provider: d.ai.provider, model: d.ai.model } : null,
+    maintenanceIntervalHours: d.maintenanceIntervalHours,
+    autoMaintenance: d.autoMaintenance,
   };
 }
 
@@ -200,6 +202,30 @@ export function SettingsScreen() {
           placeholder="~/.omp/agent/managed-skills"
           onChange={(next) => update({ inboxDirs: next })}
         />
+      </Field>
+
+      <Field label="Maintenance">
+        <div className="flex flex-col gap-2">
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs text-slate-500">Hours between daemon passes (1–168)</span>
+            <input
+              type="number"
+              min={1}
+              max={168}
+              className="w-24 rounded border border-slate-300 px-2 py-1 text-sm"
+              value={form.maintenanceIntervalHours}
+              onChange={(e) => update({ maintenanceIntervalHours: Number(e.target.value) || 1 })}
+            />
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.autoMaintenance}
+              onChange={(e) => update({ autoMaintenance: e.target.checked })}
+            />
+            Passes also pull, auto-triage, and push (mirrors <code>cron --auto</code>)
+          </label>
+        </div>
       </Field>
 
       <Field label="Hub sync">

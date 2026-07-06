@@ -57,6 +57,8 @@ function settingsWith(ai: AiLink | null): Settings {
     inboxDirs: [],
     hub: null,
     ai,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 }
 

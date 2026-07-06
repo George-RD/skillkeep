@@ -563,6 +563,92 @@ describe("GET/PUT /api/settings", () => {
     const afterBody = (await after.json()) as { projects: Record<string, unknown> };
     expect(afterBody.projects).toEqual(beforeBody.projects);
   });
+
+  test("GET reflects maintenanceIntervalHours/autoMaintenance defaults", async () => {
+    const res = await get("/api/settings");
+    const body = (await res.json()) as {
+      maintenanceIntervalHours: number;
+      autoMaintenance: boolean;
+    };
+    expect(body.maintenanceIntervalHours).toBe(24);
+    expect(body.autoMaintenance).toBe(false);
+  });
+
+  test("PUT rejects an out-of-range or non-integer maintenanceIntervalHours with 422", async () => {
+    for (const bad of [0, 169, 1.5, "24", null]) {
+      const res = await send("PUT", "/api/settings", {
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: [],
+        repoClients: [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        maintenanceIntervalHours: bad,
+      });
+      expect(res.status).toBe(422);
+    }
+  });
+
+  test("PUT rejects a non-boolean autoMaintenance with 422", async () => {
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+      autoMaintenance: "yes",
+    });
+    expect(res.status).toBe(422);
+  });
+
+  test("PUT persists valid maintenanceIntervalHours/autoMaintenance and round-trips via GET", async () => {
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+      maintenanceIntervalHours: 6,
+      autoMaintenance: true,
+    });
+    expect(res.status).toBe(200);
+
+    const after = await get("/api/settings");
+    const body = (await after.json()) as {
+      maintenanceIntervalHours: number;
+      autoMaintenance: boolean;
+    };
+    expect(body.maintenanceIntervalHours).toBe(6);
+    expect(body.autoMaintenance).toBe(true);
+  });
+
+  test("PUT omitting maintenanceIntervalHours/autoMaintenance preserves the existing values", async () => {
+    const before = await get("/api/settings");
+    const beforeBody = (await before.json()) as {
+      maintenanceIntervalHours: number;
+      autoMaintenance: boolean;
+    };
+
+    const res = await send("PUT", "/api/settings", {
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+    });
+    expect(res.status).toBe(200);
+
+    const after = await get("/api/settings");
+    const afterBody = (await after.json()) as {
+      maintenanceIntervalHours: number;
+      autoMaintenance: boolean;
+    };
+    expect(afterBody.maintenanceIntervalHours).toBe(beforeBody.maintenanceIntervalHours);
+    expect(afterBody.autoMaintenance).toBe(beforeBody.autoMaintenance);
+  });
 });
 
 describe("GET/POST /api/ai/*", () => {

@@ -119,6 +119,8 @@ export function defaultConfig(dd: string = dataDir()): Config {
     projects: {},
     hub: null,
     ai: null,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 }
 
@@ -154,7 +156,7 @@ export function getConfig(db: Database): Config {
     | { value?: string }
     | undefined;
   if (row?.value) {
-    return JSON.parse(row.value) as Config;
+    return { ...defaultConfig(inferDataDirFromDb(db)), ...(JSON.parse(row.value) as Config) };
   }
   return defaultConfig(inferDataDirFromDb(db));
 }

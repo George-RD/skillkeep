@@ -123,6 +123,10 @@ export interface Settings {
   inboxDirs: string[];
   hub: HubSettings | null;
   ai: AiLink | null;
+  /** Hours between daemon maintenance passes (agent mode). */
+  maintenanceIntervalHours: number;
+  /** Maintenance passes also pull, auto-triage, and push (mirrors `cron --auto`). */
+  autoMaintenance: boolean;
   linkModeProbe?: LinkModeProbe;
 }
 

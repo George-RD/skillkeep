@@ -4,8 +4,13 @@ import { execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { type Config, getJsonSetting, openDb } from "@skillkeep/core";
-import { type MaintenanceResult, runMaintenancePass } from "../src/maintenance";
+import { type Config, getConfig, getJsonSetting, openDb, setConfig } from "@skillkeep/core";
+import { startServer } from "../src/index";
+import {
+  type MaintenanceResult,
+  runMaintenancePass,
+  startMaintenanceScheduler,
+} from "../src/maintenance";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -221,5 +226,184 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
     // The inbox remote must NOT publish the deletion when the registry never received the add.
     const inboxRemoteLog = execSync("git log --oneline", { cwd: inboxBare }).toString();
     expect(inboxRemoteLog).not.toContain("skill-triage: routed");
+  });
+});
+
+describe("startMaintenanceScheduler", () => {
+  let tmpDir: string;
+  let db: Database;
+
+  const fakeResult: MaintenanceResult = {
+    at: "2026-01-01T00:00:00.000Z",
+    syncOk: true,
+    findings: [],
+    routed: [],
+  };
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-scheduler-test-"));
+    db = openDb(path.join(tmpDir, "skillkeep.db"));
+  });
+
+  afterEach(() => {
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("tick() runs one pass against the freshly-read config and reports it via onTick", async () => {
+    const calls: unknown[][] = [];
+    let reported: MaintenanceResult | undefined;
+    const scheduler = startMaintenanceScheduler(db, 3_600_000, {
+      runPass: async (calledDb, calledConfig, deps) => {
+        calls.push([calledDb, calledConfig, deps]);
+        return fakeResult;
+      },
+      onTick: (result) => {
+        reported = result;
+      },
+    });
+    try {
+      await scheduler.tick();
+      expect(calls).toHaveLength(1);
+      expect(calls[0][0]).toBe(db);
+      expect(reported).toEqual(fakeResult);
+    } finally {
+      scheduler.stop();
+    }
+  });
+
+  test("a tick still in flight is skipped rather than run concurrently", async () => {
+    let calls = 0;
+    const gate = Promise.withResolvers<void>();
+    const scheduler = startMaintenanceScheduler(db, 3_600_000, {
+      runPass: async () => {
+        calls++;
+        await gate.promise;
+        return fakeResult;
+      },
+    });
+    try {
+      const first = scheduler.tick();
+      const second = scheduler.tick(); // fires while `first` is still awaiting the gate
+      gate.resolve();
+      await Promise.all([first, second]);
+      expect(calls).toBe(1);
+    } finally {
+      scheduler.stop();
+    }
+  });
+
+  // Exercises the real setInterval/clearInterval this scheduler wraps -- an integration test
+  // against the platform clock is unavoidable here since the behavior under test IS "does the
+  // interval keep firing". Kept to a tiny (10ms) period so it stays fast and non-flaky: waiting
+  // for the first real tick, then confirming several more interval periods produce no further
+  // calls once stopped.
+  test("stop() clears the interval so no further ticks run", async () => {
+    let calls = 0;
+    const firstTick = Promise.withResolvers<void>();
+    const scheduler = startMaintenanceScheduler(db, 10, {
+      runPass: async () => {
+        calls++;
+        firstTick.resolve();
+        return fakeResult;
+      },
+    });
+    await firstTick.promise;
+    scheduler.stop();
+    const callsAtStop = calls;
+    await Bun.sleep(50); // several would-be interval periods
+    expect(calls).toBe(callsAtStop);
+  });
+});
+
+// Integration coverage for startServer's own wiring (as opposed to startMaintenanceScheduler's
+// unit behavior above): proves the scheduler is actually created and ticking in agent mode, and
+// never created in hub mode. Uses startServer's maintenanceIntervalMsOverride test seam (mirrors
+// the existing usageRoots override) since production's real interval is hours-scale. Polls a
+// second read-only db connection for "lastMaintenance" rather than sleeping a guessed duration --
+// still a real clock (the thing under test), but bounded and self-terminating on first success.
+describe("startServer's maintenance scheduler wiring", () => {
+  async function pollLastMaintenance(
+    dbPath: string,
+    timeoutMs: number,
+  ): Promise<MaintenanceResult | null> {
+    const deadline = Date.now() + timeoutMs;
+    for (;;) {
+      const pollDb = openDb(dbPath);
+      const result = getJsonSetting<MaintenanceResult>(pollDb, "lastMaintenance");
+      pollDb.close();
+      if (result || Date.now() >= deadline) return result;
+      await Bun.sleep(15);
+    }
+  }
+
+  test("agent mode runs a maintenance pass on the overridden interval", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-scheduler-wiring-agent-"));
+    const registryRoot = path.join(dir, "registry");
+    fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
+    execSync("git init", { cwd: registryRoot, stdio: "ignore" });
+    // Seed a config with no repoRoots/clients/inboxDirs before boot -- defaultConfig()'s
+    // repoRoots is ["~/repos"] and inboxDirs may pick up this machine's real managed-skills dir;
+    // this test must never let runSync/runCheck walk this machine's real filesystem.
+    const seedDb = openDb(path.join(dir, "skillkeep.db"));
+    setConfig(seedDb, {
+      ...getConfig(seedDb),
+      registryRoot,
+      repoRoots: [],
+      globalClients: [],
+      repoClients: [],
+      inboxDirs: [],
+    });
+    seedDb.close();
+    const started = await startServer({
+      mode: "agent",
+      port: 0,
+      dataDir: dir,
+      maintenanceIntervalMsOverride: 15,
+      // This machine's real usage transcripts must never be walked by the boot-time rescan
+      // startServer also kicks off in agent mode -- mirrors server.test.ts's beforeAll.
+      usageRoots: {
+        claude: path.join(dir, "no-claude"),
+        codex: path.join(dir, "no-codex"),
+        opencode: path.join(dir, "no-opencode"),
+        gemini: path.join(dir, "no-gemini"),
+        omp: path.join(dir, "no-omp"),
+      },
+    });
+    try {
+      const result = await pollLastMaintenance(path.join(dir, "skillkeep.db"), 2000);
+      expect(result?.syncOk).toBe(true);
+    } finally {
+      await started.close();
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("hub mode never creates a maintenance scheduler", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-scheduler-wiring-hub-"));
+    const savedToken = process.env.SKILLKEEP_TOKEN;
+    process.env.SKILLKEEP_TOKEN = "scheduler-wiring-hub-token";
+    const started = await startServer({
+      mode: "hub",
+      port: 0,
+      dataDir: dir,
+      maintenanceIntervalMsOverride: 15,
+      usageRoots: {
+        claude: path.join(dir, "no-claude"),
+        codex: path.join(dir, "no-codex"),
+        opencode: path.join(dir, "no-opencode"),
+        gemini: path.join(dir, "no-gemini"),
+        omp: path.join(dir, "no-omp"),
+      },
+    });
+    try {
+      const result = await pollLastMaintenance(path.join(dir, "skillkeep.db"), 150);
+      expect(result).toBeNull();
+    } finally {
+      await started.close();
+      if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
+      else delete process.env.SKILLKEEP_TOKEN;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });
