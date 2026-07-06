@@ -105,9 +105,46 @@ ${argsXml}
 `;
 }
 
-/** Install the macOS launchd agent to run the given program arguments weekly. No-op on non-darwin
- * (skipped result); a failed bootstrap throws. */
-export async function installLaunchAgent(programArguments: string[]): Promise<InstallResult> {
+/** Build the macOS launchd plist XML that keeps the given program running continuously
+ * (RunAtLoad + KeepAlive), used for `skillkeep daemon` instead of the weekly `cron` schedule. */
+export function buildDaemonLaunchAgentPlist(programArguments: string[]): string {
+  const logDir = getLogDir();
+  const argsXml = programArguments.map((a) => `\t\t<string>${xmlEscape(a)}</string>`).join("\n");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>${PLIST_LABEL}</string>
+	<key>ProgramArguments</key>
+	<array>
+${argsXml}
+	</array>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>PATH</key>
+		<string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+	</dict>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<true/>
+	<key>StandardOutPath</key>
+	<string>${path.join(logDir, "skillkeep.log")}</string>
+	<key>StandardErrorPath</key>
+	<string>${path.join(logDir, "skillkeep.log")}</string>
+</dict>
+</plist>
+`;
+}
+
+/** Install the macOS launchd agent to run the given program arguments (weekly cron by default,
+ * or `buildDaemonLaunchAgentPlist` for the always-on daemon service). No-op on non-darwin (skipped
+ * result); a failed bootstrap throws. */
+export async function installLaunchAgent(
+  programArguments: string[],
+  buildPlist: (args: string[]) => string = buildLaunchAgentPlist,
+): Promise<InstallResult> {
   if (process.platform !== "darwin") {
     return {
       installed: false,
@@ -117,7 +154,7 @@ export async function installLaunchAgent(programArguments: string[]): Promise<In
   }
   const logDir = getLogDir();
   await fs.mkdir(logDir, { recursive: true });
-  const plist = buildLaunchAgentPlist(programArguments);
+  const plist = buildPlist(programArguments);
   await fs.mkdir(plistDir(), { recursive: true });
   await fs.writeFile(plistPath(), plist, "utf8");
   await $`launchctl bootout gui/${process.getuid?.() ?? 0}/${PLIST_LABEL}`.quiet().nothrow();
@@ -130,6 +167,21 @@ export async function installLaunchAgent(programArguments: string[]): Promise<In
     );
   }
   return { installed: true, skipped: false };
+}
+
+/** Unload and remove the launch agent installed by `installLaunchAgent`. No-op on non-darwin
+ * (skipped result). Never throws on the `launchctl bootout` step (the agent may not be loaded). */
+export async function removeLaunchAgent(): Promise<InstallResult> {
+  if (process.platform !== "darwin") {
+    return {
+      installed: false,
+      skipped: true,
+      reason: `launch agent not supported on ${process.platform}`,
+    };
+  }
+  await $`launchctl bootout gui/${process.getuid?.() ?? 0}/${PLIST_LABEL}`.quiet().nothrow();
+  await fs.rm(plistPath(), { force: true });
+  return { installed: false, skipped: false };
 }
 
 /** Diagnose environment: registry validity, launchd state (macOS), link-mode probe result, client dirs found. */

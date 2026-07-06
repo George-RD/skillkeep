@@ -6,6 +6,7 @@ import * as path from "node:path";
 import {
   adoptDetected,
   applyTriageMoves,
+  buildDaemonLaunchAgentPlist,
   buildDiagnosticMarkdown,
   buildIssueUrl,
   buildStatus,
@@ -18,6 +19,7 @@ import {
   loadRules,
   openDb,
   planTriage,
+  removeLaunchAgent,
   reportHasProblems,
   runCheck,
   runDoctor,
@@ -70,8 +72,11 @@ function printHelp(write: Writer): void {
   write("  check               drift/dangling-link/dead-config diagnostics");
   write("  doctor              environment diagnosis (registry, link mode, clients)");
   write("  report              print a diagnostic summary and a prefilled GitHub issue URL");
-  write("  cron [--auto]       run a sync and check (--auto also pulls, runs auto-triage, pushes)");
-  write("  setup [--auto]      install the weekly launch agent (--auto for full automation)");
+  write(
+    "  cron [--auto]       run one maintenance pass now (--auto also pulls, auto-triages, pushes)",
+  );
+  write("  setup [--auto]      install the always-on daemon service (--auto for full automation)");
+  write("  setup --remove      uninstall the daemon service");
   write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
@@ -345,27 +350,62 @@ export async function runCronCommand(
 
 // --- setup -----------------------------------------------------------------------
 
-/** Absolute `[execPath, script?, "cron"]` for the weekly launch agent. Unlike selfInvocation (used
- * for same-cwd spawns) this resolves the script to an absolute path, because launchd calendar jobs
+/** Absolute `[execPath, script?, "daemon"]` for the always-on launch agent. Unlike selfInvocation
+ * (used for same-cwd spawns) this resolves the script to an absolute path, because launchd jobs
  * run with cwd=/ where a relative script would never resolve. */
-function launchAgentProgramArguments(auto: boolean): string[] {
-  const cronArgs = auto ? ["cron", "--auto"] : ["cron"];
+function launchAgentProgramArguments(): string[] {
   const scriptArg = process.argv[1];
   const isCompiledBinary = scriptArg?.startsWith("/$bunfs/") ?? false;
-  if (isCompiledBinary) return [process.execPath, ...cronArgs];
-  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), ...cronArgs];
+  if (isCompiledBinary) return [process.execPath, "daemon"];
+  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), "daemon"];
 }
 
-/** `skillkeep setup [--auto]` — install (or refresh) the weekly launch agent. Bare runs `cron`
- * (sync + check); `--auto` runs `cron --auto` (also pull, auto-triage, and push). */
-export async function runSetupCommand(write: Writer = report, auto = false): Promise<void> {
-  const result = await installLaunchAgent(launchAgentProgramArguments(auto));
+/** Dependency injection point for `runSetupCommand` tests (avoids real `launchctl` calls). */
+export interface SetupDeps {
+  install?: typeof installLaunchAgent;
+  remove?: typeof removeLaunchAgent;
+}
+
+/** `skillkeep setup [--auto] [--remove]` — install (or refresh) the always-on launch agent that
+ * keeps `skillkeep daemon` running (RunAtLoad + KeepAlive) instead of a weekly schedule.
+ * `--auto` persists `autoMaintenance: true` so the daemon's internal maintenance passes also
+ * pull, auto-triage, and push (mirrors the old `cron --auto`). `--remove` unloads and deletes the
+ * agent instead of installing it. */
+export async function runSetupCommand(
+  db: Database,
+  config: Config,
+  write: Writer = report,
+  args: string[] = [],
+  deps?: SetupDeps,
+): Promise<void> {
+  const install = deps?.install ?? installLaunchAgent;
+  const remove = deps?.remove ?? removeLaunchAgent;
+
+  if (args.includes("--remove")) {
+    const result = await remove();
+    if (result.skipped) {
+      write(`launch agent not removed: ${result.reason ?? "unsupported platform"}`);
+      return;
+    }
+    write("launch agent removed — skillkeep will no longer start automatically");
+    return;
+  }
+
+  let effectiveConfig = config;
+  if (args.includes("--auto")) {
+    effectiveConfig = { ...config, autoMaintenance: true };
+    setConfig(db, effectiveConfig);
+  }
+
+  const result = await install(launchAgentProgramArguments(), buildDaemonLaunchAgentPlist);
   if (result.skipped) {
     write(`launch agent not installed: ${result.reason ?? "unsupported platform"}`);
     return;
   }
-  const does = auto ? "sync, auto-triage, and self-check" : "sync and self-check";
-  write(`weekly launch agent installed — skillkeep will ${does} every Sunday at 10:00`);
+  write(
+    "launch agent installed — it keeps the skillkeep daemon running; maintenance runs every " +
+      `${effectiveConfig.maintenanceIntervalHours} hours (see Settings to change)`,
+  );
 }
 
 // --- daemon ----------------------------------------------------------------------
@@ -702,10 +742,6 @@ export async function main(
     await runUiCommand(write);
     return;
   }
-  if (command === "setup") {
-    await runSetupCommand(write, rest.includes("--auto"));
-    return;
-  }
 
   if (!SUBCOMMANDS.includes(command)) {
     write(`unknown command: ${command}`);
@@ -757,6 +793,9 @@ export async function main(
       }
       break;
     }
+    case "setup":
+      await runSetupCommand(db, config, write, rest);
+      break;
     case "connect":
       await runConnectCommand(db, config, rest, write);
       break;

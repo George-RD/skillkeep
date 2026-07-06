@@ -15,6 +15,7 @@ import {
   runDoctorCommand,
   runReportCommand,
   runScanCommand,
+  runSetupCommand,
   runStatusCommand,
   runSyncCommand,
   runTriageCommand,
@@ -436,5 +437,76 @@ describe("connect command", () => {
     });
     await runConnectCommand(db, withHub, ["--remove"], () => {});
     expect(getConfig(db).hub).toBeNull();
+  });
+});
+
+describe("setup command", () => {
+  let tmpDir: string;
+  let dd: string;
+  let db: Database;
+  let config: Config;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-setup-test-"));
+    dd = path.join(tmpDir, "data");
+    db = openDb(path.join(dd, "skillkeep.db"));
+    config = getConfig(db);
+  });
+
+  afterEach(() => {
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("installs the daemon launch agent via the KeepAlive plist builder", async () => {
+    const installCalls: Array<{ args: string[]; plist: string }> = [];
+    await runSetupCommand(db, config, () => {}, [], {
+      install: async (args, buildPlist) => {
+        installCalls.push({ args, plist: buildPlist ? buildPlist(args) : "" });
+        return { installed: true, skipped: false };
+      },
+    });
+    expect(installCalls).toHaveLength(1);
+    expect(installCalls[0]?.args.at(-1)).toBe("daemon");
+    expect(installCalls[0]?.plist).toContain("<key>KeepAlive</key>");
+    expect(installCalls[0]?.plist).toContain("<key>RunAtLoad</key>");
+    expect(getConfig(db).autoMaintenance).toBe(false);
+  });
+
+  test("--auto persists autoMaintenance: true before installing", async () => {
+    let installedAfterPersist = false;
+    await runSetupCommand(db, config, () => {}, ["--auto"], {
+      install: async () => {
+        installedAfterPersist = getConfig(db).autoMaintenance === true;
+        return { installed: true, skipped: false };
+      },
+    });
+    expect(installedAfterPersist).toBe(true);
+    expect(getConfig(db).autoMaintenance).toBe(true);
+  });
+
+  test("--remove unloads and deletes the agent instead of installing", async () => {
+    let installCalled = false;
+    let removeCalled = false;
+    await runSetupCommand(db, config, () => {}, ["--remove"], {
+      install: async () => {
+        installCalled = true;
+        return { installed: true, skipped: false };
+      },
+      remove: async () => {
+        removeCalled = true;
+        return { installed: false, skipped: false };
+      },
+    });
+    expect(removeCalled).toBe(true);
+    expect(installCalled).toBe(false);
+  });
+
+  test("reports when the launch agent is unsupported on this platform", async () => {
+    const lines: string[] = [];
+    await runSetupCommand(db, config, (line) => lines.push(line), [], {
+      install: async () => ({ installed: false, skipped: true, reason: "unsupported platform" }),
+    });
+    expect(lines.some((l) => l.includes("not installed"))).toBe(true);
   });
 });
