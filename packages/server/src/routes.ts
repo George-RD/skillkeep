@@ -7,6 +7,7 @@ import * as path from "node:path";
 import {
   adoptDetectedBulk,
   archiveSkill,
+  buildRecommendations,
   buildStatus,
   CLIENT_DIRS,
   type ClientId,
@@ -15,16 +16,20 @@ import {
   type Detection,
   findInRegistry,
   getConfig,
+  getJsonSetting,
   globalOnlyTokenEstimate,
   hashSkillDir,
   loadRules,
   moveSkill,
   type ProjectConfig,
   queryUsageSummary,
+  RECOMMEND_WINDOW_DAYS,
   readSkillMeta,
   resolveLinkMode,
+  runCheck,
   runSync,
   scanRegistry,
+  scanSkillDirs,
   setConfig,
   symlinkProbe,
   tildeExpand,
@@ -302,6 +307,47 @@ async function handleUsageRescan(ctx: RouterContext): Promise<Response> {
   await runUsageIngest(ctx.db, { dataDir: ctx.dataDir });
   emit("usage:updated", {});
   return jsonResponse({ ok: true });
+}
+
+// --- /api/recommendations ---------------------------------------------------------
+
+/** Skill-hygiene dashboard data: recommendations plus enough context (findings, the usage
+ * window used, and the last maintenance-pass result) for the Health screen to render without a
+ * second round trip. Agent mode only -- a hub has no registry/inbox/check concept of its own. */
+async function handleRecommendations(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+
+  const to = new Date().toISOString().slice(0, 10);
+  const from = new Date(Date.now() - RECOMMEND_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [registry, usageRows, findings, globalTokens] = await Promise.all([
+    scanRegistry(config.registryRoot),
+    Promise.resolve(queryUsageSummary(ctx.db, "skill", from, to)),
+    runCheck(config),
+    globalOnlyTokenEstimate(config.registryRoot),
+  ]);
+  const usedSkillNames = new Set(usageRows.map((row) => row.key));
+
+  let inboxCount = 0;
+  for (const dir of config.inboxDirs) {
+    inboxCount += (await scanSkillDirs(tildeExpand(dir))).length;
+  }
+
+  const recommendations = buildRecommendations({
+    registry,
+    usedSkillNames,
+    inboxCount,
+    globalTokens,
+  });
+
+  return jsonResponse({
+    recommendations,
+    findings,
+    window: { from, to, days: RECOMMEND_WINDOW_DAYS },
+    lastMaintenance: getJsonSetting(ctx.db, "lastMaintenance"),
+  });
 }
 
 // --- /api/settings ---------------------------------------------------------------
@@ -858,7 +904,8 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
           if (
             (pathname === "/api/scan" && method === "GET") ||
             (pathname === "/api/adopt" && method === "POST") ||
-            (pathname === "/api/sync" && method === "POST")
+            (pathname === "/api/sync" && method === "POST") ||
+            (pathname === "/api/recommendations" && method === "GET")
           ) {
             return jsonResponse({ error: "not available in hub mode" }, 501);
           }
@@ -900,6 +947,9 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
         if (pathname === "/api/skill" && method === "PUT") return await handleSkillPut(ctx, req);
         if (pathname === "/api/sync" && method === "POST") return await handleSync(ctx, req);
         if (pathname === "/api/status" && method === "GET") return await handleStatus(ctx);
+        if (pathname === "/api/recommendations" && method === "GET") {
+          return await handleRecommendations(ctx);
+        }
         if (pathname === "/api/usage/summary" && method === "GET") {
           return handleUsageSummary(ctx, url);
         }

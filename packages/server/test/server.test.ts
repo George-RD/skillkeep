@@ -4,7 +4,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import type { Config } from "@skillkeep/core";
-import { openDb, setConfig } from "@skillkeep/core";
+import { openDb, setConfig, upsertSkillUsage } from "@skillkeep/core";
 import { startServer } from "../src/index";
 import { resetScanCache } from "../src/scan-cache";
 import { rmrfRetry } from "./test-utils";
@@ -711,5 +711,67 @@ describe("static UI", () => {
   test("an unknown asset path is 404", async () => {
     const res = await get("/assets/does-not-exist.js", { auth: false });
     expect(res.status).toBe(404);
+  });
+});
+
+describe("GET /api/recommendations", () => {
+  test("an unused global skill appears, a used one doesn't, and the inbox/token-cost context round-trips", async () => {
+    // Dedicated fixtures independent of the other describes' mutations: a used and an unused
+    // global skill, seeded fresh so this test never depends on move/archive ordering elsewhere.
+    makeSkillDir(
+      path.join(registryRoot, "skills", "global", "rec-used"),
+      "rec-used",
+      "has recorded usage",
+    );
+    makeSkillDir(
+      path.join(registryRoot, "skills", "global", "rec-unused"),
+      "rec-unused",
+      "never used",
+    );
+    const seedDb = openDb(path.join(dataDir, "skillkeep.db"));
+    const today = new Date().toISOString().slice(0, 10);
+    upsertSkillUsage(seedDb, today, "rec-used", "claude", null, "claude-sonnet-4-5");
+    seedDb.close();
+
+    const res = await get("/api/recommendations");
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as {
+      recommendations: { id: string; kind: string; skills: string[] }[];
+      findings: unknown[];
+      window: { from: string; to: string; days: number };
+      lastMaintenance: unknown;
+    };
+    expect(body.window).toEqual({
+      from: expect.any(String),
+      to: expect.any(String),
+      days: 60,
+    });
+    expect(body.lastMaintenance).toBeNull();
+    expect(Array.isArray(body.findings)).toBe(true);
+
+    const unusedIds = body.recommendations
+      .filter((r) => r.kind === "unused-skill")
+      .map((r) => r.id);
+    expect(unusedIds).toContain("unused:rec-unused");
+    expect(unusedIds).not.toContain("unused:rec-used");
+  });
+
+  test("returns 501 in hub mode", async () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-rec-hub-"));
+    const hubToken = "rec-hub-test-token";
+    const savedToken = process.env.SKILLKEEP_TOKEN;
+    process.env.SKILLKEEP_TOKEN = hubToken;
+    const started = await startServer({ mode: "hub", port: 0, dataDir: dir });
+    try {
+      const res = await fetch(`http://127.0.0.1:${started.port}/api/recommendations`, {
+        headers: { Authorization: `Bearer ${hubToken}` },
+      });
+      expect(res.status).toBe(501);
+    } finally {
+      await started.close();
+      if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
+      else delete process.env.SKILLKEEP_TOKEN;
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

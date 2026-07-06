@@ -23,6 +23,8 @@ export * from "./link";
 export * from "./match";
 // Platform paths, client-dir table, dataDir
 export * from "./paths";
+// Skill-hygiene recommendation engine (unused/duplicate/inbox/token-cost)
+export * from "./recommend";
 // Registry enumeration and scope validation
 export * from "./registry";
 // Diagnostic-report and issue-URL helpers
