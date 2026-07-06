@@ -67,6 +67,49 @@ export interface StatusReport {
   globalOnlyTokenEstimate: number;
 }
 
+/** One drift/dangling-link/dead-config/inbox issue, mirrors CheckFinding server-side. */
+export interface CheckFinding {
+  kind: string;
+  detail: string;
+}
+
+/** Outcome of an agent->hub sync performed as the last step of a maintenance pass. */
+export interface MaintenanceHubResult {
+  pushed: string[];
+  pulled: string[];
+  conflicts: string[];
+  error?: string;
+}
+
+/** The most recent runMaintenancePass() result, persisted under the "lastMaintenance" setting. */
+export interface MaintenanceResult {
+  at: string;
+  syncOk: boolean;
+  syncError?: string;
+  findings: CheckFinding[];
+  routed: string[];
+  pushed?: boolean;
+  hub?: MaintenanceHubResult;
+}
+
+/** One skill-hygiene suggestion surfaced on the Health screen. */
+export interface Recommendation {
+  id: string;
+  kind: "unused-skill" | "duplicate-pair" | "inbox-triage" | "token-cost";
+  title: string;
+  detail: string;
+  skills: string[];
+  scope?: string;
+  action: "archive" | "dedupe" | "triage" | "review";
+}
+
+export interface RecommendationsResponse {
+  recommendations: Recommendation[];
+  findings: CheckFinding[];
+  window: { from: string; to: string; days: number };
+  lastMaintenance: MaintenanceResult | null;
+}
+
 export type UsageGroup = "model" | "repo" | "client" | "skill";
 
 export interface UsageRow {

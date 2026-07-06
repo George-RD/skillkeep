@@ -5,12 +5,13 @@ import type { Health } from "./api/types";
 import { useHealth } from "./hooks/api";
 import { DetectScreen } from "./screens/Detect";
 import { DevicesScreen } from "./screens/Devices";
+import { HealthScreen } from "./screens/Health";
 import { RegistryScreen } from "./screens/Registry";
 import { SettingsScreen } from "./screens/Settings";
 import { SyncScreen } from "./screens/Sync";
 import { UsageScreen } from "./screens/Usage";
 
-export type ScreenId = "detect" | "registry" | "sync" | "usage" | "settings" | "devices";
+export type ScreenId = "health" | "detect" | "registry" | "sync" | "usage" | "settings" | "devices";
 
 interface NavItem {
   id: ScreenId;
@@ -20,6 +21,7 @@ interface NavItem {
 }
 
 const ALL_NAV: NavItem[] = [
+  { id: "health", label: "Health", restrict: "agent" },
   { id: "detect", label: "Detect", restrict: "agent" },
   { id: "registry", label: "Registry" },
   { id: "devices", label: "Devices", restrict: "hub" },
@@ -37,7 +39,7 @@ export function visibleNav(mode: Health["mode"] | undefined): NavItem[] {
 }
 
 export function App() {
-  const [screen, setScreen] = useState<ScreenId>("detect");
+  const [screen, setScreen] = useState<ScreenId>("health");
   const queryClient = useQueryClient();
   const health = useHealth();
   const mode = health.data?.mode;
@@ -70,6 +72,10 @@ export function App() {
     es.addEventListener("usage:updated", () =>
       queryClient.invalidateQueries({ queryKey: ["usage"] }),
     );
+    es.addEventListener("maintenance:done", () => {
+      queryClient.invalidateQueries({ queryKey: ["recommendations"] });
+      queryClient.invalidateQueries({ queryKey: ["status"] });
+    });
     return () => {
       es.close();
     };
@@ -102,6 +108,7 @@ export function App() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 py-6">
+        {screen === "health" && <HealthScreen setScreen={setScreen} />}
         {screen === "detect" && <DetectScreen />}
         {screen === "registry" && <RegistryScreen />}
         {screen === "sync" && <SyncScreen />}

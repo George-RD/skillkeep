@@ -3,6 +3,7 @@ import {
   getAiStatus,
   getDevices,
   getHealth,
+  getRecommendations,
   getRegistry,
   getScan,
   getSettings,
@@ -31,12 +32,17 @@ export const queryKeys = {
   status: ["status"] as const,
   settings: ["settings"] as const,
   devices: ["devices"] as const,
+  recommendations: ["recommendations"] as const,
   usage: (group: UsageGroup, from: string, to: string) => ["usage", group, from, to] as const,
   aiStatus: (provider: AiLink["provider"] | null) => ["aiStatus", provider] as const,
 };
 
 export function useHealth() {
   return useQuery({ queryKey: queryKeys.health, queryFn: getHealth, refetchInterval: 30_000 });
+}
+
+export function useRecommendations() {
+  return useQuery({ queryKey: queryKeys.recommendations, queryFn: getRecommendations });
 }
 
 export function useScan() {

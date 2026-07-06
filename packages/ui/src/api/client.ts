@@ -12,6 +12,7 @@ import type {
   HubPullResult,
   HubPushResult,
   OpResult,
+  RecommendationsResponse,
   RegistryScope,
   Settings,
   SettingsInput,
@@ -131,6 +132,9 @@ export const postSync = (dryRun: boolean): Promise<SyncReport> =>
   apiFetch<SyncReport>("/api/sync", { method: "POST", body: JSON.stringify({ dryRun }) });
 
 export const getStatus = (): Promise<StatusReport> => apiFetch<StatusReport>("/api/status");
+
+export const getRecommendations = (): Promise<RecommendationsResponse> =>
+  apiFetch<RecommendationsResponse>("/api/recommendations");
 
 export const getUsage = (group: UsageGroup, from: string, to: string): Promise<UsageSummary> =>
   apiFetch<UsageSummary>(`/api/usage/summary?group=${group}&from=${from}&to=${to}`);
