@@ -217,7 +217,9 @@ export function SettingsScreen() {
               onChange={(e) => {
                 const n = Number(e.target.value);
                 update({
-                  maintenanceIntervalHours: Number.isFinite(n) ? Math.min(168, Math.max(1, n)) : 1,
+                  maintenanceIntervalHours: Number.isFinite(n)
+                    ? Math.min(168, Math.max(1, Math.round(n)))
+                    : 1,
                 });
               }}
             />
