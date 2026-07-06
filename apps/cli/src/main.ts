@@ -1,11 +1,12 @@
 import type { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import {
   adoptDetected,
   applyTriageMoves,
-  buildCronLogLine,
+  buildDaemonLaunchAgentPlist,
   buildDiagnosticMarkdown,
   buildIssueUrl,
   buildStatus,
@@ -13,25 +14,26 @@ import {
   dataDir,
   detectAll,
   getConfig,
-  gitPullFf,
-  gitPush,
   globalOnlyTokenEstimate,
   installLaunchAgent,
   loadRules,
   openDb,
   planTriage,
+  removeLaunchAgent,
   reportHasProblems,
   runCheck,
   runDoctor,
   runSync,
-  type SyncReport,
+  setConfig,
   tildeExpand,
 } from "@skillkeep/core";
 import {
   DaemonAlreadyRunningError,
   DEFAULT_PORT,
+  type MaintenanceDeps,
   pullFromHub,
   pushToHub,
+  runMaintenancePass,
   startServer,
 } from "@skillkeep/server";
 import { version as SKILLKEEP_VERSION } from "../package.json";
@@ -53,6 +55,7 @@ const SUBCOMMANDS = [
   "daemon",
   "ui",
   "hub",
+  "connect",
 ];
 
 function printHelp(write: Writer): void {
@@ -69,12 +72,17 @@ function printHelp(write: Writer): void {
   write("  check               drift/dangling-link/dead-config diagnostics");
   write("  doctor              environment diagnosis (registry, link mode, clients)");
   write("  report              print a diagnostic summary and a prefilled GitHub issue URL");
-  write("  cron [--auto]       run a sync and check (--auto also pulls, runs auto-triage, pushes)");
-  write("  setup [--auto]      install the weekly launch agent (--auto for full automation)");
+  write(
+    "  cron [--auto]       run one maintenance pass now (--auto also pulls, auto-triages, pushes)",
+  );
+  write("  setup [--auto]      install the always-on daemon service (--auto for full automation)");
+  write("  setup --remove      uninstall the daemon service");
   write("  daemon [--mode agent|hub] [--data <path>] [--port <n>]  run the HTTP API");
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
   write("  hub pull            pull registry skills that changed on the hub");
+  write("  connect <url> [--token <t>] [--device <name>]  link this agent to a hub daemon");
+  write("  connect --remove    unlink this agent from its hub");
 }
 
 // --- status --------------------------------------------------------------------
@@ -316,153 +324,88 @@ export async function runReportCommand(
 
 // --- cron ------------------------------------------------------------------------
 
-export type NotifyExec = (cmd: string[]) => Promise<{ exitCode: number; stderr?: string }>;
-
-async function defaultNotifyExec(cmd: string[]): Promise<{ exitCode: number; stderr?: string }> {
-  try {
-    const proc = Bun.spawn({ cmd, stdio: ["ignore", "ignore", "ignore"] });
-    await proc.exited;
-    return { exitCode: proc.exitCode ?? 0 };
-  } catch {
-    return { exitCode: -1 };
-  }
-}
-
-export async function sendMacNotification(
-  message: string,
-  exec: NotifyExec = defaultNotifyExec,
-  platform: NodeJS.Platform = process.platform,
-): Promise<void> {
-  if (platform !== "darwin") return;
-  const title = "skillkeep";
-  const script = `display notification ${JSON.stringify(message)} with title ${JSON.stringify(title)}`;
-  try {
-    await exec(["osascript", "-e", script]);
-  } catch {
-    // swallow all notification errors
-  }
-}
-
 export interface CronDeps {
   dataDir?: string;
-  exec?: NotifyExec;
+  exec?: MaintenanceDeps["exec"];
   platform?: NodeJS.Platform;
   /** --auto: also git-pull, auto-triage rule-matched inbox skills, and push what this run committed. */
   auto?: boolean;
 }
 
+/** `skillkeep cron [--auto]` — run one maintenance pass now (thin wrapper: all the actual work
+ * lives in `runMaintenancePass`, shared with the agent-mode daemon's internal scheduler). Sets
+ * `process.exitCode = 1` on the same conditions as before extraction: sync failed or check
+ * findings exist. */
 export async function runCronCommand(
+  db: Database,
   config: Config,
   _write: Writer = report,
   deps?: CronDeps,
 ): Promise<void> {
-  const auto = deps?.auto ?? false;
-
-  // --auto: fast-forward the registry first (best-effort). A diverged history is not overwritten
-  // here — the non-force push below fails loudly instead.
-  if (auto) await gitPullFf(config.registryRoot);
-
-  let syncResult: SyncReport;
-  try {
-    syncResult = await runSync(config, { dryRun: false, prune: false });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    syncResult = { created: [], fixed: [], pruned: [], configReminders: [], errors: [message] };
-  }
-
-  const firstInbox = config.inboxDirs[0];
-  let routed: string[] = [];
-  if (auto && syncResult.errors.length === 0 && firstInbox) {
-    try {
-      const rules = await loadRules(config.registryRoot);
-      const plan = await planTriage(rules, config.inboxDirs);
-      const result = await applyTriageMoves(
-        config.registryRoot,
-        plan.filter((item) => item.scope),
-        tildeExpand(firstInbox),
-      );
-      routed = result.routed;
-    } catch (err) {
-      syncResult.errors.push(`triage failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  let findings: Awaited<ReturnType<typeof runCheck>> = [];
-  try {
-    findings = await runCheck(config);
-  } catch (err) {
-    syncResult.errors.push(`check failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // Publish only when this run routed something (routed > 0); the push advances the branch like
-  // skillctl's weekly job (any unrelated local commits ride along too), never force. Push the
-  // registry first and advance the inbox remote only if that succeeded — otherwise the inbox remote
-  // would publish the skill's *deletion* while the registry never received the routed skill, losing
-  // it for any other machine. Both advance together, or neither does; local commits survive the next
-  // run. A rejected non-ff push is recorded as a failure (logged + notified).
-  let pushed: boolean | undefined;
-  if (auto && routed.length > 0) {
-    const registryPush = await gitPush(config.registryRoot);
-    const inboxPush =
-      registryPush.ok && firstInbox
-        ? await gitPush(tildeExpand(firstInbox))
-        : { ok: true, message: "" };
-    pushed = registryPush.ok && inboxPush.ok;
-    if (!registryPush.ok) {
-      syncResult.errors.push(`registry push failed: ${registryPush.message.trim() || "rejected"}`);
-    } else if (!inboxPush.ok) {
-      syncResult.errors.push(`inbox push failed: ${inboxPush.message.trim() || "rejected"}`);
-    }
-  }
-
-  const syncFailed = syncResult.errors.length > 0;
-  const logLine = buildCronLogLine({
-    timestamp: new Date().toISOString(),
-    syncOk: !syncFailed,
-    syncError: syncResult.errors[0],
-    findings: findings.length,
-    routed: auto ? routed.length : undefined,
-    pushed: auto ? pushed : undefined,
-  });
-
-  const baseDir = deps?.dataDir ?? dataDir();
-  const logDir = path.join(baseDir, "logs");
-  await fs.mkdir(logDir, { recursive: true });
-  await fs.appendFile(path.join(logDir, "cron.log"), `${logLine}\n`, "utf8");
-
-  const platform = deps?.platform ?? process.platform;
-  if (platform === "darwin" && (syncFailed || findings.length > 0)) {
-    await sendMacNotification(logLine, deps?.exec, platform);
-  }
-
-  if (syncFailed || findings.length > 0) {
+  const result = await runMaintenancePass(db, config, deps);
+  if (!result.syncOk || result.findings.length > 0) {
     process.exitCode = 1;
   }
 }
 
 // --- setup -----------------------------------------------------------------------
 
-/** Absolute `[execPath, script?, "cron"]` for the weekly launch agent. Unlike selfInvocation (used
- * for same-cwd spawns) this resolves the script to an absolute path, because launchd calendar jobs
+/** Absolute `[execPath, script?, "daemon"]` for the always-on launch agent. Unlike selfInvocation
+ * (used for same-cwd spawns) this resolves the script to an absolute path, because launchd jobs
  * run with cwd=/ where a relative script would never resolve. */
-function launchAgentProgramArguments(auto: boolean): string[] {
-  const cronArgs = auto ? ["cron", "--auto"] : ["cron"];
+function launchAgentProgramArguments(): string[] {
   const scriptArg = process.argv[1];
   const isCompiledBinary = scriptArg?.startsWith("/$bunfs/") ?? false;
-  if (isCompiledBinary) return [process.execPath, ...cronArgs];
-  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), ...cronArgs];
+  if (isCompiledBinary) return [process.execPath, "daemon"];
+  return [process.execPath, path.resolve(scriptArg ?? import.meta.path), "daemon"];
 }
 
-/** `skillkeep setup [--auto]` — install (or refresh) the weekly launch agent. Bare runs `cron`
- * (sync + check); `--auto` runs `cron --auto` (also pull, auto-triage, and push). */
-export async function runSetupCommand(write: Writer = report, auto = false): Promise<void> {
-  const result = await installLaunchAgent(launchAgentProgramArguments(auto));
+/** Dependency injection point for `runSetupCommand` tests (avoids real `launchctl` calls). */
+export interface SetupDeps {
+  install?: typeof installLaunchAgent;
+  remove?: typeof removeLaunchAgent;
+}
+
+/** `skillkeep setup [--auto] [--remove]` — install (or refresh) the always-on launch agent that
+ * keeps `skillkeep daemon` running (RunAtLoad + KeepAlive) instead of a weekly schedule.
+ * `--auto` persists `autoMaintenance: true` so the daemon's internal maintenance passes also
+ * pull, auto-triage, and push (mirrors the old `cron --auto`). `--remove` unloads and deletes the
+ * agent instead of installing it. */
+export async function runSetupCommand(
+  db: Database,
+  config: Config,
+  write: Writer = report,
+  args: string[] = [],
+  deps?: SetupDeps,
+): Promise<void> {
+  const install = deps?.install ?? installLaunchAgent;
+  const remove = deps?.remove ?? removeLaunchAgent;
+
+  if (args.includes("--remove")) {
+    const result = await remove();
+    if (result.skipped) {
+      write(`launch agent not removed: ${result.reason ?? "unsupported platform"}`);
+      return;
+    }
+    write("launch agent removed — skillkeep will no longer start automatically");
+    return;
+  }
+
+  let effectiveConfig = config;
+  if (args.includes("--auto")) {
+    effectiveConfig = { ...config, autoMaintenance: true };
+    setConfig(db, effectiveConfig);
+  }
+
+  const result = await install(launchAgentProgramArguments(), buildDaemonLaunchAgentPlist);
   if (result.skipped) {
     write(`launch agent not installed: ${result.reason ?? "unsupported platform"}`);
     return;
   }
-  const does = auto ? "sync, auto-triage, and self-check" : "sync and self-check";
-  write(`weekly launch agent installed — skillkeep will ${does} every Sunday at 10:00`);
+  write(
+    "launch agent installed — it keeps the skillkeep daemon running; maintenance runs every " +
+      `${effectiveConfig.maintenanceIntervalHours} hours (see Settings to change)`,
+  );
 }
 
 // --- daemon ----------------------------------------------------------------------
@@ -669,6 +612,144 @@ export async function runHubPullCommand(config: Config, write: Writer = report):
   if (result.skillsPulled.length > 0) write(`skills pulled: ${result.skillsPulled.join(", ")}`);
 }
 
+// --- connect -----------------------------------------------------------------------
+
+interface ConnectArgs {
+  remove: boolean;
+  url?: string;
+  token?: string;
+  device?: string;
+  error?: string;
+}
+
+function parseConnectArgs(args: string[]): ConnectArgs {
+  if (args[0] === "--remove") return { remove: true };
+  let url: string | undefined;
+  let token: string | undefined;
+  let device: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--token") {
+      const value = args[++i];
+      if (!value || value.startsWith("--")) {
+        return { remove: false, error: "--token requires a value" };
+      }
+      token = value;
+    } else if (arg === "--device") {
+      const value = args[++i];
+      if (!value || value.startsWith("--")) {
+        return { remove: false, error: "--device requires a value" };
+      }
+      device = value;
+    } else if (!arg.startsWith("--") && url === undefined) {
+      url = arg;
+    } else if (arg.startsWith("--")) {
+      return { remove: false, error: `unknown option: ${arg}` };
+    }
+  }
+  return { remove: false, url, token, device };
+}
+
+/** Network timeout for both `connect` validation requests -- a stalled hub must never hang the
+ * command indefinitely. */
+const CONNECT_TIMEOUT_MS = 5000;
+
+/**
+ * `skillkeep connect <url> [--token <t>] [--device <name>]` — link this agent to a hub daemon.
+ * Validates the hub before persisting anything: an unauthenticated `GET /healthz` must report
+ * `mode: "hub"` (never a peer agent), then an authed `GET /api/v1/registry/manifest` must accept
+ * the token. Any failure leaves the existing config untouched. `skillkeep connect --remove`
+ * unlinks (sets `hub` to null) without contacting anything.
+ */
+export async function runConnectCommand(
+  db: Database,
+  config: Config,
+  args: string[],
+  write: Writer = report,
+): Promise<void> {
+  const parsed = parseConnectArgs(args);
+
+  if (parsed.error) {
+    write(parsed.error);
+    process.exitCode = 1;
+    return;
+  }
+
+  if (parsed.remove) {
+    setConfig(db, { ...config, hub: null });
+    write("hub sync disabled");
+    return;
+  }
+
+  if (!parsed.url) {
+    write("usage: skillkeep connect <url> [--token <t>] [--device <name>]");
+    write("       skillkeep connect --remove");
+    process.exitCode = 1;
+    return;
+  }
+  const url = parsed.url.replace(/\/+$/, "");
+
+  const token = parsed.token ?? process.env.SKILLKEEP_TOKEN;
+  if (!token) {
+    write("a token is required: pass --token <t> or set SKILLKEEP_TOKEN");
+    process.exitCode = 1;
+    return;
+  }
+
+  let healthzRes: Response;
+  try {
+    healthzRes = await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS) });
+  } catch (err) {
+    write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (!healthzRes.ok) {
+    write(`${url}/healthz returned ${healthzRes.status}`);
+    process.exitCode = 1;
+    return;
+  }
+  let health: { ok?: boolean; mode?: string };
+  try {
+    health = (await healthzRes.json()) as { ok?: boolean; mode?: string };
+  } catch {
+    write(`${url}/healthz did not return valid JSON`);
+    process.exitCode = 1;
+    return;
+  }
+  if (health.mode !== "hub") {
+    write(`that daemon is not a hub (mode: ${health.mode ?? "unknown"})`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let manifestRes: Response;
+  try {
+    manifestRes = await fetch(`${url}/api/v1/registry/manifest`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
+    });
+  } catch (err) {
+    write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (manifestRes.status === 401 || manifestRes.status === 403) {
+    write("hub token rejected");
+    process.exitCode = 1;
+    return;
+  }
+  if (!manifestRes.ok) {
+    write(`${url}/api/v1/registry/manifest returned ${manifestRes.status}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const device = parsed.device ?? os.hostname();
+  setConfig(db, { ...config, hub: { url, token, device } });
+  write(`connected to ${url} as "${device}"`);
+}
+
 // --- dispatch --------------------------------------------------------------------
 
 export async function main(
@@ -688,10 +769,6 @@ export async function main(
   }
   if (command === "ui") {
     await runUiCommand(write);
-    return;
-  }
-  if (command === "setup") {
-    await runSetupCommand(write, rest.includes("--auto"));
     return;
   }
 
@@ -731,7 +808,7 @@ export async function main(
       await runReportCommand(config, write);
       break;
     case "cron":
-      await runCronCommand(config, write, { auto: rest.includes("--auto") });
+      await runCronCommand(db, config, write, { auto: rest.includes("--auto") });
       break;
     case "hub": {
       const [subcommand] = rest;
@@ -745,6 +822,12 @@ export async function main(
       }
       break;
     }
+    case "setup":
+      await runSetupCommand(db, config, write, rest);
+      break;
+    case "connect":
+      await runConnectCommand(db, config, rest, write);
+      break;
   }
 }
 

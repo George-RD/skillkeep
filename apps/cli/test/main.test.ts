@@ -1,24 +1,28 @@
+import type { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { execSync } from "node:child_process";
 import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Config } from "@skillkeep/core";
+import { type Config, getConfig, openDb } from "@skillkeep/core";
 import {
   main,
   runAdoptCommand,
   runCheckCommand,
+  runConnectCommand,
   runCronCommand,
   runDoctorCommand,
   runReportCommand,
   runScanCommand,
+  runSetupCommand,
   runStatusCommand,
   runSyncCommand,
   runTriageCommand,
   waitForShutdownSignal,
   windowsSymlinkHint,
 } from "../src/main";
+import { rmrfRetry } from "./test-utils";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -99,11 +103,13 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(async () => {
+    await rmrfRetry(tmpDir);
   });
 
   test("scan reports counts per state without crashing", async () => {
@@ -231,11 +237,13 @@ describe("report command against a redirected data dir", () => {
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(async () => {
+    await rmrfRetry(tmpDir);
   });
 
   test("healthy config prints a summary and exits 0 without writing a report", async () => {
@@ -283,192 +291,272 @@ describe("report command against a redirected data dir", () => {
   });
 });
 
-describe("cron command against a redirected data dir", () => {
-  let tmpDir: string;
-  let dd: string;
-  let config: Config;
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cron-test-"));
-    dd = path.join(tmpDir, "data");
-
-    const registryRoot = path.join(tmpDir, "registry");
-    fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
-    execSync("git init", { cwd: registryRoot, stdio: "ignore" });
-
-    config = {
-      registryRoot,
-      repoRoots: [],
-      globalClients: [],
-      repoClients: [],
-      linkMode: "symlink",
-      inboxDirs: [],
-      projects: {},
-      hub: null,
-      ai: null,
-    };
-  });
-
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  test("logs ok and exits 0 when sync and check are clean", async () => {
-    const execCalls: string[][] = [];
-    await runCronCommand(config, () => {}, {
-      dataDir: dd,
-      platform: "linux",
-      exec: async (cmd) => {
-        execCalls.push(cmd);
-        return { exitCode: 0 };
-      },
-    });
-    expect(process.exitCode).toBe(0);
-    const logPath = path.join(dd, "logs", "cron.log");
-    expect(fs.existsSync(logPath)).toBe(true);
-    const log = fs.readFileSync(logPath, "utf8");
-    expect(log).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z sync ok check 0 finding\(s\)$/m,
-    );
-    expect(execCalls).toHaveLength(0);
-  });
-
-  test("logs failure, exits 1, and sends a macOS notification on darwin", async () => {
-    const configWithMissingRepo: Config = {
-      ...config,
-      projects: { missing: { repos: ["/does/not/exist"] } },
-    };
-    const execCalls: string[][] = [];
-    await runCronCommand(configWithMissingRepo, () => {}, {
-      dataDir: dd,
-      platform: "darwin",
-      exec: async (cmd) => {
-        execCalls.push(cmd);
-        return { exitCode: 0 };
-      },
-    });
-    expect(process.exitCode).toBe(1);
-    const logPath = path.join(dd, "logs", "cron.log");
-    expect(fs.existsSync(logPath)).toBe(true);
-    const log = fs.readFileSync(logPath, "utf8");
-    expect(log).toContain("sync failed");
-    expect(log).toContain("check 0 finding(s)");
-    expect(execCalls).toHaveLength(1);
-    expect(execCalls[0][0]).toBe("osascript");
+describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
+  test("sets process.exitCode = 1 when the maintenance pass reports a check finding", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cron-wrapper-test-"));
+    let db: Database | undefined;
+    try {
+      const dd = path.join(tmpDir, "data");
+      db = openDb(path.join(dd, "skillkeep.db"));
+      const registryRoot = path.join(tmpDir, "registry");
+      fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
+      execSync("git init", { cwd: registryRoot, stdio: "ignore" });
+      const config: Config = {
+        registryRoot,
+        repoRoots: [],
+        globalClients: [],
+        repoClients: [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        projects: { missing: { repos: ["/does/not/exist"] } },
+        hub: null,
+        ai: null,
+        maintenanceIntervalHours: 24,
+        autoMaintenance: false,
+      };
+      await runCronCommand(db, config, () => {}, { dataDir: dd, platform: "linux" });
+      expect(process.exitCode).toBe(1);
+    } finally {
+      db?.close();
+      await rmrfRetry(tmpDir);
+    }
   });
 });
 
-describe("cron --auto against temp git repos with remotes", () => {
+describe("connect command", () => {
   let tmpDir: string;
   let dd: string;
+  let db: Database;
   let config: Config;
-  let registryBare: string;
-  let inboxBare: string;
-  let inbox: string;
+  const originalFetch = globalThis.fetch;
 
-  const gitInit = (dir: string): void => {
-    execSync("git init -q", { cwd: dir });
-    execSync("git config user.email test@example.com", { cwd: dir });
-    execSync("git config user.name Test", { cwd: dir });
-    execSync("git config commit.gpgsign false", { cwd: dir });
-  };
+  function installFetchStub(
+    handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
+  ): void {
+    globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : String(input);
+      return Promise.resolve(handler(url, init));
+    }) as typeof fetch;
+  }
 
   beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cronauto-test-"));
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-connect-test-"));
     dd = path.join(tmpDir, "data");
-
-    const registryRoot = path.join(tmpDir, "registry");
-    fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
-    fs.writeFileSync(path.join(registryRoot, "rules.yml"), 'global:\n  - "auto-*"\n');
-    gitInit(registryRoot);
-    execSync("git add -A && git commit -q -m init", { cwd: registryRoot });
-    registryBare = path.join(tmpDir, "registry.git");
-    execSync(`git init -q --bare ${registryBare}`);
-    execSync(`git remote add origin ${registryBare}`, { cwd: registryRoot });
-    execSync("git push -q -u origin HEAD", { cwd: registryRoot });
-
-    inbox = path.join(tmpDir, "inbox");
-    makeSkillDir(path.join(inbox, "auto-me"), "auto-me", "routes to global");
-    gitInit(inbox);
-    execSync("git add -A && git commit -q -m init", { cwd: inbox });
-    inboxBare = path.join(tmpDir, "inbox.git");
-    execSync(`git init -q --bare ${inboxBare}`);
-    execSync(`git remote add origin ${inboxBare}`, { cwd: inbox });
-    execSync("git push -q -u origin HEAD", { cwd: inbox });
-
-    config = {
-      registryRoot,
-      repoRoots: [],
-      globalClients: [],
-      repoClients: [],
-      linkMode: "symlink",
-      inboxDirs: [inbox],
-      projects: {},
-      hub: null,
-      ai: null,
-    };
+    db = openDb(path.join(dd, "skillkeep.db"));
+    config = getConfig(db);
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(async () => {
+    globalThis.fetch = originalFetch;
+    db.close();
+    await rmrfRetry(tmpDir);
   });
 
-  test("routes a rule-matched inbox skill into the registry and pushes both repos", async () => {
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux", auto: true });
+  test("validates the hub, then persists the hub link", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "hub" }), { status: 200 });
+      }
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com/", "--token", "secret-token", "--device", "laptop"],
+      () => {},
+    );
 
     expect(process.exitCode).toBe(0);
-    expect(fs.existsSync(path.join(config.registryRoot, "skills", "global", "auto-me"))).toBe(true);
-    expect(fs.existsSync(path.join(inbox, "auto-me"))).toBe(false);
-
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("triage 1 routed");
-    expect(log).toContain("push ok");
-
-    const registryRemoteLog = execSync("git log --oneline", { cwd: registryBare }).toString();
-    expect(registryRemoteLog).toContain("triage: route");
-    const inboxRemoteLog = execSync("git log --oneline", { cwd: inboxBare }).toString();
-    expect(inboxRemoteLog).toContain("skill-triage: routed");
+    const persisted = getConfig(db);
+    expect(persisted.hub).toEqual({
+      url: "https://hub.example.com",
+      token: "secret-token",
+      device: "laptop",
+    });
   });
 
-  test("bare cron (no --auto) flags the inbox but never triages or pushes", async () => {
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux" });
+  test("rejects a daemon that isn't a hub, and leaves config untouched", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "agent" }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
 
-    // The non-empty inbox is a legitimate check finding (exit 1), but bare cron must not act on it.
-    expect(process.exitCode).toBe(1);
-    expect(fs.existsSync(path.join(inbox, "auto-me"))).toBe(true);
-    expect(fs.existsSync(path.join(config.registryRoot, "skills", "global", "auto-me"))).toBe(
-      false,
+    await runConnectCommand(
+      db,
+      config,
+      ["https://not-a-hub.example.com", "--token", "secret-token"],
+      () => {},
     );
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("check 1 finding(s)");
-    expect(log).not.toContain("triage");
-    expect(log).not.toContain("push");
-    const registryRemoteLog = execSync("git log --oneline", { cwd: registryBare }).toString();
-    expect(registryRemoteLog).not.toContain("triage: route");
+
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
   });
 
-  test("a rejected registry push skips the inbox push (no orphaned deletion)", async () => {
-    // Two-sided divergence so pull --ff-only can't advance and the push is rejected non-ff: the
-    // local registry gains an unpushed commit...
-    fs.writeFileSync(path.join(config.registryRoot, "LOCAL.md"), "local");
-    execSync("git add -A && git commit -q -m local", { cwd: config.registryRoot });
-    // ...while the remote advances independently via a second clone.
-    const clone = path.join(tmpDir, "regclone");
-    execSync(`git clone -q ${registryBare} ${clone}`);
-    execSync("git config user.email test@example.com", { cwd: clone });
-    execSync("git config user.name Test", { cwd: clone });
-    fs.writeFileSync(path.join(clone, "OTHER.md"), "diverge");
-    execSync("git add -A && git commit -q -m diverge && git push -q", { cwd: clone });
+  test("rejects a bad token, and leaves config untouched", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "hub" }), { status: 200 });
+      }
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
 
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux", auto: true });
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "wrong-token"],
+      () => {},
+    );
 
-    // Registry push rejected -> recorded failure -> exit 1.
     expect(process.exitCode).toBe(1);
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("registry push failed");
-    expect(log).toContain("push failed");
-    // The inbox remote must NOT publish the deletion when the registry never received the add.
-    const inboxRemoteLog = execSync("git log --oneline", { cwd: inboxBare }).toString();
-    expect(inboxRemoteLog).not.toContain("skill-triage: routed");
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("requires a token (flag or SKILLKEEP_TOKEN) before contacting anything", async () => {
+    const savedToken = process.env.SKILLKEEP_TOKEN;
+    delete process.env.SKILLKEEP_TOKEN;
+    installFetchStub(() => {
+      throw new Error("must not be called without a token");
+    });
+    try {
+      await runConnectCommand(db, config, ["https://hub.example.com"], () => {});
+      expect(process.exitCode).toBe(1);
+      expect(getConfig(db).hub).toBeNull();
+    } finally {
+      if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
+    }
+  });
+
+  test("--remove unlinks without contacting anything", async () => {
+    const withHub: Config = {
+      ...config,
+      hub: { url: "https://hub.example.com", token: "t", device: "d" },
+    };
+    installFetchStub(() => {
+      throw new Error("must not be called by --remove");
+    });
+    await runConnectCommand(db, withHub, ["--remove"], () => {});
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("rejects --token followed by another flag instead of misreading it as the token", async () => {
+    installFetchStub(() => {
+      throw new Error("must not contact the network on a parse error");
+    });
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "--device", "laptop"],
+      () => {},
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("rejects an unknown flag instead of silently ignoring it", async () => {
+    installFetchStub(() => {
+      throw new Error("must not contact the network on a parse error");
+    });
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "t", "--bogus"],
+      () => {},
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("fails cleanly (not a thrown exception) when /healthz returns invalid JSON", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) return new Response("not json", { status: 200 });
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const lines: string[] = [];
+    await runConnectCommand(db, config, ["https://hub.example.com", "--token", "t"], (line) =>
+      lines.push(line),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+    expect(lines.some((l) => l.includes("valid JSON"))).toBe(true);
+  });
+});
+
+describe("setup command", () => {
+  let tmpDir: string;
+  let dd: string;
+  let db: Database;
+  let config: Config;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-setup-test-"));
+    dd = path.join(tmpDir, "data");
+    db = openDb(path.join(dd, "skillkeep.db"));
+    config = getConfig(db);
+  });
+
+  afterEach(async () => {
+    db.close();
+    await rmrfRetry(tmpDir);
+  });
+
+  test("installs the daemon launch agent via the KeepAlive plist builder", async () => {
+    const installCalls: Array<{ args: string[]; plist: string }> = [];
+    await runSetupCommand(db, config, () => {}, [], {
+      install: async (args, buildPlist) => {
+        installCalls.push({ args, plist: buildPlist ? buildPlist(args) : "" });
+        return { installed: true, skipped: false };
+      },
+    });
+    expect(installCalls).toHaveLength(1);
+    expect(installCalls[0]?.args.at(-1)).toBe("daemon");
+    expect(installCalls[0]?.plist).toContain("<key>KeepAlive</key>");
+    expect(installCalls[0]?.plist).toContain("<key>RunAtLoad</key>");
+    expect(getConfig(db).autoMaintenance).toBe(false);
+  });
+
+  test("--auto persists autoMaintenance: true before installing", async () => {
+    let installedAfterPersist = false;
+    await runSetupCommand(db, config, () => {}, ["--auto"], {
+      install: async () => {
+        installedAfterPersist = getConfig(db).autoMaintenance === true;
+        return { installed: true, skipped: false };
+      },
+    });
+    expect(installedAfterPersist).toBe(true);
+    expect(getConfig(db).autoMaintenance).toBe(true);
+  });
+
+  test("--remove unloads and deletes the agent instead of installing", async () => {
+    let installCalled = false;
+    let removeCalled = false;
+    await runSetupCommand(db, config, () => {}, ["--remove"], {
+      install: async () => {
+        installCalled = true;
+        return { installed: true, skipped: false };
+      },
+      remove: async () => {
+        removeCalled = true;
+        return { installed: false, skipped: false };
+      },
+    });
+    expect(removeCalled).toBe(true);
+    expect(installCalled).toBe(false);
+  });
+
+  test("reports when the launch agent is unsupported on this platform", async () => {
+    const lines: string[] = [];
+    await runSetupCommand(db, config, (line) => lines.push(line), [], {
+      install: async () => ({ installed: false, skipped: true, reason: "unsupported platform" }),
+    });
+    expect(lines.some((l) => l.includes("not installed"))).toBe(true);
   });
 });

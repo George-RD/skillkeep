@@ -7,6 +7,7 @@ import * as path from "node:path";
 import {
   adoptDetectedBulk,
   archiveSkill,
+  buildRecommendations,
   buildStatus,
   CLIENT_DIRS,
   type ClientId,
@@ -15,16 +16,20 @@ import {
   type Detection,
   findInRegistry,
   getConfig,
+  getJsonSetting,
   globalOnlyTokenEstimate,
   hashSkillDir,
   loadRules,
   moveSkill,
   type ProjectConfig,
   queryUsageSummary,
+  RECOMMEND_WINDOW_DAYS,
   readSkillMeta,
   resolveLinkMode,
+  runCheck,
   runSync,
   scanRegistry,
+  scanSkillDirs,
   setConfig,
   symlinkProbe,
   tildeExpand,
@@ -62,7 +67,7 @@ export interface RouterContext {
   version: string;
   mode: "agent" | "hub";
 }
-const UI_DIST_DIR = path.join(import.meta.dir, "../../ui/dist");
+const UI_DIST_DIR = process.env.SKILLKEEP_UI_DIST ?? path.join(import.meta.dir, "../../ui/dist");
 const ALL_CLIENT_IDS = Object.keys(CLIENT_DIRS) as ClientId[];
 
 function jsonResponse(body: unknown, status = 200): Response {
@@ -304,6 +309,47 @@ async function handleUsageRescan(ctx: RouterContext): Promise<Response> {
   return jsonResponse({ ok: true });
 }
 
+// --- /api/recommendations ---------------------------------------------------------
+
+/** Skill-hygiene dashboard data: recommendations plus enough context (findings, the usage
+ * window used, and the last maintenance-pass result) for the Health screen to render without a
+ * second round trip. Agent mode only -- a hub has no registry/inbox/check concept of its own. */
+async function handleRecommendations(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+
+  const to = new Date().toISOString().slice(0, 10);
+  const from = new Date(Date.now() - RECOMMEND_WINDOW_DAYS * 24 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  const [registry, usageRows, findings, globalTokens] = await Promise.all([
+    scanRegistry(config.registryRoot),
+    Promise.resolve(queryUsageSummary(ctx.db, "skill", from, to)),
+    runCheck(config),
+    globalOnlyTokenEstimate(config.registryRoot),
+  ]);
+  const usedSkillNames = new Set(usageRows.map((row) => row.key));
+
+  let inboxCount = 0;
+  for (const dir of config.inboxDirs) {
+    inboxCount += (await scanSkillDirs(tildeExpand(dir))).length;
+  }
+
+  const recommendations = buildRecommendations({
+    registry,
+    usedSkillNames,
+    inboxCount,
+    globalTokens,
+  });
+
+  return jsonResponse({
+    recommendations,
+    findings,
+    window: { from, to, days: RECOMMEND_WINDOW_DAYS },
+    lastMaintenance: getJsonSetting(ctx.db, "lastMaintenance"),
+  });
+}
+
 // --- /api/settings ---------------------------------------------------------------
 
 async function buildLinkModeProbe(
@@ -340,6 +386,8 @@ async function handleSettingsGet(ctx: RouterContext): Promise<Response> {
     projects: config.projects,
     hub: config.hub ? { url: config.hub.url, device: config.hub.device } : null,
     ai: config.ai,
+    maintenanceIntervalHours: config.maintenanceIntervalHours,
+    autoMaintenance: config.autoMaintenance,
     linkModeProbe,
   });
 }
@@ -452,6 +500,30 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
   }
   const current = getConfig(ctx.db);
 
+  const { maintenanceIntervalHours: rawInterval, autoMaintenance: rawAuto } = body;
+  let maintenanceIntervalHours = current.maintenanceIntervalHours;
+  if (rawInterval !== undefined) {
+    if (
+      typeof rawInterval !== "number" ||
+      !Number.isInteger(rawInterval) ||
+      rawInterval < 1 ||
+      rawInterval > 168
+    ) {
+      return jsonResponse(
+        { error: "maintenanceIntervalHours must be an integer between 1 and 168" },
+        422,
+      );
+    }
+    maintenanceIntervalHours = rawInterval;
+  }
+  let autoMaintenance = current.autoMaintenance;
+  if (rawAuto !== undefined) {
+    if (typeof rawAuto !== "boolean") {
+      return jsonResponse({ error: "autoMaintenance must be a boolean" }, 422);
+    }
+    autoMaintenance = rawAuto;
+  }
+
   // Hub link: accepts { url, token, device } or null. An empty/absent token preserves the existing
   // one (the UI's password field is never populated on load, so re-saving must not blank it).
   let hub: Config["hub"] = null;
@@ -498,6 +570,8 @@ async function handleSettingsPut(ctx: RouterContext, req: Request): Promise<Resp
     projects: parsedProjects.projects ?? current.projects,
     hub,
     ai: parsedAi.ai,
+    maintenanceIntervalHours,
+    autoMaintenance,
   };
   setConfig(ctx.db, merged);
   resetScanCache();
@@ -830,7 +904,8 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
           if (
             (pathname === "/api/scan" && method === "GET") ||
             (pathname === "/api/adopt" && method === "POST") ||
-            (pathname === "/api/sync" && method === "POST")
+            (pathname === "/api/sync" && method === "POST") ||
+            (pathname === "/api/recommendations" && method === "GET")
           ) {
             return jsonResponse({ error: "not available in hub mode" }, 501);
           }
@@ -872,6 +947,9 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
         if (pathname === "/api/skill" && method === "PUT") return await handleSkillPut(ctx, req);
         if (pathname === "/api/sync" && method === "POST") return await handleSync(ctx, req);
         if (pathname === "/api/status" && method === "GET") return await handleStatus(ctx);
+        if (pathname === "/api/recommendations" && method === "GET") {
+          return await handleRecommendations(ctx);
+        }
         if (pathname === "/api/usage/summary" && method === "GET") {
           return handleUsageSummary(ctx, url);
         }

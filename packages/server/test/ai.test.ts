@@ -27,6 +27,8 @@ function baseConfig(ai: AiLink | null): Config {
     projects: {},
     hub: null,
     ai,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 }
 

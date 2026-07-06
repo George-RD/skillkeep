@@ -11,6 +11,8 @@ const baseSettings: Settings = {
   inboxDirs: ["/inbox"],
   hub: null,
   ai: null,
+  maintenanceIntervalHours: 24,
+  autoMaintenance: false,
 };
 
 describe("toInput", () => {

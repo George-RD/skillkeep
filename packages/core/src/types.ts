@@ -40,6 +40,10 @@ export interface Config {
    * of this shape — it is resolved per-request server-side from a header or env var, and is never
    * persisted to SQLite, config, or logs. See packages/server/src/ai.ts. */
   ai: AiLink | null;
+  /** Hours between daemon maintenance passes (agent mode). */
+  maintenanceIntervalHours: number;
+  /** Maintenance passes also pull, auto-triage, and push (mirrors cron --auto). */
+  autoMaintenance: boolean;
 }
 
 /** Agent→hub link: where to push/pull registry skills and usage from this device. */

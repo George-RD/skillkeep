@@ -119,6 +119,8 @@ export function defaultConfig(dd: string = dataDir()): Config {
     projects: {},
     hub: null,
     ai: null,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 }
 
@@ -154,7 +156,7 @@ export function getConfig(db: Database): Config {
     | { value?: string }
     | undefined;
   if (row?.value) {
-    return JSON.parse(row.value) as Config;
+    return { ...defaultConfig(inferDataDirFromDb(db)), ...(JSON.parse(row.value) as Config) };
   }
   return defaultConfig(inferDataDirFromDb(db));
 }
@@ -164,6 +166,27 @@ export function setConfig(db: Database, config: Config): void {
   db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(
     "config",
     JSON.stringify(config),
+  );
+}
+
+/** Read a JSON-valued settings-table entry by key (e.g. "lastMaintenance"), or null if absent/unparseable. */
+export function getJsonSetting<T>(db: Database, key: string): T | null {
+  const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key) as
+    | { value?: string }
+    | undefined;
+  if (!row?.value) return null;
+  try {
+    return JSON.parse(row.value) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** Persist any JSON-serializable value under an arbitrary settings-table key. */
+export function setJsonSetting(db: Database, key: string, value: unknown): void {
+  db.prepare("INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)").run(
+    key,
+    JSON.stringify(value),
   );
 }
 

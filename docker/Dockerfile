@@ -20,6 +20,8 @@ FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out/skillkeep /usr/local/bin/skillkeep
+COPY --from=build /src/packages/ui/dist /usr/local/share/skillkeep/ui
+ENV SKILLKEEP_UI_DIST=/usr/local/share/skillkeep/ui
 VOLUME /data
 # Default bind port for a plain `docker run` (matches EXPOSE + the healthcheck below); Railway
 # overrides PORT at container runtime, and the daemon/healthcheck both honour that override too.

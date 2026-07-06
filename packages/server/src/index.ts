@@ -5,11 +5,24 @@ import type { Server } from "bun";
 import { ensureToken } from "./auth";
 import { createDrainingHandler } from "./drain";
 import { emit } from "./events";
+import { type MaintenanceScheduler, startMaintenanceScheduler } from "./maintenance";
 import { bindServer } from "./port";
 import { createRouter } from "./routes";
 import { runUsageIngest } from "./usage-ingest";
 
 export { type PullResult, type PushResult, pullFromHub, pushToHub } from "./hub-link";
+export {
+  type MaintenanceDeps,
+  type MaintenanceHubResult,
+  type MaintenanceResult,
+  type MaintenanceScheduler,
+  type MaintenanceSchedulerDeps,
+  maintenanceIntervalMs,
+  type NotifyExec,
+  runMaintenancePass,
+  sendMacNotification,
+  startMaintenanceScheduler,
+} from "./maintenance";
 export { DaemonAlreadyRunningError, DEFAULT_PORT } from "./port";
 export type { ManifestEntry } from "./registry-sync";
 
@@ -64,6 +77,9 @@ export async function startServer(opts: {
   port?: number;
   dataDir?: string;
   usageRoots?: Partial<Record<ClientId, string>>;
+  /** Test-only override for the maintenance scheduler's tick interval; production always derives
+   * it from `Config.maintenanceIntervalHours`. */
+  maintenanceIntervalMsOverride?: number;
 }): Promise<StartedServer> {
   const resolvedDataDir = opts.dataDir ?? dataDir();
   // Resolve the token before opening the db: in hub mode, requireHubToken() throws
@@ -90,6 +106,7 @@ export async function startServer(opts: {
 
   let rescanTimer: Timer | undefined;
   let inFlightRescan: Promise<void> = Promise.resolve();
+  let maintenanceScheduler: MaintenanceScheduler | undefined;
   if (opts.mode === "agent") {
     const rescan = () => {
       inFlightRescan = runUsageIngest(db, { dataDir: resolvedDataDir, roots: opts.usageRoots })
@@ -99,6 +116,11 @@ export async function startServer(opts: {
     };
     void rescan();
     rescanTimer = setInterval(rescan, USAGE_RESCAN_INTERVAL_MS);
+
+    maintenanceScheduler = startMaintenanceScheduler(db, opts.maintenanceIntervalMsOverride, {
+      passDeps: { dataDir: resolvedDataDir },
+      onTick: (result) => emit("maintenance:done", result),
+    });
   }
 
   return {
@@ -107,13 +129,15 @@ export async function startServer(opts: {
     port,
     close: async () => {
       // Stop accepting new requests first, then let whichever ones are already in flight
-      // finish (including a boot-time `rescan()` still walking usage roots) before closing the
-      // db handle out from under them -- exactly the kind of self-inflicted race that made the
-      // Windows EBUSY-on-cleanup bug in server.test.ts/usage-ingest.test.ts intermittent rather
-      // than deterministic.
+      // finish (including a boot-time `rescan()` still walking usage roots, and any maintenance
+      // pass mid-tick) before closing the db handle out from under them -- exactly the kind of
+      // self-inflicted race that made the Windows EBUSY-on-cleanup bug in
+      // server.test.ts/usage-ingest.test.ts intermittent rather than deterministic.
       draining.beginClose();
       clearInterval(rescanTimer);
+      maintenanceScheduler?.stop();
       await inFlightRescan;
+      await maintenanceScheduler?.waitForIdle();
       await draining.drain();
       server.stop(true);
       db.close();

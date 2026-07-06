@@ -17,6 +17,8 @@ function settingsWith(hub: Settings["hub"], ai: Settings["ai"] = null): Settings
     inboxDirs: [],
     hub,
     ai,
+    maintenanceIntervalHours: 24,
+    autoMaintenance: false,
   };
 }
 
