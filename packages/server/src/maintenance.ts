@@ -95,8 +95,15 @@ export async function runMaintenancePass(
   const auto = deps?.auto ?? false;
 
   // --auto: fast-forward the registry first (best-effort). A diverged history is not overwritten
-  // here — the non-force push below fails loudly instead.
-  if (auto) await gitPullFf(config.registryRoot);
+  // here — the non-force push below fails loudly instead. A genuinely unexpected failure (e.g. a
+  // missing/non-git registryRoot) must not abort sync/check below, so this stays best-effort too.
+  if (auto) {
+    try {
+      await gitPullFf(config.registryRoot);
+    } catch {
+      // Swallowed by design — see comment above.
+    }
+  }
 
   let syncResult: SyncReport;
   try {
@@ -238,19 +245,23 @@ export interface MaintenanceScheduler {
 }
 
 /**
- * Agent-mode-only daemon scheduler: re-reads Config on every tick (so a Settings change to
- * `autoMaintenance` takes effect on the next tick without a restart) and runs one maintenance
- * pass, skipping the tick entirely if the previous one hasn't finished yet. No pass runs at
- * startup — the first one fires after one full `intervalMs`.
+ * Agent-mode-only daemon scheduler: re-reads Config before every tick and before scheduling the
+ * next one, so a Settings change to `autoMaintenance` *or* `maintenanceIntervalHours` takes effect
+ * without a restart (unless `intervalMs` is given, which always wins — used by tests that need a
+ * deterministic fast cadence regardless of what's persisted in `db`). Skips a tick entirely if the
+ * previous one hasn't finished yet. No pass runs at startup — the first one fires after one full
+ * interval.
  */
 export function startMaintenanceScheduler(
   db: Database,
-  intervalMs: number,
+  intervalMs: number | undefined,
   deps: MaintenanceSchedulerDeps = {},
 ): MaintenanceScheduler {
   const runPass = deps.runPass ?? runMaintenancePass;
   let running = false;
+  let stopped = false;
   let inFlight: Promise<void> = Promise.resolve();
+  let timer: Timer | undefined;
 
   function tick(): Promise<void> {
     if (running) return Promise.resolve();
@@ -263,6 +274,11 @@ export function startMaintenanceScheduler(
           auto: config.autoMaintenance,
         });
         deps.onTick?.(result);
+      } catch {
+        // Keep the daemon scheduler alive on an unexpected throw (getConfig/onTick). Expected
+        // maintenance-step failures are already captured inside runMaintenancePass itself, so
+        // this only guards against a genuinely unhandled rejection escaping `void tick()` below
+        // and breaking waitForIdle()'s shutdown await.
       } finally {
         running = false;
       }
@@ -270,13 +286,21 @@ export function startMaintenanceScheduler(
     return inFlight;
   }
 
-  const timer = setInterval(() => {
-    void tick();
-  }, intervalMs);
+  function scheduleNext(): void {
+    if (stopped) return;
+    const nextMs = intervalMs ?? maintenanceIntervalMs(getConfig(db).maintenanceIntervalHours);
+    timer = setTimeout(() => {
+      void tick().finally(scheduleNext);
+    }, nextMs);
+  }
+  scheduleNext();
 
   return {
     tick,
-    stop: () => clearInterval(timer),
+    stop: () => {
+      stopped = true;
+      clearTimeout(timer);
+    },
     waitForIdle: () => inFlight,
   };
 }

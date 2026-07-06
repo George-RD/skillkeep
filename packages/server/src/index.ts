@@ -1,15 +1,11 @@
 import * as path from "node:path";
-import { dataDir, getConfig, openDb } from "@skillkeep/core";
+import { dataDir, openDb } from "@skillkeep/core";
 import type { ClientId } from "@skillkeep/usage";
 import type { Server } from "bun";
 import { ensureToken } from "./auth";
 import { createDrainingHandler } from "./drain";
 import { emit } from "./events";
-import {
-  type MaintenanceScheduler,
-  maintenanceIntervalMs,
-  startMaintenanceScheduler,
-} from "./maintenance";
+import { type MaintenanceScheduler, startMaintenanceScheduler } from "./maintenance";
 import { bindServer } from "./port";
 import { createRouter } from "./routes";
 import { runUsageIngest } from "./usage-ingest";
@@ -121,10 +117,7 @@ export async function startServer(opts: {
     void rescan();
     rescanTimer = setInterval(rescan, USAGE_RESCAN_INTERVAL_MS);
 
-    const intervalMs =
-      opts.maintenanceIntervalMsOverride ??
-      maintenanceIntervalMs(getConfig(db).maintenanceIntervalHours);
-    maintenanceScheduler = startMaintenanceScheduler(db, intervalMs, {
+    maintenanceScheduler = startMaintenanceScheduler(db, opts.maintenanceIntervalMsOverride, {
       passDeps: { dataDir: resolvedDataDir },
       onTick: (result) => emit("maintenance:done", result),
     });

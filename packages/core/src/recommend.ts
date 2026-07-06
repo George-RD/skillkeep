@@ -84,7 +84,7 @@ export function buildRecommendations(input: RecommendInput): Recommendation[] {
     recommendations.push({
       id: `unused:${name}`,
       kind: "unused-skill",
-      title: `"${name}" unused for ${RECOMMEND_WINDOW_DAYS}+ days`,
+      title: `"${name}" has no usage in the last ${RECOMMEND_WINDOW_DAYS} days`,
       detail: `No recorded usage in the last ${RECOMMEND_WINDOW_DAYS} days; it still costs tokens every session. Consider archiving it.`,
       skills: [name],
       scope: "global",

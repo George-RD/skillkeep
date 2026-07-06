@@ -619,6 +619,7 @@ interface ConnectArgs {
   url?: string;
   token?: string;
   device?: string;
+  error?: string;
 }
 
 function parseConnectArgs(args: string[]): ConnectArgs {
@@ -629,15 +630,29 @@ function parseConnectArgs(args: string[]): ConnectArgs {
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === "--token") {
-      token = args[++i];
+      const value = args[++i];
+      if (!value || value.startsWith("--")) {
+        return { remove: false, error: "--token requires a value" };
+      }
+      token = value;
     } else if (arg === "--device") {
-      device = args[++i];
+      const value = args[++i];
+      if (!value || value.startsWith("--")) {
+        return { remove: false, error: "--device requires a value" };
+      }
+      device = value;
     } else if (!arg.startsWith("--") && url === undefined) {
       url = arg;
+    } else if (arg.startsWith("--")) {
+      return { remove: false, error: `unknown option: ${arg}` };
     }
   }
   return { remove: false, url, token, device };
 }
+
+/** Network timeout for both `connect` validation requests -- a stalled hub must never hang the
+ * command indefinitely. */
+const CONNECT_TIMEOUT_MS = 5000;
 
 /**
  * `skillkeep connect <url> [--token <t>] [--device <name>]` — link this agent to a hub daemon.
@@ -653,6 +668,12 @@ export async function runConnectCommand(
   write: Writer = report,
 ): Promise<void> {
   const parsed = parseConnectArgs(args);
+
+  if (parsed.error) {
+    write(parsed.error);
+    process.exitCode = 1;
+    return;
+  }
 
   if (parsed.remove) {
     setConfig(db, { ...config, hub: null });
@@ -677,7 +698,7 @@ export async function runConnectCommand(
 
   let healthzRes: Response;
   try {
-    healthzRes = await fetch(`${url}/healthz`);
+    healthzRes = await fetch(`${url}/healthz`, { signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS) });
   } catch (err) {
     write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
     process.exitCode = 1;
@@ -688,7 +709,14 @@ export async function runConnectCommand(
     process.exitCode = 1;
     return;
   }
-  const health = (await healthzRes.json()) as { ok?: boolean; mode?: string };
+  let health: { ok?: boolean; mode?: string };
+  try {
+    health = (await healthzRes.json()) as { ok?: boolean; mode?: string };
+  } catch {
+    write(`${url}/healthz did not return valid JSON`);
+    process.exitCode = 1;
+    return;
+  }
   if (health.mode !== "hub") {
     write(`that daemon is not a hub (mode: ${health.mode ?? "unknown"})`);
     process.exitCode = 1;
@@ -699,6 +727,7 @@ export async function runConnectCommand(
   try {
     manifestRes = await fetch(`${url}/api/v1/registry/manifest`, {
       headers: { Authorization: `Bearer ${token}` },
+      signal: AbortSignal.timeout(CONNECT_TIMEOUT_MS),
     });
   } catch (err) {
     write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);

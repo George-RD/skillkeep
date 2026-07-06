@@ -214,7 +214,12 @@ export function SettingsScreen() {
               max={168}
               className="w-24 rounded border border-slate-300 px-2 py-1 text-sm"
               value={form.maintenanceIntervalHours}
-              onChange={(e) => update({ maintenanceIntervalHours: Number(e.target.value) || 1 })}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                update({
+                  maintenanceIntervalHours: Number.isFinite(n) ? Math.min(168, Math.max(1, n)) : 1,
+                });
+              }}
             />
           </label>
           <label className="flex items-center gap-2 text-sm">

@@ -75,6 +75,8 @@ export function App() {
     es.addEventListener("maintenance:done", () => {
       queryClient.invalidateQueries({ queryKey: ["recommendations"] });
       queryClient.invalidateQueries({ queryKey: ["status"] });
+      queryClient.invalidateQueries({ queryKey: ["scan"] });
+      queryClient.invalidateQueries({ queryKey: ["registry"] });
     });
     return () => {
       es.close();

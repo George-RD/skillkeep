@@ -64,7 +64,7 @@ describe("buildRecommendations", () => {
           skills: ["idle-skill"],
         }),
       ]);
-      expect(recs[0].title).toContain(`${RECOMMEND_WINDOW_DAYS}+`);
+      expect(recs[0].title).toContain(`${RECOMMEND_WINDOW_DAYS} days`);
     });
 
     test("never flags a used global skill", () => {

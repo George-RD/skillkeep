@@ -50,7 +50,7 @@ const fixtureResponse: RecommendationsResponse = {
     {
       id: "unused:idle-skill",
       kind: "unused-skill",
-      title: '"idle-skill" unused for 60+ days',
+      title: '"idle-skill" has no usage in the last 60 days',
       detail: "No recorded usage in the last 60 days.",
       skills: ["idle-skill"],
       scope: "global",
@@ -98,7 +98,7 @@ describe("HealthScreen", () => {
     expect(html).toContain("Duplicate");
     expect(html).toContain("Token cost");
     expect(html).toContain("2 skill(s) awaiting triage");
-    expect(html).toContain("&quot;idle-skill&quot; unused for 60+ days");
+    expect(html).toContain("&quot;idle-skill&quot; has no usage in the last 60 days");
     expect(html).toContain("&quot;deploy&quot; and &quot;deploy-legacy&quot; look similar");
     expect(html).toContain("Always-on token cost is high");
   });

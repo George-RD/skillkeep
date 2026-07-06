@@ -1,6 +1,6 @@
 import type { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-import { execSync } from "node:child_process";
+import { execFileSync, execSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -46,6 +46,8 @@ describe("runMaintenancePass against a redirected data dir", () => {
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
@@ -142,6 +144,8 @@ describe("runMaintenancePass hub sync step", () => {
       projects: {},
       hub: { url: "https://hub.example.com", token: "hub-test-token", device: "test-device" },
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
@@ -250,8 +254,8 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
     gitInit(registryRoot);
     execSync("git add -A && git commit -q -m init", { cwd: registryRoot });
     registryBare = path.join(tmpDir, "registry.git");
-    execSync(`git init -q --bare ${registryBare}`);
-    execSync(`git remote add origin ${registryBare}`, { cwd: registryRoot });
+    execFileSync("git", ["init", "-q", "--bare", registryBare]);
+    execFileSync("git", ["remote", "add", "origin", registryBare], { cwd: registryRoot });
     execSync("git push -q -u origin HEAD", { cwd: registryRoot });
 
     inbox = path.join(tmpDir, "inbox");
@@ -259,8 +263,8 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
     gitInit(inbox);
     execSync("git add -A && git commit -q -m init", { cwd: inbox });
     inboxBare = path.join(tmpDir, "inbox.git");
-    execSync(`git init -q --bare ${inboxBare}`);
-    execSync(`git remote add origin ${inboxBare}`, { cwd: inbox });
+    execFileSync("git", ["init", "-q", "--bare", inboxBare]);
+    execFileSync("git", ["remote", "add", "origin", inboxBare], { cwd: inbox });
     execSync("git push -q -u origin HEAD", { cwd: inbox });
 
     config = {
@@ -273,6 +277,8 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
@@ -328,7 +334,7 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
     execSync("git add -A && git commit -q -m local", { cwd: config.registryRoot });
     // ...while the remote advances independently via a second clone.
     const clone = path.join(tmpDir, "regclone");
-    execSync(`git clone -q ${registryBare} ${clone}`);
+    execFileSync("git", ["clone", "-q", registryBare, clone]);
     execSync("git config user.email test@example.com", { cwd: clone });
     execSync("git config user.name Test", { cwd: clone });
     fs.writeFileSync(path.join(clone, "OTHER.md"), "diverge");
@@ -409,6 +415,48 @@ describe("startMaintenanceScheduler", () => {
       gate.resolve();
       await Promise.all([first, second]);
       expect(calls).toBe(1);
+    } finally {
+      scheduler.stop();
+    }
+  });
+
+  test("tick() swallows a thrown error instead of leaving a rejected promise, keeping the scheduler alive", async () => {
+    const scheduler = startMaintenanceScheduler(db, 3_600_000, {
+      runPass: async () => {
+        throw new Error("boom");
+      },
+    });
+    try {
+      await expect(scheduler.tick()).resolves.toBeUndefined();
+      await expect(scheduler.waitForIdle()).resolves.toBeUndefined();
+    } finally {
+      scheduler.stop();
+    }
+  });
+
+  // Exercises the real setTimeout chain this scheduler self-reschedules through -- an
+  // integration test against the platform clock is unavoidable here since the behavior under
+  // test IS "does the next reschedule pick up a live config change". Kept to tiny (~10ms/24h)
+  // periods so the assertion window stays short and non-flaky.
+  test("self-reschedules from live config: a maintenanceIntervalHours change takes effect without a restart", async () => {
+    setConfig(db, { ...getConfig(db), maintenanceIntervalHours: 10 / 3_600_000 }); // ~10ms
+    let calls = 0;
+    const firstTick = Promise.withResolvers<void>();
+    const scheduler = startMaintenanceScheduler(db, undefined, {
+      runPass: async () => {
+        calls++;
+        firstTick.resolve();
+        return fakeResult;
+      },
+    });
+    try {
+      await firstTick.promise;
+      // Widen the interval way out; no further tick should fire in the wait window below if the
+      // scheduler is actually re-reading config before each reschedule (not frozen at startup).
+      setConfig(db, { ...getConfig(db), maintenanceIntervalHours: 24 });
+      const callsAfterFirst = calls;
+      await Bun.sleep(50); // several would-be ~10ms periods
+      expect(calls).toBe(callsAfterFirst);
     } finally {
       scheduler.stop();
     }

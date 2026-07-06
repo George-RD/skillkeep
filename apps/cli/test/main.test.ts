@@ -103,6 +103,8 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
@@ -235,6 +237,8 @@ describe("report command against a redirected data dir", () => {
       projects: {},
       hub: null,
       ai: null,
+      maintenanceIntervalHours: 24,
+      autoMaintenance: false,
     };
   });
 
@@ -306,6 +310,8 @@ describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
         projects: { missing: { repos: ["/does/not/exist"] } },
         hub: null,
         ai: null,
+        maintenanceIntervalHours: 24,
+        autoMaintenance: false,
       };
       await runCronCommand(db, config, () => {}, { dataDir: dd, platform: "linux" });
       expect(process.exitCode).toBe(1);
@@ -438,6 +444,48 @@ describe("connect command", () => {
     });
     await runConnectCommand(db, withHub, ["--remove"], () => {});
     expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("rejects --token followed by another flag instead of misreading it as the token", async () => {
+    installFetchStub(() => {
+      throw new Error("must not contact the network on a parse error");
+    });
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "--device", "laptop"],
+      () => {},
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("rejects an unknown flag instead of silently ignoring it", async () => {
+    installFetchStub(() => {
+      throw new Error("must not contact the network on a parse error");
+    });
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "t", "--bogus"],
+      () => {},
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("fails cleanly (not a thrown exception) when /healthz returns invalid JSON", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) return new Response("not json", { status: 200 });
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+    const lines: string[] = [];
+    await runConnectCommand(db, config, ["https://hub.example.com", "--token", "t"], (line) =>
+      lines.push(line),
+    );
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+    expect(lines.some((l) => l.includes("valid JSON"))).toBe(true);
   });
 });
 
