@@ -771,7 +771,7 @@ describe("GET /api/recommendations", () => {
       await started.close();
       if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
       else delete process.env.SKILLKEEP_TOKEN;
-      fs.rmSync(dir, { recursive: true, force: true });
+      await rmrfRetry(dir);
     }
   });
 });

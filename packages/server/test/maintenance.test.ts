@@ -11,6 +11,7 @@ import {
   runMaintenancePass,
   startMaintenanceScheduler,
 } from "../src/maintenance";
+import { rmrfRetry } from "./test-utils";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -48,9 +49,9 @@ describe("runMaintenancePass against a redirected data dir", () => {
     };
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("logs ok, reports syncOk, and persists lastMaintenance when sync and check are clean", async () => {
@@ -144,10 +145,10 @@ describe("runMaintenancePass hub sync step", () => {
     };
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     globalThis.fetch = originalFetch;
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("pulls (nothing new) then pushes the local registry, recording pushed skills", async () => {
@@ -275,9 +276,9 @@ describe("runMaintenancePass --auto against temp git repos with remotes", () => 
     };
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("routes a rule-matched inbox skill into the registry and pushes both repos", async () => {
@@ -365,9 +366,9 @@ describe("startMaintenanceScheduler", () => {
     db = openDb(path.join(tmpDir, "skillkeep.db"));
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("tick() runs one pass against the freshly-read config and reports it via onTick", async () => {
@@ -495,7 +496,7 @@ describe("startServer's maintenance scheduler wiring", () => {
       expect(result?.syncOk).toBe(true);
     } finally {
       await started.close();
-      fs.rmSync(dir, { recursive: true, force: true });
+      await rmrfRetry(dir);
     }
   });
 
@@ -523,7 +524,7 @@ describe("startServer's maintenance scheduler wiring", () => {
       await started.close();
       if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
       else delete process.env.SKILLKEEP_TOKEN;
-      fs.rmSync(dir, { recursive: true, force: true });
+      await rmrfRetry(dir);
     }
   });
 });

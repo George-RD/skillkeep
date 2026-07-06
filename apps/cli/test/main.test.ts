@@ -22,6 +22,7 @@ import {
   waitForShutdownSignal,
   windowsSymlinkHint,
 } from "../src/main";
+import { rmrfRetry } from "./test-utils";
 
 function makeSkillDir(dir: string, name: string, description: string): void {
   fs.mkdirSync(dir, { recursive: true });
@@ -105,8 +106,8 @@ describe("subcommand logic against a fixture registry + repo (never touches ~/.c
     };
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(async () => {
+    await rmrfRetry(tmpDir);
   });
 
   test("scan reports counts per state without crashing", async () => {
@@ -237,8 +238,8 @@ describe("report command against a redirected data dir", () => {
     };
   });
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+  afterEach(async () => {
+    await rmrfRetry(tmpDir);
   });
 
   test("healthy config prints a summary and exits 0 without writing a report", async () => {
@@ -310,7 +311,7 @@ describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
       expect(process.exitCode).toBe(1);
       db.close();
     } finally {
-      fs.rmSync(tmpDir, { recursive: true, force: true });
+      await rmrfRetry(tmpDir);
     }
   });
 });
@@ -338,10 +339,10 @@ describe("connect command", () => {
     config = getConfig(db);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     globalThis.fetch = originalFetch;
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("validates the hub, then persists the hub link", async () => {
@@ -453,9 +454,9 @@ describe("setup command", () => {
     config = getConfig(db);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     db.close();
-    fs.rmSync(tmpDir, { recursive: true, force: true });
+    await rmrfRetry(tmpDir);
   });
 
   test("installs the daemon launch agent via the KeepAlive plist builder", async () => {
