@@ -1,14 +1,16 @@
+import type { Database } from "bun:sqlite";
 import { afterEach, beforeEach, describe, expect, test } from "bun:test";
 import { execSync } from "node:child_process";
 import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { type Config, openDb } from "@skillkeep/core";
+import { type Config, getConfig, openDb } from "@skillkeep/core";
 import {
   main,
   runAdoptCommand,
   runCheckCommand,
+  runConnectCommand,
   runCronCommand,
   runDoctorCommand,
   runReportCommand,
@@ -309,5 +311,130 @@ describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
     } finally {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("connect command", () => {
+  let tmpDir: string;
+  let dd: string;
+  let db: Database;
+  let config: Config;
+  const originalFetch = globalThis.fetch;
+
+  function installFetchStub(
+    handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
+  ): void {
+    globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : String(input);
+      return Promise.resolve(handler(url, init));
+    }) as typeof fetch;
+  }
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-connect-test-"));
+    dd = path.join(tmpDir, "data");
+    db = openDb(path.join(dd, "skillkeep.db"));
+    config = getConfig(db);
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("validates the hub, then persists the hub link", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "hub" }), { status: 200 });
+      }
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com/", "--token", "secret-token", "--device", "laptop"],
+      () => {},
+    );
+
+    expect(process.exitCode).toBe(0);
+    const persisted = getConfig(db);
+    expect(persisted.hub).toEqual({
+      url: "https://hub.example.com",
+      token: "secret-token",
+      device: "laptop",
+    });
+  });
+
+  test("rejects a daemon that isn't a hub, and leaves config untouched", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "agent" }), { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    await runConnectCommand(
+      db,
+      config,
+      ["https://not-a-hub.example.com", "--token", "secret-token"],
+      () => {},
+    );
+
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("rejects a bad token, and leaves config untouched", async () => {
+    installFetchStub((url) => {
+      if (url.endsWith("/healthz")) {
+        return new Response(JSON.stringify({ ok: true, mode: "hub" }), { status: 200 });
+      }
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    await runConnectCommand(
+      db,
+      config,
+      ["https://hub.example.com", "--token", "wrong-token"],
+      () => {},
+    );
+
+    expect(process.exitCode).toBe(1);
+    expect(getConfig(db).hub).toBeNull();
+  });
+
+  test("requires a token (flag or SKILLKEEP_TOKEN) before contacting anything", async () => {
+    const savedToken = process.env.SKILLKEEP_TOKEN;
+    delete process.env.SKILLKEEP_TOKEN;
+    installFetchStub(() => {
+      throw new Error("must not be called without a token");
+    });
+    try {
+      await runConnectCommand(db, config, ["https://hub.example.com"], () => {});
+      expect(process.exitCode).toBe(1);
+      expect(getConfig(db).hub).toBeNull();
+    } finally {
+      if (savedToken !== undefined) process.env.SKILLKEEP_TOKEN = savedToken;
+    }
+  });
+
+  test("--remove unlinks without contacting anything", async () => {
+    const withHub: Config = {
+      ...config,
+      hub: { url: "https://hub.example.com", token: "t", device: "d" },
+    };
+    installFetchStub(() => {
+      throw new Error("must not be called by --remove");
+    });
+    await runConnectCommand(db, withHub, ["--remove"], () => {});
+    expect(getConfig(db).hub).toBeNull();
   });
 });

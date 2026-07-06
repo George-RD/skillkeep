@@ -1,6 +1,7 @@
 import type { Database } from "bun:sqlite";
 import { existsSync } from "node:fs";
 import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import {
   adoptDetected,
@@ -21,6 +22,7 @@ import {
   runCheck,
   runDoctor,
   runSync,
+  setConfig,
   tildeExpand,
 } from "@skillkeep/core";
 import {
@@ -51,6 +53,7 @@ const SUBCOMMANDS = [
   "daemon",
   "ui",
   "hub",
+  "connect",
 ];
 
 function printHelp(write: Writer): void {
@@ -73,6 +76,8 @@ function printHelp(write: Writer): void {
   write("  ui                  ensure the daemon is running and open it in a browser");
   write("  hub push            push this device's registry/usage snapshot to its hub");
   write("  hub pull            pull registry skills that changed on the hub");
+  write("  connect <url> [--token <t>] [--device <name>]  link this agent to a hub daemon");
+  write("  connect --remove    unlink this agent from its hub");
 }
 
 // --- status --------------------------------------------------------------------
@@ -567,6 +572,115 @@ export async function runHubPullCommand(config: Config, write: Writer = report):
   if (result.skillsPulled.length > 0) write(`skills pulled: ${result.skillsPulled.join(", ")}`);
 }
 
+// --- connect -----------------------------------------------------------------------
+
+interface ConnectArgs {
+  remove: boolean;
+  url?: string;
+  token?: string;
+  device?: string;
+}
+
+function parseConnectArgs(args: string[]): ConnectArgs {
+  if (args[0] === "--remove") return { remove: true };
+  let url: string | undefined;
+  let token: string | undefined;
+  let device: string | undefined;
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg === "--token") {
+      token = args[++i];
+    } else if (arg === "--device") {
+      device = args[++i];
+    } else if (!arg.startsWith("--") && url === undefined) {
+      url = arg;
+    }
+  }
+  return { remove: false, url, token, device };
+}
+
+/**
+ * `skillkeep connect <url> [--token <t>] [--device <name>]` — link this agent to a hub daemon.
+ * Validates the hub before persisting anything: an unauthenticated `GET /healthz` must report
+ * `mode: "hub"` (never a peer agent), then an authed `GET /api/v1/registry/manifest` must accept
+ * the token. Any failure leaves the existing config untouched. `skillkeep connect --remove`
+ * unlinks (sets `hub` to null) without contacting anything.
+ */
+export async function runConnectCommand(
+  db: Database,
+  config: Config,
+  args: string[],
+  write: Writer = report,
+): Promise<void> {
+  const parsed = parseConnectArgs(args);
+
+  if (parsed.remove) {
+    setConfig(db, { ...config, hub: null });
+    write("hub sync disabled");
+    return;
+  }
+
+  if (!parsed.url) {
+    write("usage: skillkeep connect <url> [--token <t>] [--device <name>]");
+    write("       skillkeep connect --remove");
+    process.exitCode = 1;
+    return;
+  }
+  const url = parsed.url.replace(/\/+$/, "");
+
+  const token = parsed.token ?? process.env.SKILLKEEP_TOKEN;
+  if (!token) {
+    write("a token is required: pass --token <t> or set SKILLKEEP_TOKEN");
+    process.exitCode = 1;
+    return;
+  }
+
+  let healthzRes: Response;
+  try {
+    healthzRes = await fetch(`${url}/healthz`);
+  } catch (err) {
+    write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (!healthzRes.ok) {
+    write(`${url}/healthz returned ${healthzRes.status}`);
+    process.exitCode = 1;
+    return;
+  }
+  const health = (await healthzRes.json()) as { ok?: boolean; mode?: string };
+  if (health.mode !== "hub") {
+    write(`that daemon is not a hub (mode: ${health.mode ?? "unknown"})`);
+    process.exitCode = 1;
+    return;
+  }
+
+  let manifestRes: Response;
+  try {
+    manifestRes = await fetch(`${url}/api/v1/registry/manifest`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch (err) {
+    write(`could not reach ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    process.exitCode = 1;
+    return;
+  }
+  if (manifestRes.status === 401 || manifestRes.status === 403) {
+    write("hub token rejected");
+    process.exitCode = 1;
+    return;
+  }
+  if (!manifestRes.ok) {
+    write(`${url}/api/v1/registry/manifest returned ${manifestRes.status}`);
+    process.exitCode = 1;
+    return;
+  }
+
+  const device = parsed.device ?? os.hostname();
+  setConfig(db, { ...config, hub: { url, token, device } });
+  write(`connected to ${url} as "${device}"`);
+}
+
 // --- dispatch --------------------------------------------------------------------
 
 export async function main(
@@ -643,6 +757,9 @@ export async function main(
       }
       break;
     }
+    case "connect":
+      await runConnectCommand(db, config, rest, write);
+      break;
   }
 }
 

@@ -18,6 +18,7 @@ import {
   setJsonSetting,
   tildeExpand,
 } from "@skillkeep/core";
+import { pullFromHub, pushToHub } from "./hub-link";
 
 export type NotifyExec = (cmd: string[]) => Promise<{ exitCode: number; stderr?: string }>;
 
@@ -150,9 +151,30 @@ export async function runMaintenancePass(
     }
   }
 
-  // Hub sync: wired up once a hub is configured (see the connect command). Left undefined here —
-  // there is nothing to report when the agent runs standalone.
-  const hub: MaintenanceHubResult | undefined = undefined;
+  // Hub sync: pull then push once a hub is configured (see the `connect` command). Errors are
+  // caught into `hub.error` rather than thrown -- a hub outage must never fail the whole pass or
+  // block the sync/check/triage work above, which already completed by this point. Conflicts
+  // (a skill changed on the hub since the last sync) are surfaced for the user to resolve
+  // manually, never auto-resolved.
+  let hub: MaintenanceHubResult | undefined;
+  if (config.hub) {
+    try {
+      const pullResult = await pullFromHub(config);
+      const pushResult = await pushToHub(db, config);
+      hub = {
+        pushed: pushResult.skillsPushed,
+        pulled: pullResult.skillsPulled,
+        conflicts: pushResult.conflicts,
+      };
+    } catch (err) {
+      hub = {
+        pushed: [],
+        pulled: [],
+        conflicts: [],
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
 
   const syncFailed = syncResult.errors.length > 0;
   const logLine = buildCronLogLine({

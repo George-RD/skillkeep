@@ -102,6 +102,126 @@ describe("runMaintenancePass against a redirected data dir", () => {
   });
 });
 
+describe("runMaintenancePass hub sync step", () => {
+  let tmpDir: string;
+  let dd: string;
+  let db: Database;
+  let config: Config;
+  const originalFetch = globalThis.fetch;
+
+  function installFetchStub(
+    handler: (url: string, init?: RequestInit) => Response | Promise<Response>,
+  ): void {
+    globalThis.fetch = ((input: string | URL | Request, init?: RequestInit) => {
+      const url = typeof input === "string" ? input : String(input);
+      return Promise.resolve(handler(url, init));
+    }) as typeof fetch;
+  }
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-maint-hub-test-"));
+    dd = path.join(tmpDir, "data");
+    db = openDb(path.join(dd, "skillkeep.db"));
+
+    const registryRoot = path.join(tmpDir, "registry");
+    makeSkillDir(
+      path.join(registryRoot, "skills", "global", "hub-me"),
+      "hub-me",
+      "pushed to the hub",
+    );
+    execSync("git init", { cwd: registryRoot, stdio: "ignore" });
+
+    config = {
+      registryRoot,
+      repoRoots: [],
+      globalClients: [],
+      repoClients: [],
+      linkMode: "symlink",
+      inboxDirs: [],
+      projects: {},
+      hub: { url: "https://hub.example.com", token: "hub-test-token", device: "test-device" },
+      ai: null,
+    };
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+    db.close();
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  test("pulls (nothing new) then pushes the local registry, recording pushed skills", async () => {
+    const calls: string[] = [];
+    installFetchStub((url, init) => {
+      calls.push(`${init?.method ?? "GET"} ${url.replace(/^https:\/\/hub\.example\.com/, "")}`);
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("/api/v1/ingest")) {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      if (url.includes("/api/v1/registry/skill")) {
+        return new Response(null, { status: 200 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const result = await runMaintenancePass(db, config, { dataDir: dd, platform: "linux" });
+
+    expect(result.hub?.error).toBeUndefined();
+    expect(result.hub?.pulled).toEqual([]);
+    expect(result.hub?.pushed).toEqual(["hub-me"]);
+    expect(result.hub?.conflicts).toEqual([]);
+    // Pull's manifest fetch happens before push's ingest/manifest/PUT sequence.
+    const firstManifestIdx = calls.findIndex((c) => c.includes("registry/manifest"));
+    const ingestIdx = calls.findIndex((c) => c.includes("/api/v1/ingest"));
+    expect(firstManifestIdx).toBeLessThan(ingestIdx);
+  });
+
+  test("a 409 on push is recorded as a conflict, not thrown, and the pass still reports syncOk", async () => {
+    installFetchStub((url, init) => {
+      if (url.includes("/api/v1/registry/manifest")) {
+        return new Response(JSON.stringify([]), { status: 200 });
+      }
+      if (url.includes("/api/v1/ingest")) {
+        return new Response(JSON.stringify({ ok: true }), { status: 200 });
+      }
+      if (init?.method === "PUT" && url.includes("/api/v1/registry/skill")) {
+        return new Response(null, { status: 409 });
+      }
+      throw new Error(`unexpected fetch: ${url}`);
+    });
+
+    const result = await runMaintenancePass(db, config, { dataDir: dd, platform: "linux" });
+
+    expect(result.syncOk).toBe(true);
+    expect(result.hub?.conflicts).toEqual(["hub-me"]);
+    expect(result.hub?.pushed).toEqual([]);
+  });
+
+  test("a hub that's unreachable is caught into hub.error, never thrown, and never fails the pass", async () => {
+    installFetchStub(() => {
+      throw new Error("connection refused");
+    });
+
+    const result = await runMaintenancePass(db, config, { dataDir: dd, platform: "linux" });
+
+    expect(result.syncOk).toBe(true);
+    expect(result.hub?.error).toContain("connection refused");
+    expect(result.hub?.pushed).toEqual([]);
+    expect(result.hub?.pulled).toEqual([]);
+  });
+
+  test("no hub configured: result.hub stays undefined", async () => {
+    const result = await runMaintenancePass(
+      db,
+      { ...config, hub: null },
+      { dataDir: dd, platform: "linux" },
+    );
+    expect(result.hub).toBeUndefined();
+  });
+});
+
 describe("runMaintenancePass --auto against temp git repos with remotes", () => {
   let tmpDir: string;
   let dd: string;
