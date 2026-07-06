@@ -67,7 +67,7 @@ export interface RouterContext {
   version: string;
   mode: "agent" | "hub";
 }
-const UI_DIST_DIR = path.join(import.meta.dir, "../../ui/dist");
+const UI_DIST_DIR = process.env.SKILLKEEP_UI_DIST ?? path.join(import.meta.dir, "../../ui/dist");
 const ALL_CLIENT_IDS = Object.keys(CLIENT_DIRS) as ClientId[];
 
 function jsonResponse(body: unknown, status = 200): Response {
