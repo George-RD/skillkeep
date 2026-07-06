@@ -10,6 +10,14 @@ import { createRouter } from "./routes";
 import { runUsageIngest } from "./usage-ingest";
 
 export { type PullResult, type PushResult, pullFromHub, pushToHub } from "./hub-link";
+export {
+  type MaintenanceDeps,
+  type MaintenanceHubResult,
+  type MaintenanceResult,
+  type NotifyExec,
+  runMaintenancePass,
+  sendMacNotification,
+} from "./maintenance";
 export { DaemonAlreadyRunningError, DEFAULT_PORT } from "./port";
 export type { ManifestEntry } from "./registry-sync";
 

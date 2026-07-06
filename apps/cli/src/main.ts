@@ -5,7 +5,6 @@ import * as path from "node:path";
 import {
   adoptDetected,
   applyTriageMoves,
-  buildCronLogLine,
   buildDiagnosticMarkdown,
   buildIssueUrl,
   buildStatus,
@@ -13,8 +12,6 @@ import {
   dataDir,
   detectAll,
   getConfig,
-  gitPullFf,
-  gitPush,
   globalOnlyTokenEstimate,
   installLaunchAgent,
   loadRules,
@@ -24,14 +21,15 @@ import {
   runCheck,
   runDoctor,
   runSync,
-  type SyncReport,
   tildeExpand,
 } from "@skillkeep/core";
 import {
   DaemonAlreadyRunningError,
   DEFAULT_PORT,
+  type MaintenanceDeps,
   pullFromHub,
   pushToHub,
+  runMaintenancePass,
   startServer,
 } from "@skillkeep/server";
 import { version as SKILLKEEP_VERSION } from "../package.json";
@@ -316,126 +314,26 @@ export async function runReportCommand(
 
 // --- cron ------------------------------------------------------------------------
 
-export type NotifyExec = (cmd: string[]) => Promise<{ exitCode: number; stderr?: string }>;
-
-async function defaultNotifyExec(cmd: string[]): Promise<{ exitCode: number; stderr?: string }> {
-  try {
-    const proc = Bun.spawn({ cmd, stdio: ["ignore", "ignore", "ignore"] });
-    await proc.exited;
-    return { exitCode: proc.exitCode ?? 0 };
-  } catch {
-    return { exitCode: -1 };
-  }
-}
-
-export async function sendMacNotification(
-  message: string,
-  exec: NotifyExec = defaultNotifyExec,
-  platform: NodeJS.Platform = process.platform,
-): Promise<void> {
-  if (platform !== "darwin") return;
-  const title = "skillkeep";
-  const script = `display notification ${JSON.stringify(message)} with title ${JSON.stringify(title)}`;
-  try {
-    await exec(["osascript", "-e", script]);
-  } catch {
-    // swallow all notification errors
-  }
-}
-
 export interface CronDeps {
   dataDir?: string;
-  exec?: NotifyExec;
+  exec?: MaintenanceDeps["exec"];
   platform?: NodeJS.Platform;
   /** --auto: also git-pull, auto-triage rule-matched inbox skills, and push what this run committed. */
   auto?: boolean;
 }
 
+/** `skillkeep cron [--auto]` — run one maintenance pass now (thin wrapper: all the actual work
+ * lives in `runMaintenancePass`, shared with the agent-mode daemon's internal scheduler). Sets
+ * `process.exitCode = 1` on the same conditions as before extraction: sync failed or check
+ * findings exist. */
 export async function runCronCommand(
+  db: Database,
   config: Config,
   _write: Writer = report,
   deps?: CronDeps,
 ): Promise<void> {
-  const auto = deps?.auto ?? false;
-
-  // --auto: fast-forward the registry first (best-effort). A diverged history is not overwritten
-  // here — the non-force push below fails loudly instead.
-  if (auto) await gitPullFf(config.registryRoot);
-
-  let syncResult: SyncReport;
-  try {
-    syncResult = await runSync(config, { dryRun: false, prune: false });
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    syncResult = { created: [], fixed: [], pruned: [], configReminders: [], errors: [message] };
-  }
-
-  const firstInbox = config.inboxDirs[0];
-  let routed: string[] = [];
-  if (auto && syncResult.errors.length === 0 && firstInbox) {
-    try {
-      const rules = await loadRules(config.registryRoot);
-      const plan = await planTriage(rules, config.inboxDirs);
-      const result = await applyTriageMoves(
-        config.registryRoot,
-        plan.filter((item) => item.scope),
-        tildeExpand(firstInbox),
-      );
-      routed = result.routed;
-    } catch (err) {
-      syncResult.errors.push(`triage failed: ${err instanceof Error ? err.message : String(err)}`);
-    }
-  }
-
-  let findings: Awaited<ReturnType<typeof runCheck>> = [];
-  try {
-    findings = await runCheck(config);
-  } catch (err) {
-    syncResult.errors.push(`check failed: ${err instanceof Error ? err.message : String(err)}`);
-  }
-
-  // Publish only when this run routed something (routed > 0); the push advances the branch like
-  // skillctl's weekly job (any unrelated local commits ride along too), never force. Push the
-  // registry first and advance the inbox remote only if that succeeded — otherwise the inbox remote
-  // would publish the skill's *deletion* while the registry never received the routed skill, losing
-  // it for any other machine. Both advance together, or neither does; local commits survive the next
-  // run. A rejected non-ff push is recorded as a failure (logged + notified).
-  let pushed: boolean | undefined;
-  if (auto && routed.length > 0) {
-    const registryPush = await gitPush(config.registryRoot);
-    const inboxPush =
-      registryPush.ok && firstInbox
-        ? await gitPush(tildeExpand(firstInbox))
-        : { ok: true, message: "" };
-    pushed = registryPush.ok && inboxPush.ok;
-    if (!registryPush.ok) {
-      syncResult.errors.push(`registry push failed: ${registryPush.message.trim() || "rejected"}`);
-    } else if (!inboxPush.ok) {
-      syncResult.errors.push(`inbox push failed: ${inboxPush.message.trim() || "rejected"}`);
-    }
-  }
-
-  const syncFailed = syncResult.errors.length > 0;
-  const logLine = buildCronLogLine({
-    timestamp: new Date().toISOString(),
-    syncOk: !syncFailed,
-    syncError: syncResult.errors[0],
-    findings: findings.length,
-    routed: auto ? routed.length : undefined,
-    pushed: auto ? pushed : undefined,
-  });
-
-  const baseDir = deps?.dataDir ?? dataDir();
-  const logDir = path.join(baseDir, "logs");
-  await fs.mkdir(logDir, { recursive: true });
-  await fs.appendFile(path.join(logDir, "cron.log"), `${logLine}\n`, "utf8");
-
-  const platform = deps?.platform ?? process.platform;
-  if (platform === "darwin" && (syncFailed || findings.length > 0)) {
-    await sendMacNotification(logLine, deps?.exec, platform);
-  }
-
-  if (syncFailed || findings.length > 0) {
+  const result = await runMaintenancePass(db, config, deps);
+  if (!result.syncOk || result.findings.length > 0) {
     process.exitCode = 1;
   }
 }
@@ -731,7 +629,7 @@ export async function main(
       await runReportCommand(config, write);
       break;
     case "cron":
-      await runCronCommand(config, write, { auto: rest.includes("--auto") });
+      await runCronCommand(db, config, write, { auto: rest.includes("--auto") });
       break;
     case "hub": {
       const [subcommand] = rest;

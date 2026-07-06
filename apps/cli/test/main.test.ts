@@ -4,7 +4,7 @@ import { EventEmitter } from "node:events";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Config } from "@skillkeep/core";
+import { type Config, openDb } from "@skillkeep/core";
 import {
   main,
   runAdoptCommand,
@@ -283,192 +283,31 @@ describe("report command against a redirected data dir", () => {
   });
 });
 
-describe("cron command against a redirected data dir", () => {
-  let tmpDir: string;
-  let dd: string;
-  let config: Config;
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cron-test-"));
-    dd = path.join(tmpDir, "data");
-
-    const registryRoot = path.join(tmpDir, "registry");
-    fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
-    execSync("git init", { cwd: registryRoot, stdio: "ignore" });
-
-    config = {
-      registryRoot,
-      repoRoots: [],
-      globalClients: [],
-      repoClients: [],
-      linkMode: "symlink",
-      inboxDirs: [],
-      projects: {},
-      hub: null,
-      ai: null,
-    };
-  });
-
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  test("logs ok and exits 0 when sync and check are clean", async () => {
-    const execCalls: string[][] = [];
-    await runCronCommand(config, () => {}, {
-      dataDir: dd,
-      platform: "linux",
-      exec: async (cmd) => {
-        execCalls.push(cmd);
-        return { exitCode: 0 };
-      },
-    });
-    expect(process.exitCode).toBe(0);
-    const logPath = path.join(dd, "logs", "cron.log");
-    expect(fs.existsSync(logPath)).toBe(true);
-    const log = fs.readFileSync(logPath, "utf8");
-    expect(log).toMatch(
-      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z sync ok check 0 finding\(s\)$/m,
-    );
-    expect(execCalls).toHaveLength(0);
-  });
-
-  test("logs failure, exits 1, and sends a macOS notification on darwin", async () => {
-    const configWithMissingRepo: Config = {
-      ...config,
-      projects: { missing: { repos: ["/does/not/exist"] } },
-    };
-    const execCalls: string[][] = [];
-    await runCronCommand(configWithMissingRepo, () => {}, {
-      dataDir: dd,
-      platform: "darwin",
-      exec: async (cmd) => {
-        execCalls.push(cmd);
-        return { exitCode: 0 };
-      },
-    });
-    expect(process.exitCode).toBe(1);
-    const logPath = path.join(dd, "logs", "cron.log");
-    expect(fs.existsSync(logPath)).toBe(true);
-    const log = fs.readFileSync(logPath, "utf8");
-    expect(log).toContain("sync failed");
-    expect(log).toContain("check 0 finding(s)");
-    expect(execCalls).toHaveLength(1);
-    expect(execCalls[0][0]).toBe("osascript");
-  });
-});
-
-describe("cron --auto against temp git repos with remotes", () => {
-  let tmpDir: string;
-  let dd: string;
-  let config: Config;
-  let registryBare: string;
-  let inboxBare: string;
-  let inbox: string;
-
-  const gitInit = (dir: string): void => {
-    execSync("git init -q", { cwd: dir });
-    execSync("git config user.email test@example.com", { cwd: dir });
-    execSync("git config user.name Test", { cwd: dir });
-    execSync("git config commit.gpgsign false", { cwd: dir });
-  };
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cronauto-test-"));
-    dd = path.join(tmpDir, "data");
-
-    const registryRoot = path.join(tmpDir, "registry");
-    fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
-    fs.writeFileSync(path.join(registryRoot, "rules.yml"), 'global:\n  - "auto-*"\n');
-    gitInit(registryRoot);
-    execSync("git add -A && git commit -q -m init", { cwd: registryRoot });
-    registryBare = path.join(tmpDir, "registry.git");
-    execSync(`git init -q --bare ${registryBare}`);
-    execSync(`git remote add origin ${registryBare}`, { cwd: registryRoot });
-    execSync("git push -q -u origin HEAD", { cwd: registryRoot });
-
-    inbox = path.join(tmpDir, "inbox");
-    makeSkillDir(path.join(inbox, "auto-me"), "auto-me", "routes to global");
-    gitInit(inbox);
-    execSync("git add -A && git commit -q -m init", { cwd: inbox });
-    inboxBare = path.join(tmpDir, "inbox.git");
-    execSync(`git init -q --bare ${inboxBare}`);
-    execSync(`git remote add origin ${inboxBare}`, { cwd: inbox });
-    execSync("git push -q -u origin HEAD", { cwd: inbox });
-
-    config = {
-      registryRoot,
-      repoRoots: [],
-      globalClients: [],
-      repoClients: [],
-      linkMode: "symlink",
-      inboxDirs: [inbox],
-      projects: {},
-      hub: null,
-      ai: null,
-    };
-  });
-
-  afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-  });
-
-  test("routes a rule-matched inbox skill into the registry and pushes both repos", async () => {
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux", auto: true });
-
-    expect(process.exitCode).toBe(0);
-    expect(fs.existsSync(path.join(config.registryRoot, "skills", "global", "auto-me"))).toBe(true);
-    expect(fs.existsSync(path.join(inbox, "auto-me"))).toBe(false);
-
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("triage 1 routed");
-    expect(log).toContain("push ok");
-
-    const registryRemoteLog = execSync("git log --oneline", { cwd: registryBare }).toString();
-    expect(registryRemoteLog).toContain("triage: route");
-    const inboxRemoteLog = execSync("git log --oneline", { cwd: inboxBare }).toString();
-    expect(inboxRemoteLog).toContain("skill-triage: routed");
-  });
-
-  test("bare cron (no --auto) flags the inbox but never triages or pushes", async () => {
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux" });
-
-    // The non-empty inbox is a legitimate check finding (exit 1), but bare cron must not act on it.
-    expect(process.exitCode).toBe(1);
-    expect(fs.existsSync(path.join(inbox, "auto-me"))).toBe(true);
-    expect(fs.existsSync(path.join(config.registryRoot, "skills", "global", "auto-me"))).toBe(
-      false,
-    );
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("check 1 finding(s)");
-    expect(log).not.toContain("triage");
-    expect(log).not.toContain("push");
-    const registryRemoteLog = execSync("git log --oneline", { cwd: registryBare }).toString();
-    expect(registryRemoteLog).not.toContain("triage: route");
-  });
-
-  test("a rejected registry push skips the inbox push (no orphaned deletion)", async () => {
-    // Two-sided divergence so pull --ff-only can't advance and the push is rejected non-ff: the
-    // local registry gains an unpushed commit...
-    fs.writeFileSync(path.join(config.registryRoot, "LOCAL.md"), "local");
-    execSync("git add -A && git commit -q -m local", { cwd: config.registryRoot });
-    // ...while the remote advances independently via a second clone.
-    const clone = path.join(tmpDir, "regclone");
-    execSync(`git clone -q ${registryBare} ${clone}`);
-    execSync("git config user.email test@example.com", { cwd: clone });
-    execSync("git config user.name Test", { cwd: clone });
-    fs.writeFileSync(path.join(clone, "OTHER.md"), "diverge");
-    execSync("git add -A && git commit -q -m diverge && git push -q", { cwd: clone });
-
-    await runCronCommand(config, () => {}, { dataDir: dd, platform: "linux", auto: true });
-
-    // Registry push rejected -> recorded failure -> exit 1.
-    expect(process.exitCode).toBe(1);
-    const log = fs.readFileSync(path.join(dd, "logs", "cron.log"), "utf8");
-    expect(log).toContain("registry push failed");
-    expect(log).toContain("push failed");
-    // The inbox remote must NOT publish the deletion when the registry never received the add.
-    const inboxRemoteLog = execSync("git log --oneline", { cwd: inboxBare }).toString();
-    expect(inboxRemoteLog).not.toContain("skill-triage: routed");
+describe("cron command — thin CLI wrapper over runMaintenancePass", () => {
+  test("sets process.exitCode = 1 when the maintenance pass reports a check finding", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "skillkeep-cron-wrapper-test-"));
+    try {
+      const dd = path.join(tmpDir, "data");
+      const db = openDb(path.join(dd, "skillkeep.db"));
+      const registryRoot = path.join(tmpDir, "registry");
+      fs.mkdirSync(path.join(registryRoot, "skills", "global"), { recursive: true });
+      execSync("git init", { cwd: registryRoot, stdio: "ignore" });
+      const config: Config = {
+        registryRoot,
+        repoRoots: [],
+        globalClients: [],
+        repoClients: [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        projects: { missing: { repos: ["/does/not/exist"] } },
+        hub: null,
+        ai: null,
+      };
+      await runCronCommand(db, config, () => {}, { dataDir: dd, platform: "linux" });
+      expect(process.exitCode).toBe(1);
+      db.close();
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
   });
 });
