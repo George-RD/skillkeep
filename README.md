@@ -91,7 +91,7 @@ Pass `--url` to point it at a remote hub instead of the local daemon. It default
 ### Docker
 
 ```sh
-docker run -v /path/to/data:/data -e SKILLKEEP_TOKEN=<random-32-byte-token> -p 8080:8080 ghcr.io/george-rd/skillkeep:latest
+docker run -v /path/to/data:/data -e SKILLKEEP_TOKEN=<random-32-byte-token> -p 4517:4517 ghcr.io/george-rd/skillkeep:latest
 ```
 
 ### Deploy on Railway

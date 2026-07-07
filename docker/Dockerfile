@@ -23,9 +23,10 @@ COPY --from=build /out/skillkeep /usr/local/bin/skillkeep
 COPY --from=build /src/packages/ui/dist /usr/local/share/skillkeep/ui
 ENV SKILLKEEP_UI_DIST=/usr/local/share/skillkeep/ui
 VOLUME /data
-# Default bind port for a plain `docker run` (matches EXPOSE + the healthcheck below); Railway
-# overrides PORT at container runtime, and the daemon/healthcheck both honour that override too.
-ENV PORT=8080
-EXPOSE 8080
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s CMD curl -f "http://localhost:${PORT:-8080}/healthz" || exit 1
+# Default bind port for a plain `docker run` (matches EXPOSE + the healthcheck below, and the
+# daemon's own DEFAULT_PORT); Railway overrides PORT at container runtime, and the
+# daemon/healthcheck both honour that override too.
+ENV PORT=4517
+EXPOSE 4517
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s CMD curl -f "http://localhost:${PORT:-4517}/healthz" || exit 1
 ENTRYPOINT ["skillkeep", "daemon", "--mode", "hub", "--data", "/data"]
