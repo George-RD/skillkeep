@@ -108,7 +108,7 @@
 ### Zone: Z12 — Mobile (390px)
 **Scores:** DQ: 6 | O: 7 | Craft: 5 | Func: 5  
 **Strengths:** Core jobs still reachable: triage opens with Keep/Merge/Discard; budget strip appears; garden rows remain scannable.  
-**Issues:** **Horizontal overflow** (scrollWidth 564). Shell actions clip; name column mid-word ellipsis returns aggressively; tier keys remain sub-44px but are force-clickable (tier change + undo verified). Gate floor applied for overflow, not for missing tier.  
+**Issues:** **Horizontal overflow** (scrollWidth 564). Shell actions clip; name column mid-word ellipsis returns aggressively; tier keys remain ~17×18px (not mobile-usable by normal touch standards). Gate floor applied for overflow; C3 only PARTIAL.  
 **Screenshot evidence:** `z12-mobile-390.png`, `mobile-390-full.png`, `mobile-390-triage.png`, `mobile-390-deploy.png`
 
 ---
@@ -146,7 +146,7 @@ Originality remains 8 (>4), so no originality-linked craft penalty applies.
 | **B4 — Legible States** | M | **PARTIAL** | Loading/empty/clear present; full offline matrix not exhaustively proven. |
 | **C1 — Mobile 390 Overflow** | H | **FAIL** | Horizontal overflow at 390px (scrollWidth 564). |
 | **C2 — Anti-Slop** | H | **PASS** | No gradient blobs, emoji icons, purple SaaS chrome, or 3-up stat heroes. |
-| **C3 — Mobile Core Job** | M | **PASS** | At 390: tier `c` click changes resident set 5.7k→5.6k with Undo (rcp controls present, 17×18 hit targets). Triage entry opens seedlings queue (earlier pass `hasKeep=true`; later pass flaky after shell overflow). Overflow remains C1 failure. |
+| **C3 — Mobile Core Job** | M | **PARTIAL** | Triage mode can open and show the seedlings queue at 390, and tier controls exist in the DOM, but hit targets are ~17×18px and the shell overflows horizontally—normal mobile usability is impaired. A force-click mutation is not counted as proof of usability. C1 remains FAIL. |
 | **C4 — State Motion** | L | **PASS** | Undo ribbon / settle motion tied to decisions, not decorative loops. |
 
 **High-bar note:** C1 remains FAIL, so the sprint is **not** fully accept-ready despite A1–A4/B1–B2/C2 passing.

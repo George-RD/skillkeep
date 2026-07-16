@@ -1,14 +1,13 @@
 {
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
-  "phase": "evaluate",
-  "iteration": 2,
-  "agent": "Evaluator",
-  "note": "Scoring iteration 2 (triage live, deploy review, undo) at 1440/390",
+  "phase": "implement",
+  "iteration": 3,
+  "agent": "Builder",
+  "note": "Build: phone thumb-dock shell, full-width sheets, 44px targets, 2-line name wrap",
   "log": [
-    "builder 2c: all six flows PASS with evidence",
-    "iteration 2 committed (03ad9d5)",
-    "sandbox reset to pristine",
-    "evaluator dispatched (iteration 2)"
+    "iteration 2: wavg 7.0 → REFINE",
+    "design 3: three-band mobile shell + bottom thumb dock + sheets; global touch/wrap rules",
+    "builder dispatched (iteration 3)"
   ]
 }

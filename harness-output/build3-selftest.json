@@ -1,0 +1,114 @@
+{
+  "desktop": {
+    "flows": {
+      "triageOpen": true,
+      "triageKeepUndo": {
+        "keepClicked": true,
+        "ribbon": true,
+        "ribbonGone": true
+      },
+      "triageDiscardUndo": {
+        "discardClicked": true,
+        "ribbon": true
+      },
+      "tierBudgetUndo": {
+        "budgetText": "RESIDENT SET\n5.7k tokens",
+        "ribbon": true,
+        "ribbonGone": true
+      },
+      "lenses": {
+        "ok": true
+      },
+      "find": {
+        "open": true,
+        "resultsCount": 15
+      },
+      "deployReview": {
+        "title": true,
+        "commit": true
+      },
+      "rotFeed": true,
+      "rotWhisper": 36,
+      "rotResolve": {
+        "mode": "resolve",
+        "ribbon": true
+      }
+    }
+  },
+  "phone": {
+    "surfaces": [
+      {
+        "surface": "garden",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "triage",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "deploy",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "rot",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "search",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "detail",
+        "scrollWidth": 390
+      },
+      {
+        "surface": "settings",
+        "scrollWidth": 390
+      }
+    ],
+    "dockSlots": 4,
+    "dockVisible": true,
+    "dockSlotRect": {
+      "x": 0,
+      "y": 785,
+      "width": 97.5,
+      "height": 59
+    },
+    "tierSegRect": {
+      "x": 228,
+      "y": 206.609375,
+      "width": 44,
+      "height": 44
+    },
+    "statusActionsHidden": true,
+    "nameClamp": {
+      "webkitLineClamp": "2",
+      "display": "flow-root",
+      "height": 19.609375
+    },
+    "phonePathHidden": true,
+    "triageOpen": true,
+    "triageDecisionRect": {
+      "x": 33,
+      "y": 836,
+      "width": 102.65625,
+      "height": 44
+    },
+    "triageDecisionStyle": {
+      "minHeight": "44px",
+      "minWidth": "44px",
+      "width": 102.65625,
+      "height": 44
+    },
+    "deploySheet": true,
+    "rotSheet": true,
+    "searchSheet": true,
+    "detailSheet": true,
+    "settingsOpen": true,
+    "hitOk": {
+      "dock": true,
+      "tier": true,
+      "triageDecision": true
+    }
+  }
+}

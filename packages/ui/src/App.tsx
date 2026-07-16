@@ -124,6 +124,7 @@ export function App() {
   const [sortField, setSortField] = useState<"name" | "cost" | "exposure" | "tier">("name");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchOpen, setSearchOpen] = useState(false);
+  const [filterSheetOpen, setFilterSheetOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
   const [activeTriageIndex, setActiveTriageIndex] = useState(0);
   /** Frozen N when triage opens — progress is "k of N remaining". */
@@ -321,6 +322,8 @@ export function App() {
   const [budgetPreviewDelta, setBudgetPreviewDelta] = useState<number | null>(null);
   const [deployError, setDeployError] = useState(false);
   const [deployPreviewAt, setDeployPreviewAt] = useState<string | null>(null);
+  const [deployConfirmLine, setDeployConfirmLine] = useState<string | null>(null);
+  const [deployJustCommitted, setDeployJustCommitted] = useState(false);
 
   // Undo manager — discard commits DELETE only after the ~8s ribbon window lapses.
   const commitPendingDiscard = (action: UndoAction) => {
@@ -469,6 +472,14 @@ export function App() {
     setTriageSessionN(awaitingCount > 0 ? awaitingCount : seedlings.length);
     setTriageMergeOpen(false);
     void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+  };
+
+  const openRot = () => {
+    setDeployOpen(false);
+    setSelectedSkillName(null);
+    setSearchOpen(false);
+    setFilterSheetOpen(false);
+    setActiveMode("rot");
   };
 
   const runTriageSuggest = () => {
@@ -705,6 +716,9 @@ export function App() {
     setDeployError(false);
     setSyncReport(null);
     setSyncPreviewed(false);
+    setDeployConfirmLine(null);
+    setDeployJustCommitted(false);
+    setActiveMode("garden");
     syncMutation.mutate(
       { dryRun: true },
       {
@@ -727,8 +741,18 @@ export function App() {
       { dryRun: false },
       {
         onSuccess: (rep) => {
-          setSyncReport(rep);
-          setSyncPreviewed(false);
+          setDeployConfirmLine(
+            `Deployed · ${rep.created.length} rooted · ${rep.pruned.length} pruned`,
+          );
+          setDeployJustCommitted(true);
+          // Idle after commit: clear actionable preview so shell/dock return to idle.
+          setSyncReport({
+            created: [],
+            pruned: [],
+            fixed: [],
+            errors: rep.errors ?? [],
+          });
+          setSyncPreviewed(true);
           setDeployError(false);
           queryClient.invalidateQueries({ queryKey: ["scan"] });
           queryClient.invalidateQueries({ queryKey: ["registry"] });
@@ -870,6 +894,7 @@ export function App() {
 
   const deployLabel = (() => {
     if (deployError) return "Deploy · error";
+    if (deployJustCommitted) return "Deploy · idle";
     const driftN = status.data?.drift.length ?? 0;
     if (driftN > 0) return `Deploy · drift ${driftN}`;
     if (syncReport && (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0)) {
@@ -879,53 +904,61 @@ export function App() {
     return "Review deploy";
   })();
   const deployHasWork =
-    (status.data?.drift.length ?? 0) > 0 ||
-    (syncReport != null &&
-      (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0));
+    !deployJustCommitted &&
+    ((status.data?.drift.length ?? 0) > 0 ||
+      (syncReport != null &&
+        (syncReport.created.length > 0 ||
+          syncReport.pruned.length > 0 ||
+          syncReport.fixed.length > 0)));
+
+  const rotConsequenceWhisper = (rec: Recommendation): string => {
+    if (rec.action === "archive") return "Archive unused skill · reversible via undo";
+    if (rec.action === "triage") return "Opens seedling queue · no change until you decide";
+    if (rec.action === "review") return "Opens skill detail · no mutation until you save";
+    if (rec.action === "dedupe") return "Review duplicates · merge is session-local until discard";
+    return "Resolve · reversible while undo ribbon is open";
+  };
 
   return (
-    <div className="min-h-screen flex flex-col font-sans bg-field text-ink relative scroll-quiet">
-      {/* Z1 Main Shell Header */}
-      <header className="h-[var(--shell-h)] border-b border-rule bg-plate-raised px-4 flex items-center justify-between z-30 shadow-sm">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen flex flex-col font-sans bg-field text-ink relative scroll-quiet overflow-x-hidden max-w-[100vw]">
+      {/* Z1 Main Shell Header — phone: status only */}
+      <header className="h-[var(--shell-h)] border-b border-rule bg-plate-raised px-3 sm:px-4 flex items-center justify-between z-30 shadow-sm max-w-[100vw] overflow-hidden">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
+            type="button"
             onClick={() => {
               setActiveMode("garden");
               setSelectedSkillName(null);
               setDeployOpen(false);
             }}
-            className="text-lg font-serif font-semibold text-ink tracking-tight bg-transparent border-none cursor-pointer"
+            className="text-lg font-serif font-semibold text-ink tracking-tight bg-transparent border-none cursor-pointer flex-shrink-0"
           >
             skillkeep
           </button>
-          <span className="text-[10px] uppercase tracking-wider text-ink-quiet">v0.1.0</span>
+          <span className="shell-version text-[10px] uppercase tracking-wider text-ink-quiet">v0.1.0</span>
 
-          <div className="flex items-center gap-2 border-l border-rule pl-3 ml-2">
+          <div className="flex items-center gap-2 border-l border-rule pl-2 sm:pl-3 ml-1 sm:ml-2 min-w-0">
             <span
               className={`health-disk ${
                 health.isError
                   ? "health-disk--offline"
                   : health.data?.ok
-                  ? "health-disk--live"
-                  : "health-disk--degraded"
+                    ? "health-disk--live"
+                    : "health-disk--degraded"
               } ${showSweep ? "health-disk--sweep" : ""}`}
             />
             <span className="text-[11px] font-mono text-ink-secondary">
-              {health.isError
-                ? "offline"
-                : health.data?.ok
-                ? `live`
-                : "degraded"}
+              {health.isError ? "offline" : health.data?.ok ? "live" : "degraded"}
             </span>
           </div>
 
-          <span className="chip uppercase text-[9px] font-bold tracking-widest px-1.5 py-0.5 border border-rule-strong">
+          <span className="chip uppercase text-[9px] font-bold tracking-widest px-1.5 border border-rule-strong flex-shrink-0">
             {health.data?.mode ?? "agent"}
           </span>
         </div>
 
-        {/* Center: Context-budget readout */}
-        <div className="hidden sm:flex items-center gap-2 ledger-plate-tight px-3 py-1 font-mono text-xs tabular">
+        {/* Center: Context-budget readout (desktop) */}
+        <div className="shell-budget-desktop hidden md:flex items-center gap-2 ledger-plate-tight px-3 py-1 font-mono text-xs tabular">
           <span className="text-ink-quiet text-[10px] uppercase font-bold tracking-wide">resident set</span>
           <span className="font-semibold text-terracotta">{formatTokens(totalBudget)} tokens</span>
           {budgetPreviewDelta != null && budgetPreviewDelta !== 0 && (
@@ -936,13 +969,13 @@ export function App() {
           )}
         </div>
 
-        {/* Right action signals */}
-        <div className="flex items-center gap-3">
+        {/* Right action signals — desktop; phone uses thumb dock */}
+        <div className="shell-actions-desktop flex items-center gap-2 md:gap-3">
           <button
             type="button"
             onClick={openTriage}
             data-hot={awaitingCount > 0}
-            className="chip chip-signal chip-action px-2 py-0.5"
+            className="chip chip-signal chip-action"
           >
             {inbox.isLoading && !inbox.data ? (
               <span className="text-ink-quiet">Loading inbox…</span>
@@ -965,7 +998,7 @@ export function App() {
             type="button"
             onClick={openDeployReview}
             data-hot={deployHasWork || deployError}
-            className="chip chip-signal chip-action px-2 py-0.5"
+            className="chip chip-signal chip-action"
           >
             <span className="action-stem action-stem--forest" />
             <span>{deployLabel}</span>
@@ -973,21 +1006,18 @@ export function App() {
 
           <button
             type="button"
-            onClick={() => {
-              setDeployOpen(false);
-              setSelectedSkillName(null);
-              setActiveMode("garden");
-            }}
+            onClick={openRot}
             data-hot={rotFindingsCount > 0}
-            className="chip chip-signal chip-action px-2 py-0.5"
+            className="chip chip-signal chip-action"
           >
             {rotFindingsCount > 0 && <span className="action-stem action-stem--amber" />}
             <span>Rot{rotFindingsCount > 0 ? ` ${rotFindingsCount}` : ""}</span>
           </button>
 
           <button
+            type="button"
             onClick={() => setSearchOpen(true)}
-            className="p-1.5 rounded hover:bg-row-alt text-ink-secondary cursor-pointer"
+            className="press-icon"
             title="Search ( / )"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -996,13 +1026,14 @@ export function App() {
           </button>
 
           <button
+            type="button"
             onClick={() => {
               setActiveMode(activeMode === "settings" ? "garden" : "settings");
               setSelectedSkillName(null);
+              setDeployOpen(false);
             }}
-            className={`p-1.5 rounded cursor-pointer ${
-              activeMode === "settings" ? "bg-row-alt text-terracotta" : "hover:bg-row-alt text-ink-secondary"
-            }`}
+            className="press-icon"
+            data-active={activeMode === "settings"}
             title="Settings"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1011,31 +1042,57 @@ export function App() {
             </svg>
           </button>
         </div>
+
+        {/* Phone status-row settings only */}
+        <button
+          type="button"
+          onClick={() => {
+            setActiveMode(activeMode === "settings" ? "garden" : "settings");
+            setSelectedSkillName(null);
+            setDeployOpen(false);
+          }}
+          className="press-icon md:hidden flex-shrink-0"
+          data-active={activeMode === "settings"}
+          title="Settings"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+        </button>
       </header>
 
-
-      {/* Sub budget bar for mobile */}
-      <div className="sm:hidden border-b border-rule bg-plate px-4 py-1 text-center font-mono text-xs text-ink-quiet">
-        resident set: <span className="font-semibold text-terracotta">{formatTokens(totalBudget)} tokens</span>
+      {/* Phone budget strip — full width under status */}
+      <div className="budget-strip">
+        <span className="budget-strip__label">resident set</span>
+        <span className="budget-strip__value tabular">{formatTokens(totalBudget)} tokens</span>
+        {budgetPreviewDelta != null && budgetPreviewDelta !== 0 && (
+          <span className="budget-strip__delta tabular">
+            {budgetPreviewDelta > 0 ? "+" : "−"}
+            {formatTokens(Math.abs(budgetPreviewDelta))}
+          </span>
+        )}
       </div>
 
       {/* Main Workspace Frame */}
-      <main className={`flex-1 grid grid-cols-1 md:grid-cols-[1fr_350px] gap-6 p-4 md:p-6 max-w-[1440px] mx-auto w-full overflow-hidden ${activeMode === "triage" ? "workbench-dim" : ""}`}>
-        
+      <main
+        className={`workbench-main flex-1 grid grid-cols-1 md:grid-cols-[1fr_350px] gap-6 p-4 md:p-6 max-w-[1440px] mx-auto w-full overflow-hidden ${
+          activeMode === "triage" ? "workbench-dim" : ""
+        }`}
+      >
         {/* LEFT COLUMN: Main workspace */}
         <section className="flex flex-col min-h-0 min-w-0">
-          {activeMode === "garden" && (
+          {(activeMode === "garden" || activeMode === "rot") && (
             <div className="ledger-plate flex flex-col h-full min-h-[500px]">
-              {/* Z5 Control Rail */}
-              <div className="flex flex-wrap items-center justify-between gap-3 p-3 border-b border-rule bg-plate-raised">
+              {/* Z5 Control Rail — desktop full; phone Filter · Lens */}
+              <div className="control-rail-desktop flex-wrap items-center justify-between gap-3 p-3 border-b border-rule bg-plate-raised">
                 <div className="flex flex-wrap items-center gap-2">
-                  {/* Scope filter */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">scope:</span>
                     <select
                       value={scopeFilter}
                       onChange={(e) => setScopeFilter(e.target.value)}
-                      className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs font-medium cursor-pointer"
+                      className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs font-medium cursor-pointer min-h-[44px]"
                     >
                       <option value="all">all scopes</option>
                       {(registry.data ?? []).map((s) => (
@@ -1045,14 +1102,12 @@ export function App() {
                       ))}
                     </select>
                   </div>
-
-                  {/* Tier filter */}
                   <div className="flex items-center gap-1.5">
                     <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">tier:</span>
                     <select
                       value={tierFilter}
                       onChange={(e) => setTierFilter(e.target.value as Tier | "all")}
-                      className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs font-medium cursor-pointer"
+                      className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs font-medium cursor-pointer min-h-[44px]"
                     >
                       <option value="all">all tiers</option>
                       <option value="rooted">rooted</option>
@@ -1061,43 +1116,43 @@ export function App() {
                     </select>
                   </div>
                 </div>
-
-                {/* Sort & Perspective Lenses */}
                 <div className="flex items-center gap-2">
                   <div className="flex items-center gap-1">
                     <button
+                      type="button"
                       onClick={() => setPerspective("garden")}
                       data-active={perspective === "garden"}
-                      className={`btn btn-ghost text-xs px-2 py-1 ${
+                      className={`btn btn-ghost text-xs ${
                         perspective === "garden" ? "text-terracotta font-semibold" : ""
                       }`}
                     >
                       Garden
                     </button>
                     <button
+                      type="button"
                       onClick={() => setPerspective("cost")}
                       data-active={perspective === "cost"}
-                      className={`btn btn-ghost text-xs px-2 py-1 ${
+                      className={`btn btn-ghost text-xs ${
                         perspective === "cost" ? "text-terracotta font-semibold" : ""
                       }`}
                     >
                       Cost
                     </button>
                     <button
+                      type="button"
                       onClick={() => setPerspective("exposure")}
                       data-active={perspective === "exposure"}
-                      className={`btn btn-ghost text-xs px-2 py-1 ${
+                      className={`btn btn-ghost text-xs ${
                         perspective === "exposure" ? "text-terracotta font-semibold" : ""
                       }`}
                     >
                       Exposure
                     </button>
                   </div>
-
                   <select
                     value={sortField}
                     onChange={(e) => setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")}
-                    className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs cursor-pointer text-ink-secondary"
+                    className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs cursor-pointer text-ink-secondary min-h-[44px]"
                   >
                     <option value="name">sort: name</option>
                     <option value="tier">sort: tier</option>
@@ -1106,9 +1161,25 @@ export function App() {
                   </select>
                 </div>
               </div>
+              <div className="control-rail-phone">
+                <button
+                  type="button"
+                  className="chip chip-signal chip-action"
+                  data-hot={perspective !== "garden" || scopeFilter !== "all" || tierFilter !== "all"}
+                  onClick={() => setFilterSheetOpen(true)}
+                >
+                  {(perspective !== "garden" || scopeFilter !== "all" || tierFilter !== "all") && (
+                    <span className="action-stem action-stem--forest" />
+                  )}
+                  <span>Filter · Lens</span>
+                </button>
+                <span className="text-[11px] font-mono text-ink-quiet tabular">
+                  {sortedSkills.length} skills
+                </span>
+              </div>
 
               {/* Z2 Garden list body */}
-              <div className="flex-1 overflow-y-auto scroll-quiet">
+              <div className="flex-1 overflow-y-auto scroll-quiet overflow-x-hidden">
                 {registry.isLoading && (
                   <div className="flex flex-col gap-2 p-4">
                     <div className="skeleton-row" />
@@ -1136,6 +1207,7 @@ export function App() {
                       Configure your repositories in settings and run a triage sweep to manage your AI assistant skills.
                     </p>
                     <button
+                      type="button"
                       onClick={() => {
                         setActiveMode("settings");
                       }}
@@ -1157,6 +1229,49 @@ export function App() {
                         skill.costMicroUsd !== null &&
                         skill.costMicroUsd > 100000;
 
+                      const applyTier = (t: Tier) => {
+                        const prev = skill.tier;
+                        if (prev === t) return;
+                        saveTier(skill.name, t);
+                        setTierRevision((n) => n + 1);
+                        setBudgetPreviewDelta(null);
+                        triggerUndoAction({
+                          type: "tier",
+                          name: skill.name,
+                          label: `Tier → ${t} on ${skill.name}`,
+                          prevTier: prev,
+                        });
+                      };
+
+                      const makeTierSeg = () => (
+                        <div
+                          className="tier-seg"
+                          onClick={(e) => e.stopPropagation()}
+                          onMouseLeave={() => setBudgetPreviewDelta(null)}
+                        >
+                          {(["rooted", "climbing", "pruned"] as Tier[]).map((t) => (
+                            <button
+                              key={t}
+                              type="button"
+                              data-active={skill.tier === t}
+                              className="tier-seg__btn"
+                              onMouseEnter={() =>
+                                setBudgetPreviewDelta(budgetDelta(skill.tier, t, skill.tokenEstimate))
+                              }
+                              onFocus={() =>
+                                setBudgetPreviewDelta(budgetDelta(skill.tier, t, skill.tokenEstimate))
+                              }
+                              onClick={() => applyTier(t)}
+                              title={`Move to ${t} (${formatBudgetDelta(
+                                budgetDelta(skill.tier, t, skill.tokenEstimate),
+                              )})`}
+                            >
+                              {t[0]}
+                            </button>
+                          ))}
+                        </div>
+                      );
+
                       return (
                         <div
                           key={skill.name}
@@ -1164,111 +1279,107 @@ export function App() {
                             setSelectedSkillName(skill.name);
                             setDeployOpen(false);
                           }}
-                          className={`flex items-center justify-between gap-4 py-2.5 px-3 hover:bg-row-alt/30 cursor-pointer transition-all duration-150 ${
+                          className={`hover:bg-row-alt/30 cursor-pointer transition-all duration-150 ${
                             selectedSkillName === skill.name ? "bg-row-alt/65 font-medium" : ""
                           } ${recede ? "row-recede" : ""} ${expensive ? "row-cost-flag" : ""}`}
                         >
-                          <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <span
-                              className={`tier-stem ${
-                                skill.tier === "rooted"
-                                  ? "tier-stem--rooted"
-                                  : skill.tier === "climbing"
-                                    ? "tier-stem--climbing"
-                                    : "tier-stem--pruned"
-                              }`}
-                            />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-start gap-2">
-                                <span className="skill-name min-w-0 flex-1">{skill.name}</span>
-                                <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30 flex-shrink-0">
-                                  {skill.scope}
+                          {/* Desktop multi-column row */}
+                          <div className="garden-row-desktop items-center justify-between gap-4 py-2.5 px-3">
+                            <div className="flex items-center gap-3 min-w-0 flex-1">
+                              <span
+                                className={`tier-stem ${
+                                  skill.tier === "rooted"
+                                    ? "tier-stem--rooted"
+                                    : skill.tier === "climbing"
+                                      ? "tier-stem--climbing"
+                                      : "tier-stem--pruned"
+                                }`}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-start gap-2">
+                                  <span className="skill-name min-w-0 flex-1">{skill.name}</span>
+                                  <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30 flex-shrink-0">
+                                    {skill.scope}
+                                  </span>
+                                </div>
+                                <div
+                                  className="skill-path max-w-lg mt-0.5"
+                                  title={skill.description || undefined}
+                                >
+                                  {skill.description || "no description"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 flex-shrink-0">
+                              {(perspective === "exposure" || perspective === "cost") && (
+                                <span
+                                  className={`verdict ${
+                                    skill.exposure === "active"
+                                      ? "verdict--active"
+                                      : skill.exposure === "stale"
+                                        ? "verdict--stale"
+                                        : "verdict--dormant"
+                                  }`}
+                                >
+                                  {skill.exposure}
                                 </span>
+                              )}
+                              <div className="text-right font-mono text-xs">
+                                {perspective === "cost" ? (
+                                  <div className="font-medium text-ink">{formatCost(skill.costMicroUsd)}</div>
+                                ) : (
+                                  <div className="text-ink-secondary">
+                                    {formatTokens(skill.tokenEstimate)}
+                                  </div>
+                                )}
+                                <div className="text-[10px] text-ink-quiet">
+                                  {skill.usageTokens > 0
+                                    ? `${formatTokens(skill.usageTokens)} used`
+                                    : "unused"}
+                                </div>
                               </div>
-                              <div
-                                className="skill-path max-w-lg mt-0.5"
-                                title={skill.description || undefined}
-                              >
-                                {skill.description || "no description"}
-                              </div>
+                              {makeTierSeg()}
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4 flex-shrink-0">
-                            {(perspective === "exposure" || perspective === "cost") && (
+                          {/* Phone stacked ledger cell — path hidden */}
+                          <div className="garden-row-phone">
+                            <div className="garden-row-phone__primary">
                               <span
-                                className={`verdict ${
-                                  skill.exposure === "active"
-                                    ? "verdict--active"
-                                    : skill.exposure === "stale"
-                                      ? "verdict--stale"
-                                      : "verdict--dormant"
+                                className={`tier-stem ${
+                                  skill.tier === "rooted"
+                                    ? "tier-stem--rooted"
+                                    : skill.tier === "climbing"
+                                      ? "tier-stem--climbing"
+                                      : "tier-stem--pruned"
                                 }`}
-                              >
-                                {skill.exposure}
-                              </span>
-                            )}
-
-                            <div className="text-right font-mono text-xs">
-                              {perspective === "cost" ? (
-                                <div className="font-medium text-ink">
-                                  {formatCost(skill.costMicroUsd)}
-                                </div>
-                              ) : (
-                                <div className="text-ink-secondary">
-                                  {formatTokens(skill.tokenEstimate)}
-                                </div>
-                              )}
-                              <div className="text-[10px] text-ink-quiet">
-                                {skill.usageTokens > 0
-                                  ? `${formatTokens(skill.usageTokens)} used`
-                                  : "unused"}
-                              </div>
+                              />
+                              <span className="skill-name min-w-0 flex-1">{skill.name}</span>
                             </div>
-
-                            <div
-                              onClick={(e) => e.stopPropagation()}
-                              className="flex border border-rule rounded overflow-hidden"
-                              onMouseLeave={() => setBudgetPreviewDelta(null)}
-                            >
-                              {(["rooted", "climbing", "pruned"] as Tier[]).map((t) => (
-                                <button
-                                  key={t}
-                                  onMouseEnter={() =>
-                                    setBudgetPreviewDelta(
-                                      budgetDelta(skill.tier, t, skill.tokenEstimate),
-                                    )
-                                  }
-                                  onFocus={() =>
-                                    setBudgetPreviewDelta(
-                                      budgetDelta(skill.tier, t, skill.tokenEstimate),
-                                    )
-                                  }
-                                  onClick={() => {
-                                    const prev = skill.tier;
-                                    if (prev === t) return;
-                                    saveTier(skill.name, t);
-                                    setTierRevision((n) => n + 1);
-                                    setBudgetPreviewDelta(null);
-                                    triggerUndoAction({
-                                      type: "tier",
-                                      name: skill.name,
-                                      label: `Tier → ${t} on ${skill.name}`,
-                                      prevTier: prev,
-                                    });
-                                  }}
-                                  className={`px-1.5 py-0.5 text-[9px] font-mono cursor-pointer border-none ${
-                                    skill.tier === t
-                                      ? "bg-forest text-field font-semibold"
-                                      : "bg-plate hover:bg-row-alt text-ink-secondary"
+                            <div className="garden-row-phone__secondary">
+                              <div className="garden-row-phone__meta">
+                                <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30 flex-shrink-0">
+                                  {skill.scope}
+                                </span>
+                                <span className="font-mono text-xs text-ink-secondary tabular">
+                                  {formatCost(skill.costMicroUsd)}
+                                </span>
+                                <span className="font-mono text-[10px] text-ink-quiet tabular">
+                                  {formatTokens(skill.tokenEstimate)}
+                                </span>
+                                <span
+                                  className={`verdict ${
+                                    skill.exposure === "active"
+                                      ? "verdict--active"
+                                      : skill.exposure === "stale"
+                                        ? "verdict--stale"
+                                        : "verdict--dormant"
                                   }`}
-                                  title={`Move to ${t} (${formatBudgetDelta(
-                                    budgetDelta(skill.tier, t, skill.tokenEstimate),
-                                  )})`}
                                 >
-                                  {t[0]}
-                                </button>
-                              ))}
+                                  {skill.exposure}
+                                </span>
+                              </div>
+                              {makeTierSeg()}
                             </div>
                           </div>
                         </div>
@@ -1282,14 +1393,14 @@ export function App() {
 
           {/* Z10 Settings panel */}
           {activeMode === "settings" && (
-            <div className="ledger-plate p-5 flex flex-col h-full overflow-y-auto scroll-quiet">
-              <div className="flex items-center justify-between border-b border-rule pb-3 mb-4">
+            <div className="settings-plate ledger-plate p-5 flex flex-col h-full overflow-y-auto scroll-quiet">
+              <div className="flex items-center justify-between border-b border-rule pb-3 mb-4 settings-plate__header">
                 <h2 className="font-serif text-lg font-semibold text-ink">Configuration Settings</h2>
-                <div className="flex gap-2">
-                  <button onClick={() => setActiveMode("garden")} className="btn btn-quiet">
+                <div className="flex gap-2 settings-plate__actions">
+                  <button type="button" onClick={() => setActiveMode("garden")} className="btn btn-quiet">
                     Back to Garden
                   </button>
-                  <button onClick={handleSaveSettings} className="btn btn-primary">
+                  <button type="button" onClick={handleSaveSettings} className="btn btn-primary">
                     Save Changes
                   </button>
                 </div>
@@ -1688,14 +1799,14 @@ export function App() {
                           <div className="text-xs text-ink-quiet py-1">None</div>
                         ) : (
                           syncReport.created.map((s) => (
-                            <div key={s} className="flex gap-2 text-[11px] py-0.5 min-w-0">
-                              <span className="skill-name text-[12px] flex-shrink-0 max-w-[40%]">
-                                {s.split("/").pop() ?? s}
-                              </span>
-                              <span className="skill-path flex-1" title={s}>
-                                {s}
-                              </span>
-                              <span className="font-mono text-forest flex-shrink-0">root</span>
+                            <div key={s} className="deploy-line">
+                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <div className="deploy-line__meta">
+                                <span className="skill-path" title={s}>
+                                  {s}
+                                </span>
+                                <span className="font-mono text-forest flex-shrink-0">root</span>
+                              </div>
                             </div>
                           ))
                         )}
@@ -1709,14 +1820,14 @@ export function App() {
                           <div className="text-xs text-ink-quiet py-1">None</div>
                         ) : (
                           syncReport.pruned.map((s) => (
-                            <div key={s} className="flex gap-2 text-[11px] py-0.5 min-w-0">
-                              <span className="skill-name text-[12px] flex-shrink-0 max-w-[40%]">
-                                {s.split("/").pop() ?? s}
-                              </span>
-                              <span className="skill-path flex-1" title={s}>
-                                {s}
-                              </span>
-                              <span className="font-mono text-brick flex-shrink-0">prune</span>
+                            <div key={s} className="deploy-line">
+                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <div className="deploy-line__meta">
+                                <span className="skill-path" title={s}>
+                                  {s}
+                                </span>
+                                <span className="font-mono text-brick flex-shrink-0">prune</span>
+                              </div>
                             </div>
                           ))
                         )}
@@ -1731,7 +1842,7 @@ export function App() {
                         ) : (
                           <>
                             {syncReport.fixed.map((s) => (
-                              <div key={`fix-${s}`} className="text-[11px] py-0.5">
+                              <div key={`fix-${s}`} className="deploy-line">
                                 <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
                                 <div className="text-ink-quiet font-mono text-[10px]" title={s}>
                                   dry-run correction · {s}
@@ -1739,7 +1850,7 @@ export function App() {
                               </div>
                             ))}
                             {(status.data?.drift ?? []).map((s) => (
-                              <div key={`status-drift-${s}`} className="text-[11px] py-0.5">
+                              <div key={`status-drift-${s}`} className="deploy-line">
                                 <span className="skill-name text-[12px]">{s}</span>
                                 <div className="text-ink-quiet font-mono text-[10px]">
                                   status: origin vs override
@@ -1776,7 +1887,9 @@ export function App() {
                 )}
 
                 <div className="pt-2 border-t border-rule flex flex-col gap-2">
+                  {deployConfirmLine && <div className="deploy-confirm">{deployConfirmLine}</div>}
                   <button
+                    type="button"
                     onClick={runSyncApply}
                     disabled={
                       !syncReport ||
@@ -1794,7 +1907,7 @@ export function App() {
                     syncReport.fixed.length === 0) ? (
                     <p className="text-[10px] text-ink-quiet text-center">Nothing to deploy</p>
                   ) : null}
-                  <button onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
+                  <button type="button" onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
                     Cancel
                   </button>
                 </div>
@@ -1829,12 +1942,14 @@ export function App() {
                           {rec.kind === "inbox-triage" ? "INBOX TRIAGE" : rec.kind.replace("-", " ")}
                         </span>
                       </div>
-                      <h4 className="font-serif font-medium text-ink text-[13px]">{rec.title}</h4>
+                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">{rec.title}</h4>
                       <p className="text-ink-secondary leading-normal">{rec.detail}</p>
+                      <p className="rot-whisper">{rotConsequenceWhisper(rec)}</p>
                       <div className="flex justify-end gap-2 pt-1 border-t border-rule/30">
                         <button
+                          type="button"
                           onClick={() => handleResolveRecommendation(rec)}
-                          className="btn btn-forest py-0.5 px-2 text-[11px]"
+                          className="btn btn-forest"
                         >
                           {rec.action === "triage" ? "Open triage" : "Resolve"}
                         </button>
@@ -1849,8 +1964,8 @@ export function App() {
 
       {/* Z4 Focused Triage Mode (Inbox sweep) */}
       {activeMode === "triage" && (
-        <div className="fixed inset-0 bg-field/90 z-40 flex items-center justify-center p-4">
-          <div className="ledger-plate w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative z-50">
+        <div className="triage-overlay fixed inset-0 bg-field/90 z-40 flex items-center justify-center p-4">
+          <div className="triage-plate ledger-plate w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative z-50">
             <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-rule bg-plate flex flex-col min-h-0">
               <div className="p-3 border-b border-rule bg-plate-raised flex justify-between items-center">
                 <span className="font-serif font-bold text-sm">Seedlings</span>
@@ -1866,10 +1981,10 @@ export function App() {
               </div>
               {triageLoadState === "populated" && seedlings.length > 0 && (
                 <div className="px-3 py-2 border-b border-rule flex flex-wrap gap-2 bg-plate-raised">
-                  <button type="button" className="btn btn-quiet text-[11px] py-0.5 px-2" onClick={bulkKeepSuggested}>
+                  <button type="button" className="btn btn-quiet text-[11px]" onClick={bulkKeepSuggested}>
                     Keep all suggested
                   </button>
-                  <button type="button" className="btn btn-quiet text-[11px] py-0.5 px-2" onClick={bulkDiscardObvious}>
+                  <button type="button" className="btn btn-quiet text-[11px]" onClick={bulkDiscardObvious}>
                     Discard obvious duplicates
                   </button>
                 </div>
@@ -1904,7 +2019,7 @@ export function App() {
               </div>
             </div>
 
-            <div className="flex-1 p-5 flex flex-col min-h-0 bg-plate-raised">
+            <div className="flex-1 p-5 flex flex-col min-h-0 bg-plate-raised overflow-y-auto">
               {triageLoadState === "loading" && (
                 <div className="flex-1 flex flex-col gap-3">
                   <div className="skeleton-row" />
@@ -1981,7 +2096,7 @@ export function App() {
                         <select
                           value={triageMergeTarget}
                           onChange={(e) => setTriageMergeTarget(e.target.value)}
-                          className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs"
+                          className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
                         >
                           <option value="">Select Target...</option>
                           {(registry.data ?? [])
@@ -2000,13 +2115,14 @@ export function App() {
                       )}
                       <div className="flex gap-2 mt-2">
                         <button
+                          type="button"
                           onClick={triageConfirmMerge}
                           disabled={!triageMergeTarget}
                           className="btn btn-primary flex-1"
                         >
                           Mark merge resolved
                         </button>
-                        <button onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
+                        <button type="button" onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
                           Cancel
                         </button>
                       </div>
@@ -2025,7 +2141,7 @@ export function App() {
                             <select
                               value={triageScope}
                               onChange={(e) => setTriageScope(e.target.value)}
-                              className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs"
+                              className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
                             >
                               <option value="global">global</option>
                               {(registry.data ?? []).map((s) => (
@@ -2042,7 +2158,7 @@ export function App() {
                             <select
                               value={triageTier}
                               onChange={(e) => setTriageTier(e.target.value as Tier)}
-                              className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs"
+                              className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
                             >
                               <option value="rooted">rooted (resident set)</option>
                               <option value="climbing">climbing (search index)</option>
@@ -2064,19 +2180,19 @@ export function App() {
                         </div>
                       </div>
 
-                      <div className="mt-auto pt-4 border-t border-rule flex gap-2">
-                        <button onClick={triageKeep} className="btn btn-primary flex-1">
+                      <div className="triage-actions mt-auto pt-4 border-t border-rule flex flex-wrap gap-2">
+                        <button type="button" onClick={triageKeep} className="btn btn-primary flex-1">
                           Keep
                         </button>
-                        <button onClick={triageMerge} className="btn btn-forest flex-1">
+                        <button type="button" onClick={triageMerge} className="btn btn-forest flex-1">
                           Merge
                         </button>
                         {aiStatus.data?.configured && (
-                          <button onClick={runTriageSuggest} className="btn btn-quiet px-3">
+                          <button type="button" onClick={runTriageSuggest} className="btn btn-quiet px-3">
                             AI Suggest
                           </button>
                         )}
-                        <button onClick={triageDiscard} className="btn btn-brick flex-1">
+                        <button type="button" onClick={triageDiscard} className="btn btn-brick flex-1">
                           Discard
                         </button>
                       </div>
@@ -2087,8 +2203,9 @@ export function App() {
             </div>
 
             <button
+              type="button"
               onClick={() => setActiveMode("garden")}
-              className="absolute top-3 right-3 text-sm text-ink-quiet hover:underline bg-transparent border-none cursor-pointer"
+              className="absolute top-3 right-3 press-icon text-sm text-ink-quiet"
             >
               Close
             </button>
@@ -2101,7 +2218,7 @@ export function App() {
         <div className="search-backdrop" onClick={() => setSearchOpen(false)}>
           <div className="ledger-plate search-plate" onClick={(e) => e.stopPropagation()}>
             <div className="p-3 border-b border-rule bg-plate-raised flex items-center gap-3">
-              <svg className="w-4 h-4 text-ink-quiet" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-ink-quiet flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
               <input
@@ -2110,14 +2227,15 @@ export function App() {
                 placeholder="Find skill by name, description, scope or hash..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent border-none text-sm outline-none text-ink"
+                className="w-full bg-transparent border-none text-sm outline-none text-ink min-h-[44px]"
               />
               <button
+                type="button"
                 onClick={() => {
                   setSearchQuery("");
                   setSearchOpen(false);
                 }}
-                className="text-xs text-ink-quiet hover:underline bg-transparent border-none cursor-pointer"
+                className="press-icon text-xs text-ink-quiet"
               >
                 Close
               </button>
@@ -2132,17 +2250,15 @@ export function App() {
                     setSearchOpen(false);
                     setActiveMode("garden");
                   }}
-                  className="p-3 hover:bg-row-alt/40 cursor-pointer flex justify-between items-center gap-4 text-xs"
+                  className="p-3 hover:bg-row-alt/40 cursor-pointer flex justify-between items-start gap-4 text-xs"
                 >
-                  <div className="min-w-0">
-                    <span className="font-serif text-[13px] font-semibold text-ink block truncate">
-                      {skill.name}
-                    </span>
-                    <span className="font-mono text-ink-quiet truncate block mt-0.5">
+                  <div className="min-w-0 flex-1">
+                    <span className="skill-name text-[13px] font-semibold">{skill.name}</span>
+                    <span className="font-mono text-ink-quiet block mt-0.5 truncate">
                       {skill.scope} · {skill.description || "no description"}
                     </span>
                   </div>
-                  <span className="chip uppercase text-[9px]">{skill.tier}</span>
+                  <span className="chip uppercase text-[9px] flex-shrink-0">{skill.tier}</span>
                 </div>
               ))}
 
@@ -2151,6 +2267,85 @@ export function App() {
                   No matching registry skills found.
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Filter · Lens half-height bottom sheet (phone) */}
+      {filterSheetOpen && (
+        <div className="sheet-overlay md:hidden" onClick={() => setFilterSheetOpen(false)}>
+          <div className="sheet-panel sheet-panel--half" onClick={(e) => e.stopPropagation()}>
+            <div className="sheet-header">
+              <h3 className="font-serif text-base font-semibold">Filter · Lens</h3>
+              <button type="button" className="press-icon" onClick={() => setFilterSheetOpen(false)}>
+                Close
+              </button>
+            </div>
+            <div className="sheet-body flex flex-col gap-4">
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">scope</label>
+                <select
+                  value={scopeFilter}
+                  onChange={(e) => setScopeFilter(e.target.value)}
+                  className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
+                >
+                  <option value="all">all scopes</option>
+                  {(registry.data ?? []).map((s) => (
+                    <option key={s.scope} value={s.scope}>
+                      {s.scope}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">tier</label>
+                <select
+                  value={tierFilter}
+                  onChange={(e) => setTierFilter(e.target.value as Tier | "all")}
+                  className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
+                >
+                  <option value="all">all tiers</option>
+                  <option value="rooted">rooted</option>
+                  <option value="climbing">climbing</option>
+                  <option value="pruned">pruned</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">sort</label>
+                <select
+                  value={sortField}
+                  onChange={(e) => setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")}
+                  className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
+                >
+                  <option value="name">name</option>
+                  <option value="tier">tier</option>
+                  <option value="cost">usage cost</option>
+                  <option value="exposure">exposure</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-2">
+                  perspective
+                </label>
+                <div className="flex gap-2">
+                  {(["garden", "cost", "exposure"] as Perspective[]).map((p) => (
+                    <button
+                      key={p}
+                      type="button"
+                      className={`btn flex-1 ${perspective === p ? "btn-primary" : "btn-quiet"}`}
+                      onClick={() => setPerspective(p)}
+                    >
+                      {p[0]!.toUpperCase() + p.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="sheet-sticky-actions">
+              <button type="button" className="btn btn-primary w-full" onClick={() => setFilterSheetOpen(false)}>
+                Apply
+              </button>
             </div>
           </div>
         </div>
@@ -2185,35 +2380,240 @@ export function App() {
         </div>
       )}
 
-      {/* Z12 Mobile Panels Adaptive overlay sheets */}
+      {/* Phone thumb dock — four jobs */}
+      <nav className="thumb-dock" aria-label="Phone instrument dock">
+        <button
+          type="button"
+          className="thumb-dock__slot"
+          data-hot={awaitingCount > 0}
+          data-active={activeMode === "triage"}
+          onClick={openTriage}
+        >
+          <span className="thumb-dock__label">
+            {awaitingCount > 0 && <span className="action-stem action-stem--terracotta" />}
+            {awaitingCount > 0 ? `Triage ${awaitingCount}` : "Inbox"}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="thumb-dock__slot"
+          data-hot={deployHasWork || deployError}
+          data-active={deployOpen}
+          onClick={openDeployReview}
+        >
+          <span className="thumb-dock__label">
+            <span className="action-stem action-stem--forest" />
+            Deploy
+          </span>
+        </button>
+        <button
+          type="button"
+          className="thumb-dock__slot"
+          data-hot={rotFindingsCount > 0}
+          data-active={activeMode === "rot"}
+          onClick={openRot}
+        >
+          <span className="thumb-dock__label">
+            {rotFindingsCount > 0 && <span className="action-stem action-stem--amber" />}
+            {rotFindingsCount > 0 ? `Rot ${rotFindingsCount}` : "Rot"}
+          </span>
+        </button>
+        <button
+          type="button"
+          className="thumb-dock__slot"
+          data-active={searchOpen}
+          onClick={() => setSearchOpen(true)}
+        >
+          <span className="thumb-dock__label">Find</span>
+        </button>
+      </nav>
+
+      {/* Z12 Mobile full sheets: detail, deploy, rot */}
       <div className="md:hidden">
-        {selectedSkillName && (
+        {selectedSkillName && !deployOpen && (
           <div className="sheet-overlay" onClick={() => setSelectedSkillName(null)}>
-            <div className="sheet-panel" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between border-b border-rule pb-2 mb-3">
-                <h3 className="font-serif text-base font-semibold text-ink">{selectedSkillName}</h3>
-                <button onClick={() => setSelectedSkillName(null)} className="btn btn-ghost text-sm">
-                  Dismiss
+            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-header">
+                <h3 className="skill-name font-serif text-base font-semibold text-ink min-w-0 flex-1">
+                  {selectedSkillName}
+                </h3>
+                <button type="button" onClick={() => setSelectedSkillName(null)} className="press-icon">
+                  Close
                 </button>
               </div>
-
-              {selectedSkillQuery.data && (
-                <div className="flex flex-col gap-4 text-xs">
-                  <textarea
-                    value={detailContent}
-                    onChange={(e) => setDetailContent(e.target.value)}
-                    className="w-full min-h-[180px] p-2 border border-rule bg-plate-raised font-mono text-xs scroll-quiet rounded"
-                  />
-                  <div className="flex flex-wrap gap-2">
-                    <button onClick={handleSaveDetail} className="btn btn-primary flex-1">
-                      Save
-                    </button>
-                    <button onClick={handleArchiveDetail} className="btn btn-brick flex-1">
-                      Archive
-                    </button>
+              <div className="sheet-body">
+                {selectedSkillQuery.data && (
+                  <div className="flex flex-col gap-4 text-xs">
+                    <textarea
+                      value={detailContent}
+                      onChange={(e) => setDetailContent(e.target.value)}
+                      className="w-full min-h-[180px] p-2 border border-rule bg-plate-raised font-mono text-xs scroll-quiet rounded"
+                    />
                   </div>
+                )}
+              </div>
+              {selectedSkillQuery.data && (
+                <div className="sheet-sticky-actions">
+                  <button type="button" onClick={handleSaveDetail} className="btn btn-primary flex-1">
+                    Save
+                  </button>
+                  <button type="button" onClick={() => setSelectedSkillName(null)} className="btn btn-quiet flex-1">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={handleArchiveDetail} className="btn btn-brick flex-1">
+                    Archive
+                  </button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {deployOpen && (
+          <div className="sheet-overlay" onClick={() => setDeployOpen(false)}>
+            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-header">
+                <div className="min-w-0">
+                  <h3 className="font-serif text-base font-semibold text-ink">Deploy review</h3>
+                  <p className="text-[11px] font-mono text-ink-quiet mt-0.5">
+                    {deployPreviewAt ? `Preview as of ${deployPreviewAt}` : "Dry-run preview"}
+                  </p>
+                </div>
+                <button type="button" onClick={() => setDeployOpen(false)} className="press-icon">
+                  Close
+                </button>
+              </div>
+              <div className="sheet-body flex flex-col gap-4">
+                {syncMutation.isPending && !syncReport && (
+                  <div className="flex flex-col gap-2">
+                    <div className="skeleton-row" />
+                    <div className="skeleton-row" />
+                  </div>
+                )}
+                {deployError && !syncReport && (
+                  <div className="rounded border border-brick/30 bg-brick-soft p-3 text-brick text-xs">
+                    <h4 className="font-serif font-semibold text-sm mb-1">Couldn't load deploy preview</h4>
+                    <button type="button" className="btn btn-primary" onClick={openDeployReview}>
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {syncReport && (
+                  <>
+                    <div className="deploy-summary">
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.created.length}</div>
+                        <div className="deploy-summary__label">Will root</div>
+                      </div>
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.pruned.length}</div>
+                        <div className="deploy-summary__label">Will prune</div>
+                      </div>
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.fixed.length}</div>
+                        <div className="deploy-summary__label">Drift</div>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold text-forest border-b border-rule/50 mb-1">
+                          Will root
+                        </div>
+                        {syncReport.created.length === 0 ? (
+                          <div className="text-xs text-ink-quiet py-1">None</div>
+                        ) : (
+                          syncReport.created.map((s) => (
+                            <div key={s} className="deploy-line">
+                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-path" title={s}>
+                                {s}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold text-brick border-b border-rule/50 mb-1">
+                          Will prune
+                        </div>
+                        {syncReport.pruned.length === 0 ? (
+                          <div className="text-xs text-ink-quiet py-1">None</div>
+                        ) : (
+                          syncReport.pruned.map((s) => (
+                            <div key={s} className="deploy-line">
+                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-path" title={s}>
+                                {s}
+                              </span>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="sheet-sticky-actions flex-col">
+                {deployConfirmLine && <div className="deploy-confirm w-full">{deployConfirmLine}</div>}
+                <button
+                  type="button"
+                  onClick={runSyncApply}
+                  disabled={
+                    !syncReport ||
+                    (syncReport.created.length === 0 &&
+                      syncReport.pruned.length === 0 &&
+                      syncReport.fixed.length === 0)
+                  }
+                  className="btn btn-primary w-full"
+                >
+                  Commit sync
+                </button>
+                <button type="button" onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {activeMode === "rot" && !deployOpen && !selectedSkillName && (
+          <div className="sheet-overlay" onClick={() => setActiveMode("garden")}>
+            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+              <div className="sheet-header">
+                <h3 className="font-serif text-base font-semibold text-ink">Rot Recommendations</h3>
+                <button type="button" onClick={() => setActiveMode("garden")} className="press-icon">
+                  Close
+                </button>
+              </div>
+              <div className="sheet-body flex flex-col gap-3">
+                {recommendations.isLoading && <p className="text-xs text-ink-quiet">Loading health analysis...</p>}
+                {recommendations.isSuccess && rotRecommendations.length === 0 && (
+                  <div className="text-center py-8 text-ink-quiet text-xs italic">
+                    Garden status healthy. No rot detected.
+                  </div>
+                )}
+                {(recommendations.isSuccess || awaitingCount > 0) &&
+                  rotRecommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="ledger-plate-tight p-3 text-xs flex flex-col gap-2 bg-plate-raised"
+                    >
+                      <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.2 bg-amber-soft text-amber border border-amber/30 rounded self-start">
+                        {rec.kind === "inbox-triage" ? "INBOX TRIAGE" : rec.kind.replace("-", " ")}
+                      </span>
+                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">{rec.title}</h4>
+                      <p className="text-ink-secondary leading-normal">{rec.detail}</p>
+                      <p className="rot-whisper">{rotConsequenceWhisper(rec)}</p>
+                      <button
+                        type="button"
+                        onClick={() => handleResolveRecommendation(rec)}
+                        className="btn btn-forest self-end"
+                      >
+                        {rec.action === "triage" ? "Open triage" : "Resolve"}
+                      </button>
+                    </div>
+                  ))}
+              </div>
             </div>
           </div>
         )}
