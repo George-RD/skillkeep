@@ -6,6 +6,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import {
   adoptDetectedBulk,
+  adoptSkill,
   archiveSkill,
   buildRecommendations,
   buildStatus,
@@ -126,10 +127,14 @@ async function handleAdopt(ctx: RouterContext, req: Request): Promise<Response> 
   const results: (AdoptResultOutput | null)[] = body.items.map(() => null);
   const bulkInputs: { skill: DetectedSkill; scope: string }[] = [];
   const bulkPositions: number[] = [];
+  const inboxFallbacks: { index: number; item: AdoptItemInput }[] = [];
   body.items.forEach((item, index) => {
     const skill = detection.skills.find((s) => s.name === item.name && s.path === item.path);
     if (!skill) {
-      results[index] = { name: item.name, ok: false, error: "not found in last scan" };
+      // Additive fallback: absolute paths under a configured inbox dir are not part of the
+      // detect census, but the UI still needs to adopt them. Existing scan-gated callers are
+      // unchanged (they still match detection.skills first).
+      inboxFallbacks.push({ index, item });
       return;
     }
     bulkInputs.push({ skill, scope: item.scope });
@@ -142,8 +147,105 @@ async function handleAdopt(ctx: RouterContext, req: Request): Promise<Response> 
     if (position !== undefined) results[position] = result;
   });
 
+  for (const { index, item } of inboxFallbacks) {
+    if (item.name !== path.basename(item.path.replace(/\/$/, ""))) {
+      results[index] = { name: item.name, ok: false, error: "not found in last scan" };
+      continue;
+    }
+    if (!(await isPathInsideInboxDirs(item.path, config.inboxDirs))) {
+      results[index] = { name: item.name, ok: false, error: "not found in last scan" };
+      continue;
+    }
+    // Only adopt a real skill dir (has SKILL.md) that scanSkillDirs would surface.
+    const parent = path.dirname(path.resolve(item.path));
+    const listed = await scanSkillDirs(parent);
+    if (!listed.some((s) => s.name === item.name && s.dir === path.resolve(item.path))) {
+      results[index] = { name: item.name, ok: false, error: "not found in last scan" };
+      continue;
+    }
+    try {
+      await adoptSkill(config.registryRoot, item.path, item.scope, true);
+      results[index] = { name: item.name, ok: true };
+    } catch (err) {
+      results[index] = {
+        name: item.name,
+        ok: false,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
   resetScanCache();
   return jsonResponse(results);
+}
+
+// --- /api/inbox --------------------------------------------------------------
+
+interface InboxSkillOutput {
+  name: string;
+  path: string;
+  dir: string;
+  description: string;
+}
+
+/** True when `candidate` resolves to a strict child of some configured inbox dir. */
+async function isPathInsideInboxDirs(candidate: string, inboxDirs: string[]): Promise<boolean> {
+  let resolvedCandidate: string;
+  try {
+    resolvedCandidate = await fs.realpath(candidate);
+  } catch {
+    // Path may not exist yet (or was already deleted) — still resolve for traversal checks.
+    resolvedCandidate = path.resolve(candidate);
+  }
+  for (const raw of inboxDirs) {
+    const expanded = tildeExpand(raw);
+    let resolvedInbox: string;
+    try {
+      resolvedInbox = await fs.realpath(expanded);
+    } catch {
+      resolvedInbox = path.resolve(expanded);
+    }
+    const rel = path.relative(resolvedInbox, resolvedCandidate);
+    if (rel !== "" && !rel.startsWith("..") && !path.isAbsolute(rel)) return true;
+  }
+  return false;
+}
+
+async function handleInboxList(ctx: RouterContext): Promise<Response> {
+  const config = getConfig(ctx.db);
+  const items: InboxSkillOutput[] = [];
+  for (const raw of config.inboxDirs) {
+    const expanded = tildeExpand(raw);
+    for (const skill of await scanSkillDirs(expanded)) {
+      items.push({
+        name: skill.name,
+        path: skill.dir,
+        dir: expanded,
+        description: skill.description ?? "",
+      });
+    }
+  }
+  return jsonResponse(items);
+}
+
+async function handleInboxDelete(ctx: RouterContext, url: URL): Promise<Response> {
+  const rawPath = url.searchParams.get("path");
+  if (rawPath === null || rawPath.trim() === "") {
+    return jsonResponse({ error: "path query param is required" }, 422);
+  }
+  const config = getConfig(ctx.db);
+  // Containment uses realpath so a symlink whose target escapes the inbox is rejected;
+  // the delete itself targets the original lexical path so an inbox symlink is unlinked,
+  // not its external real target.
+  if (!(await isPathInsideInboxDirs(rawPath, config.inboxDirs))) {
+    return jsonResponse({ error: "path must resolve inside a configured inbox dir" }, 422);
+  }
+  const target = path.resolve(rawPath);
+  if (!existsSync(target)) {
+    return jsonResponse({ error: "path does not exist" }, 422);
+  }
+  await fs.rm(target, { recursive: true, force: true });
+  return jsonResponse({ ok: true });
 }
 
 // --- /api/registry -----------------------------------------------------------
@@ -936,6 +1038,10 @@ export function createRouter(ctx: RouterContext): (req: Request) => Promise<Resp
 
         if (pathname === "/api/scan" && method === "GET") return await handleScan(ctx, url);
         if (pathname === "/api/adopt" && method === "POST") return await handleAdopt(ctx, req);
+        if (pathname === "/api/inbox" && method === "GET") return await handleInboxList(ctx);
+        if (pathname === "/api/inbox" && method === "DELETE") {
+          return await handleInboxDelete(ctx, url);
+        }
         if (pathname === "/api/registry" && method === "GET") return await handleRegistryList(ctx);
         if (pathname === "/api/registry/move" && method === "POST") {
           return await handleRegistryMove(ctx, req);
