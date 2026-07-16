@@ -1,0 +1,1437 @@
+{
+  "tokenTail": "a48ebd0c",
+  "startedAt": "2026-07-16T12:58:18.489Z",
+  "phoneDiscard": {
+    "completed": true,
+    "disc": {
+      "t": "Discard",
+      "y": 719,
+      "h": 44,
+      "w": 116
+    },
+    "undo": true,
+    "ribbon": {
+      "top": 614.4,
+      "bottom": 712,
+      "gap": 72,
+      "overlap": false,
+      "text": "Discarded openspine-change-landing-ceremony · openspine-change-landing-ceremonyUndoDismiss"
+    },
+    "counts": {
+      "before": {
+        "triage": 65,
+        "rot": 35,
+        "remaining": {
+          "cur": 1,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 1 of 65 remaining | Keep all suggested | Discard obvious duplicates | openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint"
+      },
+      "afterDisc": {
+        "triage": 64,
+        "rot": 35,
+        "remaining": {
+          "cur": 2,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 2 of 65 remaining | Keep all suggested | Discard obvious duplicates | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cli-anything-doc-bootstrap"
+      },
+      "afterUndo": {
+        "triage": 65,
+        "rot": 35,
+        "remaining": {
+          "cur": 1,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 1 of 65 remaining | Keep all suggested | Discard obvious duplicates | openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint"
+      }
+    }
+  },
+  "phoneKeepPrimary": {
+    "dock": {
+      "top": 784,
+      "bottom": 844,
+      "h": 60
+    },
+    "decisionRow": {
+      "top": 706,
+      "bottom": 775,
+      "h": 69,
+      "gap": 9,
+      "overlap": false
+    },
+    "buttons": [
+      {
+        "text": "Keep",
+        "y": 719,
+        "bottom": 763,
+        "w": 116,
+        "h": 44,
+        "gap": 21,
+        "overlap": false,
+        "inViewport": true
+      },
+      {
+        "text": "Merge",
+        "y": 719,
+        "bottom": 763,
+        "w": 116,
+        "h": 44,
+        "gap": 21,
+        "overlap": false,
+        "inViewport": true
+      },
+      {
+        "text": "Discard",
+        "y": 719,
+        "bottom": 763,
+        "w": 116,
+        "h": 44,
+        "gap": 21,
+        "overlap": false,
+        "inViewport": true
+      }
+    ]
+  },
+  "exclusiveRecheck": [
+    {
+      "i": 1,
+      "phase": "mid",
+      "steps": "rot→esc→find→detail→esc→deploy→triage→find→detail",
+      "open": [
+        {
+          "kind": "find",
+          "cls": "search-backdrop",
+          "h": 776,
+          "z": "85"
+        },
+        {
+          "kind": "sheet",
+          "cls": "sheet-overlay md:hidden",
+          "h": 776,
+          "z": "80"
+        }
+      ],
+      "openCount": 2,
+      "majorKinds": [
+        "find"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 1,
+      "phase": "afterClose",
+      "seq": "rot→esc→find→detail→esc→deploy→triage→find→detail",
+      "openCount": 1,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 2,
+      "phase": "mid",
+      "steps": "rot→esc→find→rot→esc→triage→esc→triage→esc→find→esc→deploy",
+      "open": [
+        {
+          "kind": "deploy",
+          "cls": "sheet-overlay",
+          "h": 776,
+          "z": "80"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "deploy"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 2,
+      "phase": "afterClose",
+      "seq": "rot→esc→find→rot→esc→triage→esc→triage→esc→find→esc→deploy",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 3,
+      "phase": "mid",
+      "steps": "triage→triage→esc→find→detail→triage→triage",
+      "open": [],
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 3,
+      "phase": "afterClose",
+      "seq": "triage→triage→esc→find→detail→triage→triage→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 4,
+      "phase": "mid",
+      "steps": "triage→esc→deploy→esc→deploy→esc→rot→esc→deploy→deploy",
+      "open": [],
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 4,
+      "phase": "afterClose",
+      "seq": "triage→esc→deploy→esc→deploy→esc→rot→esc→deploy→deploy→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 5,
+      "phase": "mid",
+      "steps": "triage→esc→rot→rot→esc→triage",
+      "open": [
+        {
+          "kind": "triage",
+          "cls": "triage-overlay fixed inset-0 bg-field/90 z-40 flex items-cen",
+          "h": 776,
+          "z": "90"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "triage"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 5,
+      "phase": "afterClose",
+      "seq": "triage→esc→rot→rot→esc→triage→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 6,
+      "phase": "mid",
+      "steps": "find→detail→deploy→esc→rot→rot→triage→esc→deploy→triage",
+      "open": [
+        {
+          "kind": "triage",
+          "cls": "triage-overlay fixed inset-0 bg-field/90 z-40 flex items-cen",
+          "h": 776,
+          "z": "90"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "triage"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 6,
+      "phase": "afterClose",
+      "seq": "find→detail→deploy→esc→rot→rot→triage→esc→deploy→triage→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 7,
+      "phase": "mid",
+      "steps": "deploy→esc→deploy→find→detail→esc→find→detail→deploy",
+      "open": [
+        {
+          "kind": "deploy",
+          "cls": "sheet-overlay",
+          "h": 776,
+          "z": "80"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "deploy"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 7,
+      "phase": "afterClose",
+      "seq": "deploy→esc→deploy→find→detail→esc→find→detail→deploy→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 8,
+      "phase": "mid",
+      "steps": "find→detail→esc→triage→esc→deploy→rot",
+      "open": [
+        {
+          "kind": "rot",
+          "cls": "sheet-overlay",
+          "h": 776,
+          "z": "80"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "rot"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 8,
+      "phase": "afterClose",
+      "seq": "find→detail→esc→triage→esc→deploy→rot→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 9,
+      "phase": "mid",
+      "steps": "find→detail→rot→esc→find→detail→esc→rot",
+      "open": [
+        {
+          "kind": "rot",
+          "cls": "sheet-overlay",
+          "h": 776,
+          "z": "80"
+        }
+      ],
+      "openCount": 1,
+      "majorKinds": [
+        "rot"
+      ],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 9,
+      "phase": "afterClose",
+      "seq": "find→detail→rot→esc→find→detail→esc→rot→esc",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 10,
+      "phase": "mid",
+      "steps": "deploy→deploy→esc→find→detail→esc→rot→esc→find→esc→find",
+      "open": [],
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "dockVisible": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 10,
+      "phase": "afterClose",
+      "seq": "deploy→deploy→esc→find→detail→esc→rot→esc→find→esc→find",
+      "openCount": 0,
+      "majorKinds": [],
+      "exclusive": true,
+      "scrollWidth": 390,
+      "sane": true
+    }
+  ],
+  "desktop": {
+    "tasks": {
+      "a_triage": {
+        "completed": true,
+        "discardCompleted": true,
+        "keep": true,
+        "undoKeep": true,
+        "discard": true,
+        "undoDiscard": true,
+        "counts": {
+          "before": {
+            "triage": 65,
+            "rot": 35,
+            "remaining": null,
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 65 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow"
+          },
+          "afterKeep": {
+            "triage": 64,
+            "rot": 35,
+            "remaining": {
+              "cur": 2,
+              "total": 65
+            },
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+          },
+          "afterUndoKeep": {
+            "triage": 65,
+            "rot": 35,
+            "remaining": {
+              "cur": 1,
+              "total": 65
+            },
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 65 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 65 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+          },
+          "afterDisc": {
+            "triage": 64,
+            "rot": 35,
+            "remaining": {
+              "cur": 2,
+              "total": 65
+            },
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+          },
+          "afterUndoDisc": {
+            "triage": 65,
+            "rot": 35,
+            "remaining": {
+              "cur": 1,
+              "total": 65
+            },
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 65 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 65 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+          }
+        }
+      },
+      "b_tier": {
+        "completed": true,
+        "tierSize": {
+          "x": 962,
+          "y": 187,
+          "w": 44,
+          "h": 44
+        },
+        "budgetDelta": "−40",
+        "undo": true
+      },
+      "c_lens": {
+        "completed": true,
+        "detailOpened": true
+      },
+      "d_find": {
+        "completed": false,
+        "searchOpen": false
+      },
+      "e_deploy": {
+        "completed": true,
+        "markers": {
+          "willRoot": true,
+          "willPrune": true,
+          "drift": true,
+          "commit": true,
+          "head": "skillkeep\nV0.1.0\nlive\nAGENT\nRESIDENT SET\n5.8k tokens\nTriage 65\nDeploy · idle\nRot 35\nSCOPE:\nall scopes\narchive\nproject/mag\nproject/marshmallow\nproject/oh-my-pi\nproject/cairn\nproject/gnss-watch\nproject/yarnling-ios\nglobal\nTIER:\nall tiers\nrooted\nclimbing\npruned\nGarden\nCost\nExposure\nsort: name\nsort: tier\nsort: usage cost\nsort: exposure\n1password\nGLOBAL\nSet up and use 1Password CLI for sign-in, desktop"
+        },
+        "commit": true
+      },
+      "f_rot": {
+        "completed": true,
+        "whisper": {
+          "whisper": true,
+          "snippet": "Archive unused skill · reversible via undo"
+        },
+        "resolve": true,
+        "undo": true,
+        "counts": {
+          "beforeRot": {
+            "triage": 65,
+            "rot": 35,
+            "remaining": null,
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 65 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow"
+          },
+          "afterRot": {
+            "triage": 65,
+            "rot": 34,
+            "remaining": null,
+            "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.8k tokens | Triage 65 | Review deploy | Rot 34 | SCOPE: | all scopes | archive | project/mag | project/marshmallow"
+          }
+        }
+      }
+    },
+    "hits": {
+      "total": 690,
+      "allVisible": 45,
+      "under40": [],
+      "under44": [],
+      "under44Interesting": [],
+      "wordmark": {
+        "tag": "BUTTON",
+        "name": "skillkeep",
+        "cls": "wordmark-btn",
+        "w": 87.4,
+        "h": 44,
+        "y": 7.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      "interesting": [
+        {
+          "tag": "BUTTON",
+          "name": "skillkeep",
+          "cls": "wordmark-btn",
+          "w": 87.4,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Triage 65",
+          "cls": "chip chip-signal chip-action",
+          "w": 82.3,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Review deploy",
+          "cls": "chip chip-signal chip-action",
+          "w": 108,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Rot 35",
+          "cls": "chip chip-signal chip-action",
+          "w": 68.2,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Garden",
+          "cls": "btn btn-ghost text-xs text-terracotta font-semibold",
+          "w": 61.7,
+          "h": 44,
+          "y": 97,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Cost",
+          "cls": "btn btn-ghost text-xs ",
+          "w": 44.6,
+          "h": 44,
+          "y": 97,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Exposure",
+          "cls": "btn btn-ghost text-xs ",
+          "w": 73.7,
+          "h": 44,
+          "y": 97,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "SELECT",
+          "name": "sort: namesort: tiersort: usage costsort: exposure",
+          "cls": "bg-transparent border border-rule rounded px-2 py-0.5 text-xs cursor-pointer tex",
+          "w": 123,
+          "h": 44,
+          "y": 97,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 165,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 165,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 165,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 235.9,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 235.9,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 235.9,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 310.6,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 310.6,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 310.6,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 385.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 385.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 385.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 460.1,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 460.1,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 460.1,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 534.8,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 534.8,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 534.8,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 609.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 609.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 609.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 684.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 684.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 684.3,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 759,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 759,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 759,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "r",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 833.7,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "c",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 833.7,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "p",
+          "cls": "tier-seg__btn",
+          "w": 44,
+          "h": 44,
+          "y": 833.7,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Open triage",
+          "cls": "btn btn-forest",
+          "w": 95.2,
+          "h": 44,
+          "y": 266.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Resolve",
+          "cls": "btn btn-forest",
+          "w": 72.6,
+          "h": 44,
+          "y": 493.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Resolve",
+          "cls": "btn btn-forest",
+          "w": 72.6,
+          "h": 44,
+          "y": 720.6,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        }
+      ]
+    },
+    "overflow": {
+      "innerWidth": 1440,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "overflowX": false
+    },
+    "viewport": {
+      "w": 1440,
+      "h": 900
+    },
+    "countsStart": {
+      "triage": 65,
+      "rot": 35,
+      "remaining": null,
+      "head": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 65 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow"
+    },
+    "exerciseInteractives": [
+      {
+        "name": "skillkeep",
+        "ok": true,
+        "w": 87.4,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Triage 65",
+        "ok": true,
+        "w": 82.3,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Review deploy",
+        "ok": true,
+        "w": 108,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Rot 34",
+        "ok": true,
+        "w": 68.2,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "all scopesarchiveproject/magproject/mars",
+        "ok": true,
+        "w": 157,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "all tiersrootedclimbingpruned",
+        "ok": true,
+        "w": 86,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Garden",
+        "ok": true,
+        "w": 61.7,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Cost",
+        "ok": true,
+        "w": 44.6,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Exposure",
+        "ok": true,
+        "w": 73.7,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "sort: namesort: tiersort: usage costsort",
+        "ok": true,
+        "w": 123,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Open triage",
+        "ok": true,
+        "w": 95.2,
+        "h": 44,
+        "fail44": false
+      },
+      {
+        "name": "Resolve",
+        "ok": true,
+        "w": 72.6,
+        "h": 44,
+        "fail44": false
+      }
+    ],
+    "hitsEnd": {
+      "total": 14,
+      "allVisible": 14,
+      "under40": [],
+      "under44": [],
+      "under44Interesting": [],
+      "wordmark": {
+        "tag": "BUTTON",
+        "name": "skillkeep",
+        "cls": "wordmark-btn",
+        "w": 87.4,
+        "h": 44,
+        "y": 7.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      "interesting": [
+        {
+          "tag": "BUTTON",
+          "name": "skillkeep",
+          "cls": "wordmark-btn",
+          "w": 87.4,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Triage 48",
+          "cls": "chip chip-signal chip-action",
+          "w": 82.3,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Review deploy",
+          "cls": "chip chip-signal chip-action",
+          "w": 108,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Rot 34",
+          "cls": "chip chip-signal chip-action",
+          "w": 68.2,
+          "h": 44,
+          "y": 7.5,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Keep all suggested",
+          "cls": "btn btn-quiet text-[11px]",
+          "w": 138.1,
+          "h": 44,
+          "y": 99,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Discard obvious duplicates",
+          "cls": "btn btn-quiet text-[11px]",
+          "w": 185.6,
+          "h": 44,
+          "y": 151,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "SELECT",
+          "name": "rooted (resident set)climbing (search index)pruned (archive)",
+          "cls": "w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44p",
+          "w": 282,
+          "h": 44,
+          "y": 286.1,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Keep",
+          "cls": "btn btn-primary flex-1",
+          "w": 212.7,
+          "h": 44,
+          "y": 810,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Merge",
+          "cls": "btn btn-forest flex-1",
+          "w": 212.7,
+          "h": 44,
+          "y": 810,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        },
+        {
+          "tag": "BUTTON",
+          "name": "Discard",
+          "cls": "btn btn-brick flex-1",
+          "w": 212.7,
+          "h": 44,
+          "y": 810,
+          "fail40": false,
+          "fail44": false,
+          "interesting": true,
+          "visible": true
+        }
+      ]
+    },
+    "tasksAttempted": 6,
+    "tasksCompleted": 5,
+    "ratio": "5/6"
+  },
+  "console": {
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "d:Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "d:Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "d:Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "d:Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "d:Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ]
+  },
+  "screenshots": [
+    "phone-primary-decide.png",
+    "phone-after-discard.png",
+    "phone-after-undo-discard.png",
+    "desktop-1440-viewport.png",
+    "desktop-1440-full.png",
+    "z01-shell.png",
+    "z02-garden-list.png",
+    "task-a-triage-open.png",
+    "z04-seedlings-triage.png",
+    "task-a-after-keep.png",
+    "task-a-after-undo-keep.png",
+    "task-a-after-discard.png",
+    "task-a-after-undo-discard.png",
+    "task-b-tier-hover.png",
+    "task-b-after-tier.png",
+    "z03-skill-object.png",
+    "task-b-after-undo.png",
+    "task-c-cost-lens.png",
+    "z05-perspective-controls.png",
+    "task-c-dormant-detail.png",
+    "task-d-search-results.png",
+    "z06-search-overlay.png",
+    "z09-skill-detail-from-search.png",
+    "task-e-deploy-review.png",
+    "z07-deployment-preview.png",
+    "task-e-after-commit.png",
+    "z08-rot-feed.png",
+    "task-f-after-resolve.png",
+    "z10-settings-view.png",
+    "z11-system-states-healthy.png"
+  ],
+  "finishedAt": "2026-07-16T13:00:38.596Z",
+  "summary": {
+    "phoneDiscard": true,
+    "phoneDiscardCounts": {
+      "before": {
+        "triage": 65,
+        "rot": 35,
+        "remaining": {
+          "cur": 1,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 1 of 65 remaining | Keep all suggested | Discard obvious duplicates | openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint"
+      },
+      "afterDisc": {
+        "triage": 64,
+        "rot": 35,
+        "remaining": {
+          "cur": 2,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 2 of 65 remaining | Keep all suggested | Discard obvious duplicates | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cli-anything-doc-bootstrap"
+      },
+      "afterUndo": {
+        "triage": 65,
+        "rot": 35,
+        "remaining": {
+          "cur": 1,
+          "total": 65
+        },
+        "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Seedlings | 1 of 65 remaining | Keep all suggested | Discard obvious duplicates | openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint"
+      }
+    },
+    "primaryDecide": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60
+      },
+      "decisionRow": {
+        "top": 706,
+        "bottom": 775,
+        "h": 69,
+        "gap": 9,
+        "overlap": false
+      },
+      "buttons": [
+        {
+          "text": "Keep",
+          "y": 719,
+          "bottom": 763,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        },
+        {
+          "text": "Merge",
+          "y": 719,
+          "bottom": 763,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        },
+        {
+          "text": "Discard",
+          "y": 719,
+          "bottom": 763,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        }
+      ]
+    },
+    "exclusiveAfterClose": "10/10",
+    "exclusiveMid": "10/10",
+    "desktopRatio": "5/6",
+    "desktopTasks": {
+      "a_triage": {
+        "completed": true,
+        "discardCompleted": true
+      },
+      "b_tier": {
+        "completed": true
+      },
+      "c_lens": {
+        "completed": true
+      },
+      "d_find": {
+        "completed": false
+      },
+      "e_deploy": {
+        "completed": true
+      },
+      "f_rot": {
+        "completed": true
+      }
+    },
+    "desktopUnder44": 0,
+    "desktopUnder44Interesting": 0,
+    "wordmark": {
+      "tag": "BUTTON",
+      "name": "skillkeep",
+      "cls": "wordmark-btn",
+      "w": 87.4,
+      "h": 44,
+      "y": 7.5,
+      "fail40": false,
+      "fail44": false,
+      "interesting": true,
+      "visible": true
+    },
+    "desktopOverflow": {
+      "innerWidth": 1440,
+      "clientWidth": 1440,
+      "scrollWidth": 1440,
+      "overflowX": false
+    }
+  }
+}

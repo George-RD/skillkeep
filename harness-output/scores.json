@@ -1,0 +1,757 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "gateResults": {
+        "viewportBoundary1440": "not-evaluated",
+        "viewportBoundary390": "not-evaluated",
+        "textReadability": "pass",
+        "interactionCompleteness": "fail",
+        "overflowStressTest": "not-evaluated"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 7,
+            "functionality": 2
+          },
+          "issues": [
+            "triage modal shows '1 of 0' and 'Triage Inbox Clear' despite 65 seedlings recommendation"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 5,
+            "originality": 5,
+            "craft": 4,
+            "functionality": 1
+          },
+          "issues": [
+            "dry-run preview and commit controls are entirely missing or non-functional"
+          ]
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 4,
+        "functionality": 1
+      },
+      "weightedAverage": 6.2,
+      "decision": "REFINE",
+      "actualViewports": [
+        800,
+        647
+      ],
+      "gateFailures": [
+        "triage seedlings modal is non-functional ('1 of 0', 'Triage Inbox Clear')",
+        "header deploy chip is non-interactive"
+      ],
+      "keyIssues": [
+        "seedlings triage modal fails to load seedlings ('1 of 0' and 'Triage Inbox Clear')",
+        "deploy/sync dry-run preview and commit control are missing or non-functional",
+        "state-changing actions (triage, tier edits, recommendations resolves) are not reversible (no undo)"
+      ],
+      "uxWalkthrough": {
+        "tasksAttempted": 6,
+        "tasksCompleted": 4,
+        "notes": [
+          "Triage seedling: Attempted. Opened modal but inbox was clear ('1 of 0'), could not triage. Failed.",
+          "Change skill tier in situ: Attempted. Changed 1password from rooted to climbing. Budget updated to 5.6k tokens. Completed.",
+          "Use cost/exposure lens to find dormant/stale skill: Attempted. Cost lens showed holocron-brand as stale, unused. Opened details. Completed.",
+          "Use global find to locate a skill by name fragment: Attempted. Searched '1password', clicked match, opened details in sidebar. Completed.",
+          "Run a deploy/sync dry-run preview: Attempted. Clicked deploy chip in header; no modal opened, no preview. Failed.",
+          "Resolve one rot-feed recommendation: Attempted. Clicked Resolve on 'archive-session-handoff'. Card was removed from list. Completed."
+        ]
+      }
+    },
+    {
+      "iteration": 2,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "pass",
+        "overflowStressTest": "fail"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 7,
+            "functionality": 8
+          },
+          "issues": [
+            "tier r/c/p hit targets ~17x18px"
+          ]
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "Resolve lacks pre-action consequence copy"
+          ]
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 6,
+            "originality": 7,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "horizontal overflow scrollWidth 564 > 390",
+            "shell action chips clipped"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 5,
+        "functionality": 5
+      },
+      "weightedAverage": 7,
+      "decision": "REFINE",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [
+        "390px horizontal overflow (documentElement.scrollWidth 564 > clientWidth 390); shell actions clip"
+      ],
+      "keyIssues": [
+        "390px layout horizontal overflow clips shell action cluster (C1 fail; craft/functionality floor 5)",
+        "tier r/c/p and dense chips remain sub-44px touch targets",
+        "long skill names still mid-word ellipsize under width pressure (mobile rows, deploy list)"
+      ],
+      "uxWalkthrough": {
+        "tasksAttempted": 6,
+        "tasksCompleted": 6,
+        "notes": [
+          "Triage seedling: Completed. Opened Triage 64 (= rot 64). Keep with scope/tier; shell/rot 63; Undo restored 64. Discard then Undo restored 64. Sync ok.",
+          "Change skill tier in situ: Completed. Hover preview \u221240; demote 1password; budget 5.7k\u21925.6k; Undo ribbon restored.",
+          "Use cost/exposure lens: Completed. Cost lens + dormant/unused row opened detail.",
+          "Global find: Completed. Search 1password \u2192 detail.",
+          "Deploy dry-run: Completed. Review deploy showed Will root 385 / prune 0 / drift 0; Commit sync.",
+          "Resolve rot: Completed. Resolve unused card Rot 35\u219234; Undo restored."
+        ]
+      }
+    },
+    {
+      "iteration": 3,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "fail",
+        "overflowStressTest": "pass"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "wordmark press height 28px remains the only sub-40 interesting control"
+          ]
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "phone sticky Keep/Merge/Discard at y\u2248836 collides with fixed thumb dock (784\u2013844)"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone Find\u2192detail less reliable than desktop"
+          ]
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 7,
+            "originality": 8,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "triage primary decide row under thumb dock",
+            "phone find/deploy sheet reliability after mode stacking"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 5,
+        "functionality": 5
+      },
+      "weightedAverage": 7,
+      "decision": "REFINE",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [
+        "phone triage Keep/Merge/Discard sticky row under fixed thumb dock (y\u2248836 vs dock 784\u2013844); primary decide path unreachable \u2014 interaction completeness FAIL"
+      ],
+      "keyIssues": [
+        "phone triage Keep/Merge/Discard sticky row sits under fixed thumb dock (y\u2248836 vs dock 784\u2013844) \u2014 primary decide path not thumb-reachable",
+        "phone Find\u2192detail and Deploy sheet less reliable after stacked modes",
+        "wordmark press height remains 28px (only sub-40 interesting control); secondary descriptions still single-line ellipsis"
+      ],
+      "phoneScrollWidths": {
+        "garden": 390,
+        "triage": 390,
+        "deploy": 390,
+        "rot": 390,
+        "search": 390,
+        "detail": 390,
+        "settings": 390,
+        "filter": 390,
+        "gardenFinal": 390
+      },
+      "uxWalkthrough": {
+        "desktop": {
+          "tasksAttempted": 6,
+          "tasksCompleted": 6,
+          "ratio": "6/6"
+        },
+        "phone": {
+          "tasksAttempted": 6,
+          "tasksCompletedFull": 3,
+          "tasksPartial": 3,
+          "ratio": "3 full + 3 partial / 6"
+        },
+        "notes": [
+          "Triage seedling (desktop): Completed. Open Triage 65 \u2192 Keep \u2192 shell 64 + undo ribbon; Undo \u2192 65. Discard \u2192 64; Undo \u2192 65. Budget impact on plate. Phone: sheet opens scrollWidth=390 but Keep/Merge/Discard under dock.",
+          "Change skill tier: Completed desktop+phone. Hover \u221240; r/c/p = 44\u00d744; undo ribbon above dock without overlap on phone.",
+          "Cost/exposure lens: Completed. Cost lens + unused/stale; phone Filter \u00b7 Lens sheet.",
+          "Global find: Completed desktop (1password \u2192 detail). Phone Find opens; result\u2192detail flaky.",
+          "Deploy dry-run: Completed desktop. Review deploy 0 WILL ROOT / 5 WILL PRUNE / 0 DRIFT; Commit sync. Phone Commit 358\u00d744 when sheet present.",
+          "Resolve rot: Completed. Consequence whisper \u201cArchive unused skill \u00b7 reversible via undo\u201d; Rot 35\u219234 (then 34\u219233); Undo ribbon."
+        ]
+      },
+      "hitTargets": {
+        "dockSlots": {
+          "w": 97.5,
+          "h": 59
+        },
+        "tierSegments": {
+          "w": 44,
+          "h": 44
+        },
+        "shellActionsHeight": 44,
+        "triageDecisionsPhone": {
+          "w": 102.7,
+          "h": 44,
+          "y": 836,
+          "note": "under dock"
+        },
+        "wordmark": {
+          "w": 74.6,
+          "h": 28
+        }
+      },
+      "decisionNote": "Deviation from convergence-SHIP rule: hard gate failure (phone triage decide row under dock) violates sprint contract; fidelity fix iteration, design contract unchanged."
+    },
+    {
+      "iteration": 4,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "pass",
+        "overflowStressTest": "pass"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "progress copy still reads '1 of 65 remaining' at queue head",
+            "bulk Keep all suggested vs primary Keep labeling can confuse first glance"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "desktop search control is an unlabeled glyph"
+          ]
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone dock Rot badge cold-load count-sync failure (326 vs ~35)"
+          ]
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          },
+          "issues": [
+            "offline matrix not exhaustively re-proven"
+          ]
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone Rot dock badge count-sync defect on cold garden (326 vs ~35)",
+            "triage progress ordinal whisper"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 7,
+        "functionality": 7
+      },
+      "weightedAverage": 7.67,
+      "decision": "SHIP",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [],
+      "keyIssues": [
+        "phone Rot dock cold garden painted Rot 326 vs desktop/feed ~35 \u2014 count-sync FAIL on Z8/Z12",
+        "triage progress ordinal still reads '1 of 65 remaining'",
+        "desktop search/settings remain unlabeled icon buttons; GET /api/v1/devices 404",
+        "B4 offline matrix still PARTIAL (Z11 floors craft/func at 7)"
+      ],
+      "phoneScrollWidths": {
+        "garden": 390,
+        "triage": 390,
+        "deploy": 390,
+        "rot": 390,
+        "search": 390,
+        "detail": 390,
+        "settings": 390,
+        "filter": 390,
+        "gardenFinal": 390
+      },
+      "uxWalkthrough": {
+        "desktop": {
+          "tasksAttempted": 6,
+          "tasksCompleted": 6,
+          "ratio": "6/6"
+        },
+        "phone": {
+          "tasksAttempted": 6,
+          "tasksCompletedFull": 6,
+          "tasksPartial": 0,
+          "ratio": "6/6",
+          "discardBranch": "65\u219264\u219265 with undo ribbon gap 72px"
+        },
+        "notes": [
+          "Triage seedling: Desktop keep 65\u219264 undo\u219265; discard 65\u219264 undo\u219265. Phone keep+discard both complete; decision row gap 9px (bottom 775 vs dock 784); primary Keep/Merge/Discard 116\u00d744 y=719 inViewport.",
+          "Change skill tier: Completed desktop+phone. Hover \u221240; r/c/p=44\u00d744; phone undo ribbon gap 8px above dock.",
+          "Cost/exposure lens: Completed. Cost lens + unused/stale; phone Filter \u00b7 Lens sheet.",
+          "Global find: Completed desktop (search glyph \u2192 1password \u2192 detail) and phone Find \u2192 detail.",
+          "Deploy dry-run: Completed both. WILL ROOT/PRUNE/DRIFT markers; Commit sync; phone sticky gap 8px.",
+          "Resolve rot: Completed. Consequence whisper present; desktop Rot 35\u219234 + undo. Phone resolve+undo works but cold dock badge was 326 (count-sync defect).",
+          "Exclusive stack: own PRNG 10/10 after-close + 10/10 mid exclusive via strict overlay roots.",
+          "Wordmark: 87.4\u00d744 both viewports (was 28)."
+        ]
+      },
+      "hitTargets": {
+        "dockSlots": {
+          "w": 97.5,
+          "h": 59
+        },
+        "tierSegments": {
+          "w": 44,
+          "h": 44
+        },
+        "shellActionsHeight": 44,
+        "triageDecisionsPhone": {
+          "w": 116,
+          "h": 44,
+          "y": 719,
+          "decisionRowBottom": 775,
+          "dockTop": 784,
+          "gap": 9,
+          "note": "above dock; reachable"
+        },
+        "wordmark": {
+          "w": 87.4,
+          "h": 44
+        },
+        "under44VisibleCount": 0
+      },
+      "sheetGaps": {
+        "triageDecisionRow": 9,
+        "triagePrimaryButtons": 21,
+        "triageUndoAfterKeep": 72,
+        "triageUndoAfterDiscard": 72,
+        "afterTierUndo": 8,
+        "deploySticky": 8,
+        "detailSticky": 8,
+        "rotUndoAfterResolve": 72
+      },
+      "transitions": {
+        "seed": "0x4E4A4C31",
+        "afterCloseSane": "10/10",
+        "midExclusive": "10/10"
+      },
+      "textAudit": {
+        "unintentionalClips": 0,
+        "intentionalEllipsisSamplesDesktop": 7,
+        "intentionalEllipsisSamplesPhone": 4,
+        "evidence": "eval-4/_text_console_audit.json"
+      },
+      "consoleFindings": [
+        "404 GET /api/v1/devices",
+        "intermittent ERR_INCOMPLETE_CHUNKED_ENCODING under mutation load"
+      ],
+      "decisionNote": "SHIP candidate: all four scores \u22657 (8/8/7/7 wavg 7.67); iter-3 gates cleared with numeric evidence; decision left empty for orchestrator."
+    }
+  ],
+  "bestIteration": 4
+}

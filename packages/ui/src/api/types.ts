@@ -35,6 +35,14 @@ export interface AdoptResult {
   error?: string;
 }
 
+/** One skill sitting in a configured inbox dir, from GET /api/inbox. */
+export interface InboxSkill {
+  name: string;
+  path: string;
+  dir: string;
+  description: string;
+}
+
 export interface RegistrySkill {
   name: string;
   description: string | null;

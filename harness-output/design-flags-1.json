@@ -1,0 +1,32 @@
+[
+  {
+    "flag": "Client-only visibility tiers",
+    "where": "packages/ui/src/lib/garden.ts (readTier, saveTier)",
+    "closestEquivalent": "Tiers (rooted, climbing, pruned) are simulated client-side via localStorage overrides and scope mapping (scope === 'archive' -> pruned)."
+  },
+  {
+    "flag": "Client-only seedling merge",
+    "where": "packages/ui/src/App.tsx (triageConfirmMerge)",
+    "closestEquivalent": "Merge seedling displays AI dedupe advice and targets, then dismisses the seedling locally from the queue (local resolution; no file consolidation is executed)."
+  },
+  {
+    "flag": "Local seedling discard",
+    "where": "packages/ui/src/App.tsx (triageDiscard)",
+    "closestEquivalent": "Discard seedling dismisses the unmanaged scan path locally from the inbox triage queue since there is no server endpoint for deleting unmanaged files."
+  },
+  {
+    "flag": "No Keep undo support",
+    "where": "packages/ui/src/App.tsx (triageKeep)",
+    "closestEquivalent": "Undoing seedling Keep (adopt) is disabled because adoption deletes the original scan source file; archiving does not restore it."
+  },
+  {
+    "flag": "Client-derived token cost estimation",
+    "where": "packages/ui/src/lib/garden.ts (estimateTokens)",
+    "closestEquivalent": "Per-skill resident tokens are estimated client-side using a description character length heuristic (chars/4) to preview budget impact."
+  },
+  {
+    "flag": "Client-derived exposure verdicts",
+    "where": "packages/ui/src/lib/garden.ts (buildGardenSkills)",
+    "closestEquivalent": "Skill exposure verdicts (active, stale, dormant) are derived client-side by joining registry skills with 30-day usage summary rows and recommendations."
+  }
+]

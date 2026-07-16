@@ -1,8 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  deleteInboxItem,
   getAiStatus,
   getDevices,
   getHealth,
+  getInbox,
   getRecommendations,
   getRegistry,
   getScan,
@@ -33,6 +35,7 @@ export const queryKeys = {
   settings: ["settings"] as const,
   devices: ["devices"] as const,
   recommendations: ["recommendations"] as const,
+  inbox: ["inbox"] as const,
   usage: (group: UsageGroup, from: string, to: string) => ["usage", group, from, to] as const,
   aiStatus: (provider: AiLink["provider"] | null) => ["aiStatus", provider] as const,
 };
@@ -46,11 +49,15 @@ export function useRecommendations() {
 }
 
 export function useScan() {
-  return useQuery({ queryKey: queryKeys.scan, queryFn: () => getScan() });
+  return useQuery({ queryKey: queryKeys.scan, queryFn: () => getScan(true) });
 }
 
 export function useRegistry() {
   return useQuery({ queryKey: queryKeys.registry, queryFn: getRegistry });
+}
+
+export function useInbox() {
+  return useQuery({ queryKey: queryKeys.inbox, queryFn: getInbox });
 }
 
 export function useSkill(name: string | null) {
@@ -85,6 +92,20 @@ export function useAdoptMutation() {
       qc.invalidateQueries({ queryKey: ["scan"] });
       qc.invalidateQueries({ queryKey: ["registry"] });
       qc.invalidateQueries({ queryKey: ["status"] });
+      qc.invalidateQueries({ queryKey: queryKeys.inbox });
+      qc.invalidateQueries({ queryKey: queryKeys.recommendations });
+    },
+  });
+}
+
+export function useDeleteInboxMutation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (skillPath: string) => deleteInboxItem(skillPath),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.inbox });
+      qc.invalidateQueries({ queryKey: queryKeys.recommendations });
+      qc.invalidateQueries({ queryKey: ["scan"] });
     },
   });
 }
@@ -147,8 +168,8 @@ export function usePutSettingsMutation() {
   });
 }
 
-export function useDevices() {
-  return useQuery({ queryKey: queryKeys.devices, queryFn: getDevices });
+export function useDevices(enabled = true) {
+  return useQuery({ queryKey: queryKeys.devices, queryFn: getDevices, enabled });
 }
 
 export function useHubPushMutation() {

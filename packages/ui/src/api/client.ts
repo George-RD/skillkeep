@@ -11,6 +11,7 @@ import type {
   Health,
   HubPullResult,
   HubPushResult,
+  InboxSkill,
   OpResult,
   RecommendationsResponse,
   RegistryScope,
@@ -109,6 +110,13 @@ export const getScan = (fresh = false): Promise<Detection> =>
 
 export const postAdopt = (items: AdoptItem[]): Promise<AdoptResult[]> =>
   apiFetch<AdoptResult[]>("/api/adopt", { method: "POST", body: JSON.stringify({ items }) });
+
+export const getInbox = (): Promise<InboxSkill[]> => apiFetch<InboxSkill[]>("/api/inbox");
+
+export const deleteInboxItem = (skillPath: string): Promise<{ ok: true }> =>
+  apiFetch<{ ok: true }>(`/api/inbox?path=${encodeURIComponent(skillPath)}`, {
+    method: "DELETE",
+  });
 
 export const getRegistry = (): Promise<RegistryScope[]> =>
   apiFetch<RegistryScope[]>("/api/registry");

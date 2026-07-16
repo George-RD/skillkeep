@@ -1,0 +1,1405 @@
+{
+  "viewports": {
+    "desktop": {
+      "w": 1440,
+      "overflowX": false,
+      "scrollWidth": 1440,
+      "clientWidth": 1440
+    },
+    "mobile": {
+      "innerWidth": 390,
+      "innerHeight": 844,
+      "scrollWidth": 564,
+      "clientWidth": 390,
+      "overflowX": true
+    }
+  },
+  "gate": {
+    "interactivesDesktop": 660,
+    "smallTargetsDesktop": [
+      "skillkeep(75x28)",
+      "Triage 64(78x23)",
+      "Review deploy(105x23)",
+      "Rot 35(64x23)",
+      "(28x28)",
+      "(28x28)",
+      "all scopes\narchive\nproject/mag\nproject/m(157x23)",
+      "all tiers\nrooted\nclimbing\npruned(86x23)",
+      "Garden(62x26)",
+      "Cost(45x26)",
+      "Exposure(74x26)",
+      "sort: name\nsort: tier\nsort: usage cost\ns(123x23)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)",
+      "c(17x18)",
+      "p(17x18)",
+      "r(17x18)"
+    ],
+    "clipsDesktop": [
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 685,
+        "cw": 512,
+        "tx": "Set up and use 1Password CLI for sign-in"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 3299,
+        "cw": 512,
+        "tx": "Lock in a webui fix that a frozen-fixtur"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2178,
+        "cw": 512,
+        "tx": "Adjudicate a contested DESIGN/PROSE chan"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 1607,
+        "cw": 512,
+        "tx": "Validate a project roadmap's claimed sta"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 1942,
+        "cw": 512,
+        "tx": "Structure a repo's docs so an AI coding "
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2221,
+        "cw": 512,
+        "tx": "Anonymise real vessel/customer NMEA-or-s"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 1285,
+        "cw": 512,
+        "tx": "Implement App Attest attestation and ass"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 950,
+        "cw": 512,
+        "tx": "Procedure for archiving a consumed docs/"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2121,
+        "cw": 512,
+        "tx": "Decide whether a heavy OMP plugin (e.g. "
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 3099,
+        "cw": 512,
+        "tx": "When correcting or changing a load-beari"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 807,
+        "cw": 512,
+        "tx": "How to clean up an autoresearch branch b"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 3463,
+        "cw": 512,
+        "tx": "Decide the honest next move when a self-"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 1828,
+        "cw": 512,
+        "tx": "Run an OMP autoresearch / self-optimizin"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2856,
+        "cw": 512,
+        "tx": "Do safe read-only AWS reconnaissance (VP"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 3456,
+        "cw": 512,
+        "tx": "Determine which AWS regions in an enterp"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2792,
+        "cw": 512,
+        "tx": "Determine whether an AWS region/AZ can A"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 3627,
+        "cw": 512,
+        "tx": "Stand up a fresh EC2 instance and deploy"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 2463,
+        "cw": 512,
+        "tx": "Decide whether a deferred/low-priority b"
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 1121,
+        "cw": 512,
+        "tx": "Add a strict biome v2 lint+format gate ("
+      },
+      {
+        "tag": "DIV",
+        "cls": "skill-path max-w-lg mt-0.5",
+        "sh": 18,
+        "ch": 18,
+        "sw": 4284,
+        "cw": 512,
+        "tx": "Turn corporate brand guidelines / design"
+      }
+    ],
+    "clickCoverage": {
+      "total": 693,
+      "attempted": 693,
+      "failed": [],
+      "sample": [
+        {
+          "label": "skillkeep",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Triage 64",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Review deploy",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Rot 35",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "BUTTON",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "BUTTON",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "all scopes archive project/mag project/marshmallow project/o",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "all tiers rooted climbing pruned",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Garden",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Cost",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "Exposure",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "sort: name sort: tier sort: usage cost sort: exposure",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "click",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "p",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "r",
+          "action": "skip-dup-tier",
+          "ok": true
+        },
+        {
+          "label": "c",
+          "action": "skip-dup-tier",
+          "ok": true
+        }
+      ]
+    },
+    "longNames": [
+      {
+        "text": "Configuration Settings",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 197,
+        "sw": 197
+      },
+      {
+        "text": "AI Support (BYOK)",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 672,
+        "sw": 672
+      },
+      {
+        "text": "Sync with Hub",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 672,
+        "sw": 672
+      },
+      {
+        "text": "Deploy review",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 158,
+        "sw": 158
+      },
+      {
+        "text": "configure-hindsight-llm-provider",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "openspine-change-landing-ceremony",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "cairn-bootstrap-blueprint",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "cli-anything-doc-bootstrap",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "network-reachability-port-policy-probe",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "bot-review-second-pass-triage",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "cf-workers-builds-wedge-recovery",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "archive-session-handoff",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "cairn-waved-parallel-fanout",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "george-family-health-log",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "adjudicate-debate-on-ratified-decisions",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "resume-after-subagent-auto-cancellation",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "ab-compare-subagent-instruction-cost",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "autoresearch-deepen-or-stop-at-converged-metric",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "coderabbit-stale-review-dismiss",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "adversarial-decision-debate",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "autoresearch-loop-honesty",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "recover-file-from-reindentation-churn",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "land-feature-from-cluttered-branch",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "gnss-watch-demo-restart-diagnosis",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "humanize-writing",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "yarnling-parallel-wave-epic-execution",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "dg",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 19,
+        "sw": 19
+      },
+      {
+        "text": "clear-meerk40t-poisoned-op-store",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "cargo-dist-package-rename-continuity",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      },
+      {
+        "text": "grbl-laser-first-bringup",
+        "overflow": false,
+        "ellipsis": "clip",
+        "whiteSpace": "normal",
+        "w": 125,
+        "sw": 125
+      }
+    ],
+    "mobileWideElements": [],
+    "smallTargetsMobile": [
+      "skillkeep(75x28)",
+      "Triage 64(62x39)",
+      "Review deploy(67x39)",
+      "Rot 35(48x39)",
+      "(28x28)",
+      "(28x28)",
+      "Keep all suggested(138x34)",
+      "Discard obvious duplicates(186x34)",
+      "global\narchive\nproject/mag\npro(282x27)",
+      "rooted (resident set)\nclimbing(282x27)",
+      "Keep(100x34)",
+      "Merge(100x34)",
+      "Discard(100x34)",
+      "Close(35x20)"
+    ],
+    "overflowDesktop": false,
+    "overflowMobile": true,
+    "consoleErrors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)"
+    ],
+    "mobileOffenders": [
+      {
+        "tag": "DIV",
+        "cls": "flex items-center gap-3",
+        "right": 531,
+        "w": 282,
+        "overflow": true
+      },
+      {
+        "tag": "BUTTON",
+        "cls": "chip chip-signal chip-action px-2 py-0.5",
+        "right": 451,
+        "w": 48,
+        "overflow": true
+      }
+    ]
+  },
+  "walkthrough": {
+    "a": {
+      "completed": true,
+      "interactions": 5,
+      "consequenceClear": true,
+      "reversible": true,
+      "syncOk": true,
+      "notes": [
+        "open: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories. |  | Open triage | UNUSED SKILL | \"archive-session-handoff\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it. |  | Resolve | UNUSED SKILL | \"audit-claim-across-all-surfaces\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Co",
+        "populated=true",
+        "after keep: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 63 | Review deploy | Rot 36 | Rot Recommendations | INBOX TRIAGE | 63 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories. |  | Open triage | UNUSED SKILL | \"archive-session-handoff\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Con",
+        "garden appearance check: skill=null present=null"
+      ],
+      "timeline": [
+        {
+          "step": "before",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": null,
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": false,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow"
+        },
+        {
+          "step": "opened",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": "1 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": false,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        },
+        {
+          "step": "after-keep",
+          "shell": "63",
+          "rotInbox": "63",
+          "remaining": "2 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "36",
+          "hasUndo": true,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 63 | Review deploy | Rot 36 | Rot Recommendations | INBOX TRIAGE | 63 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        },
+        {
+          "step": "after-undo-keep",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": "1 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": false,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        },
+        {
+          "step": "after-discard",
+          "shell": "63",
+          "rotInbox": "63",
+          "remaining": "2 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": true,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 63 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 63 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        },
+        {
+          "step": "after-undo-discard",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": "1 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": false,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        },
+        {
+          "step": "end",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": "1 of 64 remaining",
+          "budget": "5.7k",
+          "rotCount": "35",
+          "hasUndo": false,
+          "snippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | Rot Recommendations | INBOX TRIAGE | 64 skill(s) awaiting triage |  | Unreviewed skills in configured inbox directories."
+        }
+      ],
+      "gardenAppearance": {
+        "skill": "pruned (archive)",
+        "presentInSearchAfterKeep": false,
+        "budgetLine": "Budget impact: no resident change"
+      }
+    },
+    "b": {
+      "completed": true,
+      "interactions": 2,
+      "consequenceClear": true,
+      "reversible": true,
+      "notes": [
+        "hover: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | −40 | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-i",
+        "after: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.6k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pr",
+        "undo count 1"
+      ],
+      "timeline": [
+        {
+          "step": "before",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": null,
+          "budget": "5.7k",
+          "rotCount": "35",
+          "shellSnippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive"
+        },
+        {
+          "step": "after",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": null,
+          "budget": "5.6k",
+          "rotCount": "35",
+          "shellSnippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.6k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive"
+        },
+        {
+          "step": "undo",
+          "shell": "64",
+          "rotInbox": "64",
+          "remaining": null,
+          "budget": "5.7k",
+          "rotCount": "35",
+          "shellSnippet": "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive"
+        }
+      ]
+    },
+    "c": {
+      "completed": true,
+      "interactions": 2,
+      "consequenceClear": true,
+      "reversible": true,
+      "notes": [
+        "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | holocron-brand | PROJECT/GNSS-WATCH | Holocron — the canonical, agent-portable brand & UI DNA for Fugro'",
+        "dormant opened"
+      ]
+    },
+    "d": {
+      "completed": true,
+      "interactions": 3,
+      "consequenceClear": true,
+      "reversible": true,
+      "notes": [
+        "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | 1pas"
+      ]
+    },
+    "e": {
+      "completed": true,
+      "interactions": 2,
+      "consequenceClear": true,
+      "reversible": false,
+      "notes": [
+        "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | 1password | GLOBAL | Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. | 40 | unused | r | c | p | add-functional-state-scenario-to-visual-eval-harness | PROJECT/CAIRN | Lock in a webui fix that a frozen-fixture/clean-state visual-eval benchmark cannot see, by adding a functional-state scenario to a CDP harness (e.g. cairn webui harness/eval.mjs). Use after fixing a defect in a state the eval never renders (populated findings, a selected/decision/ghost node, an overlay) so a regression flags loudly. Covers the overlay-fixture + second-replay-server + ",
+        "struct {\"willRoot\":true,\"willPrune\":true,\"drift\":true,\"commit\":true,\"numbers\":\"WILL ROOT\\n0\\nWILL PRUNE\\n0\\nDRIFT\\nWILL ROOT\\nconfigur\"}",
+        "after: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 5.7k tokens | Triage 64 | Review deploy | Rot 35 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | 1password | GLOBAL | Set up and use 1Password CLI for "
+      ]
+    },
+    "f": {
+      "completed": true,
+      "interactions": 2,
+      "consequenceClear": false,
+      "reversible": true,
+      "notes": [
+        "resolved from clean rot panel",
+        "undo=true"
+      ]
+    },
+    "a_followup": {
+      "completed": false,
+      "interactions": 1,
+      "consequenceClear": false,
+      "reversible": false,
+      "notes": [
+        "shell before: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | Rot Recommendations | UNUSED SKILL | \"archive-session-handoff\" has no usage in the last 60 days",
+        "opened triage: false",
+        "triage text: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | Rot Recommendations | UNUSED SKILL | \"archive-session-handoff\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it. |  | Resolve | UNUSED SKILL | \"audit-claim-across-all-surfaces\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it. |  | Resolve | UNUSED SKILL | \"audit-installed-agent-skill-safety\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archi",
+        "populated=false emptyGenuine=true",
+        "keepCount=0 discardCount=0",
+        "sync shell=undefined rot=undefined remaining=0 remaining/0"
+      ],
+      "keepOk": false,
+      "discardOk": false,
+      "syncOk": false,
+      "followup": [
+        "inbox label: Inbox clear",
+        "skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 11k tokens | Inbox clear | Review deploy | Rot 80 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | 1password | GLOBAL | Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. | 40 | unused | r | c | p | deploy-1password-connect-on-coolify | GLOBAL | Deploy a 1"
+      ],
+      "genuineEmpty": true
+    },
+    "mobileTriage": {
+      "text": "skillkeep | V0.1.0 | live | AGENT | Triage 61 | Review deploy | Rot 35 | resident set: 5.7k tokens | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | gl",
+      "hasKeep": false,
+      "counts": {
+        "shell": "64",
+        "rotInbox": null,
+        "remaining": "1 of 64 remaining",
+        "budget": "5.7k",
+        "rotCount": "35",
+        "shellSnippet": "skillkeep | V0.1.0 | live | AGENT | Triage 64 | Review deploy | Rot 35 | resident set: 5.7k tokens | Seedlings | 1 of 64 remaining | Keep all suggested | Discard obvious duplicates"
+      }
+    },
+    "mobileDeploy": {
+      "text": "skillkeep | V0.1.0 | live | AGENT | Triage 64 | Review deploy | Rot 35 | resident set: 5.7k tokens | Seedlings | 1 of 64 remaining | Keep all suggested | Discard obvious duplicates | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/mana"
+    },
+    "mobileTier": {
+      "rcp": 654,
+      "tierOk": true,
+      "tierUndo": true,
+      "notes": [
+        "c box {\"x\":325.1875,\"y\":231.984375,\"width\":17.40625,\"height\":17.5}",
+        "skillkeep | V0.1.0 | live | AGENT | Triage 61 | Review deploy | Rot 35 | resident set: 5.6k tokens | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pru"
+      ],
+      "measure": {
+        "innerWidth": 390,
+        "overflowX": true,
+        "scrollWidth": 564
+      }
+    }
+  },
+  "console": [
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES",
+    "Failed to load resource: net::ERR_INSUFFICIENT_RESOURCES"
+  ],
+  "failed": [
+    {
+      "url": "http://127.0.0.1:4519/api/v1/devices",
+      "status": 404
+    }
+  ],
+  "notes": [
+    "BOOT skillkeep | V0.1.0 | degraded | AGENT | RESIDENT SET | 0 tokens | Loading inbox… | Review deploy | Rot | SCOPE: | all scopes | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | Rot Recommendations |  | Loading health analysis...",
+    "VP desktop 1440x900 overflowX=false",
+    "SHOT desktop-1440-full.png 3234323b",
+    "SHOT desktop-1440-viewport.png 237684b",
+    "interactives=693 small=40",
+    "clips desktop 25",
+    "click coverage 693 fail 0",
+    "SHOT desktop-1440-after-click-pass.png 97893b",
+    "SHOT desktop-1440-scrolled.png 87794b",
+    "=== A TRIAGE ===",
+    "SHOT z04-seedlings-triage.png 1329928b",
+    "SHOT task-a-triage-open.png 96427b",
+    "{\"completed\":false,\"interactions\":1,\"consequenceClear\":false,\"reversible\":false,\"notes\":[\"shell before: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | Rot Recommendations | UNUSED SKILL | \\\"archive-session-handoff\\\" has no usage in the last 60 days\",\"opened triage: false\",\"triage text: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | Rot Recommendations | UNUSED SKILL | \\\"archive-session-handoff\\\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it. |  | Resolve | UNUSED SKILL | \\\"audit-claim-across-all-surfaces\\\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it. |  | Resolve | UNUSED SKILL | \\\"audit-installed-agent-skill-safety\\\" has no usage in the last 60 days |  | No recorded usage in the last 60 days; it still costs tokens every session. Consider archi\",\"populated=false emptyGenuine=true\",\"keepCount=0 discardCount=0\",\"sync shell=undefined rot=undefined remaining=0 remaining/0\"],\"keepOk\":false,\"discardOk\":false,\"syncOk\":false}",
+    "=== B TIER ===",
+    "SHOT task-b-tier-hover.png 247035b",
+    "SHOT task-b-after-tier.png 246064b",
+    "SHOT task-b-after-undo.png 241458b",
+    "{\"completed\":true,\"interactions\":2,\"consequenceClear\":true,\"reversible\":true,\"notes\":[\"budget before: 6.3k\",\"hover consequence: true snippet=skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | −40 | Inbox clear | Review deploy | Rot 80 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | pro\",\"after: skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.2k tokens | Inbox clear | Review deploy | Rot 80 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | \",\"undo tier ok\"]}",
+    "=== C COST ===",
+    "SHOT z05-perspective-controls.png 227456b",
+    "SHOT task-c-cost-lens.png 4640436b",
+    "SHOT z09-skill-detail.png 320398b",
+    "SHOT task-c-dormant-detail.png 320398b",
+    "{\"completed\":true,\"interactions\":2,\"consequenceClear\":true,\"reversible\":true,\"notes\":[\"skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | holocron-brand | PROJECT/GNSS-WATCH | Holocron — the canonical, agent-portable brand & UI DNA for Fugr\",\"verdicts=true\",\"opened dormant detail\"]}",
+    "=== D SEARCH ===",
+    "SHOT z06-search-overlay.png 346325b",
+    "SHOT task-d-search-results.png 164545b",
+    "{\"completed\":false,\"interactions\":2,\"consequenceClear\":true,\"reversible\":true,\"notes\":[\"skillkeep | V0.1.0 | live | AGENT | RESIDENT SET | 6.3k tokens | Inbox clear | Review deploy | Rot 80 | SCOPE: | all scopes | archive | project/mag | project/marshmallow | project/oh-my-pi | project/cairn | project/gnss-watch | project/yarnling-ios | global | TIER: | all tiers | rooted | climbing | pruned | Garden | Cost | Exposure | sort: name | sort: tier | sort: usage cost | sort: exposure | 1p\",\"ERR locator.click: Timeout 4000ms exceeded.\\nCall log:\\n  - waiting for getByText(/1password/i).first()\\n    - locator resolved to <span class=\\\"skill-name min-w-0 flex-1\\\">1password</span>\\n  - attempting click action\\n    2 × waiting for element to be visible, enabled and stable\\n      - element is visible, enabled and stable\\n      - scrolling into view if needed\\n      - done scrolling\\n      - <span class=\\\"font-mono text-ink-quiet truncate block mt-0.5\\\">global · Deploy a 1Password Connect secrets-broke…</span> from <div class=\\\"search-backdrop\\\">…</div> subtree intercepts pointer events\\n    - retrying click action\\n    - waiting 20ms\\n    2 × waiting for element to be visible, enabled and stable\\n      - element is visible, enabled and stable\\n      - scrolling into view if needed\\n      - done scrolling\\n      - <span class=\\\"font-mono text-ink-quiet truncate block mt-0.5\\\">global · Deploy a 1Password Connect secrets-broke…</span> from <div class=\\\"search-backdrop\\\">…</div> subtree intercepts pointer events\\n    - retrying click action\\n      - waiting 100ms\\n    8 × waiting for element to be visible, enabled and stable\\n      - element is visible, enabled and stable\\n      - scrolling into view if needed\\n      - done scrolling\\n      - <span class=\\\"font-mono text-ink-quiet truncate block mt-0.5\\\">global · Deploy a 1Password Connect secrets-broke…</span> from <div class=\\\"search-backdrop\\\">…</div> subtree intercepts pointer events\\n    - retrying click action\\n      - waiting 500ms\\n\"]}",
+    "=== E DEPLOY ===",
+    "{\"completed\":false,\"interactions\":0,\"consequenceClear\":false,\"reversible\":false,\"notes\":[\"ERR locator.click: Timeout 5000ms exceeded.\\nCall log:\\n  - waiting for getByRole('button', { name: /Review deploy|Deploy/ }).first()\\n    - locator resolved to <button type=\\\"button\\\" data-hot=\\\"false\\\" class=\\\"chip chip-signal chip-action px-2 py-0.5\\\">…</button>\\n  - attempting click action\\n    2 × waiting for element to be visible, enabled and stable\\n      - element is visible, enabled and stable\\n      - scrolling into view if needed\\n      - done scrolling\\n      - <div class=\\\"search-backdrop\\\">…</div> intercepts pointer events\\n    - retrying click action\\n    - waiting 20ms\\n    2 × waiting for element to be visible, enabled and stable\\n      - element is visible, enabled and stable\\n      - scrolling into view if needed\\n      - done scrolling\\n      - <div class=\\\"search-backdrop\\\">…</div> intercepts pointer events\\n    - retrying click action\\n      - waiting 100ms\\n    10 × waiting for element to be visible, enabled and stable\\n       - element is visible, enabled and stable\\n       - scrolling into view if needed\\n       - done scrolling\\n       - <div class=\\\"search-backdrop\\\">…</div> intercepts pointer events\\n     - retrying click action\\n       - waiting 500ms\\n\"]}",
+    "=== F ROT ===",
+    "SHOT z08-rot-feed-full.png 163969b"
+  ],
+  "imageDims": {
+    "chrome-smoke.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 238221
+    },
+    "desktop-1440-after-click-pass.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 97893
+    },
+    "desktop-1440-final.png": {
+      "w": 1440,
+      "h": 16400,
+      "bytes": 4838051
+    },
+    "desktop-1440-full.png": {
+      "w": 1440,
+      "h": 13100,
+      "bytes": 3222081
+    },
+    "desktop-1440-scrolled.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 87794
+    },
+    "desktop-1440-viewport.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 237731
+    },
+    "mobile-390-deploy.png": {
+      "w": 390,
+      "h": 844,
+      "bytes": 119286
+    },
+    "mobile-390-full.png": {
+      "w": 564,
+      "h": 17012,
+      "bytes": 1769888
+    },
+    "mobile-390-scrolled.png": {
+      "w": 390,
+      "h": 844,
+      "bytes": 84957
+    },
+    "mobile-390-triage.png": {
+      "w": 390,
+      "h": 844,
+      "bytes": 101087
+    },
+    "task-a-after-discard.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 220748
+    },
+    "task-a-after-keep.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 214929
+    },
+    "task-a-after-undo-discard.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 219155
+    },
+    "task-a-after-undo-keep.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 218406
+    },
+    "task-a-keep-clicked.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 214706
+    },
+    "task-a-triage-open.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 214557
+    },
+    "task-b-after-tier.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 243022
+    },
+    "task-b-after-undo.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 238785
+    },
+    "task-b-tier-hover.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 237778
+    },
+    "task-c-cost-lens.png": {
+      "w": 1440,
+      "h": 13161,
+      "bytes": 3155159
+    },
+    "task-c-dormant-detail.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 330020
+    },
+    "task-d-search-results.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 282866
+    },
+    "task-e-after-commit.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 106395
+    },
+    "task-e-deploy-review.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 263079
+    },
+    "z01-shell.png": {
+      "w": 1440,
+      "h": 90,
+      "bytes": 12664
+    },
+    "z02-garden-list.png": {
+      "w": 980,
+      "h": 720,
+      "bytes": 129727
+    },
+    "z03-skill-object.png": {
+      "w": 980,
+      "h": 160,
+      "bytes": 31099
+    },
+    "z04-seedlings-triage-followup.png": {
+      "w": 1440,
+      "h": 30446,
+      "bytes": 4616465
+    },
+    "z04-seedlings-triage.png": {
+      "w": 1440,
+      "h": 6729,
+      "bytes": 723525
+    },
+    "z05-exposure-lens.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 270200
+    },
+    "z05-perspective-controls.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 226536
+    },
+    "z06-search-overlay.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 282827
+    },
+    "z07-deployment-preview.png": {
+      "w": 1440,
+      "h": 16400,
+      "bytes": 4837951
+    },
+    "z08-rot-feed-full.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 265231
+    },
+    "z08-rot-feed.png": {
+      "w": 460,
+      "h": 720,
+      "bytes": 62055
+    },
+    "z09-skill-detail-from-search.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 262294
+    },
+    "z09-skill-detail.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 330020
+    },
+    "z10-settings-view.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 263049
+    },
+    "z11-system-states-healthy.png": {
+      "w": 1440,
+      "h": 900,
+      "bytes": 164154
+    },
+    "z12-mobile-390.png": {
+      "w": 390,
+      "h": 844,
+      "bytes": 80660
+    }
+  }
+}

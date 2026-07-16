@@ -1,0 +1,145 @@
+/* ==========================================================================
+   TRELLIS LEDGER — canonical design tokens
+   --------------------------------------------------------------------------
+   This file is the single source of truth for every design token the shipped
+   skillkeep UI defines. packages/ui/src/index.css is a CONSUMER of these
+   custom properties and must stay in sync; if a token changes here it must
+   change there (and vice-versa). The values below are extracted verbatim from
+   the iteration-4 shipped stylesheet.
+
+   Web-font loading (see packages/ui/index.html):
+     --font-serif  → Fraunces  (variable opsz 9..144, wght 400–700 + italic)
+     --font-sans   → IBM Plex Sans  (wght 400/500/600 + italic)
+     --font-mono   → IBM Plex Mono   (wght 400/500)
+     All served via Google Fonts with display=swap; the stacks below carry
+     open-source fallbacks (Lora / Source Sans 3 / JetBrains Mono) + system.
+
+   Token census: 51 custom properties — colour 20, type 9, rhythm 13,
+   motion 7, radius 2. Mobile variant overrides 3 rhythm tokens. No dark-mode
+   variant exists in the shipped site (single warm light theme only).
+   ========================================================================== */
+
+:root {
+  /* ---- Colour: field & surfaces --------------------------------------- */
+  --color-field: #f5f0e8;          /* page background — aged-paper field the ledger sits on */
+  --color-plate: #faf7f1;          /* plate surface — raised ledger card / sheet body */
+  --color-plate-raised: #fffcf7;   /* highest surface — sticky headers, chips, focused plates */
+  --color-row-alt: #f0ebe2;        /* zebra-stripe alt row + quiet hover wash */
+  --color-rule: #c9bfb0;           /* hairline rule — primary 1px ledger gridlines */
+  --color-rule-strong: #8a7f70;    /* heavy rule — double-rule plate inner edge + hot chip border */
+  --color-ink: #1c2b24;            /* primary ink — deepest forest-green body text */
+  --color-ink-secondary: #5a645c;  /* secondary ink — descriptions, default button labels */
+  --color-ink-quiet: #7a847c;      /* quiet ink — paths, meta labels, budget deltas */
+  --color-ink-faded: #9aa39a;      /* faded ink — pruned-stem hatch, dormant verdicts */
+
+  /* ---- Colour: accents (the four signal hues) ------------------------- */
+  --color-terracotta: #c45c3e;     /* primary action — active tier stem, primary buttons */
+  --color-terracotta-dark: #a04830;/* pressed/hover action — primary button hover, border */
+  --color-terracotta-soft: #f5e6e0;/* hot chip wash — terracotta-tinted active surface */
+  --color-forest: #2b5c3f;         /* confirm/success — rooted stems, forest buttons, focus ring */
+  --color-forest-dark: #1c3e2a;    /* deep forest — verdict-active text, deploy-confirm label */
+  --color-forest-soft: #e6f0ea;    /* success wash — active chip, forest hover, deploy-confirm bg */
+  --color-amber: #b8860b;          /* warning/stale — stale verdicts, degraded health disk, cost flag */
+  --color-amber-soft: #f7efd6;     /* amber wash — reserved tint for caution surfaces */
+  --color-brick: #8b3a3a;          /* danger/offline — offline health disk, destructive buttons */
+  --color-brick-soft: #f5e8e8;     /* brick wash — destructive hover surface */
+
+  /* ---- Typography: families ------------------------------------------- */
+  --font-serif: "Fraunces", "Lora", Georgia, "Times New Roman", serif;
+                                   /* display face — skill names, wordmark, ribbon name */
+  --font-sans: "IBM Plex Sans", "Source Sans 3", system-ui, sans-serif;
+                                   /* UI face — body text, buttons, labels, meta */
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace, monospace;
+                                   /* data face — paths, budget figures, tier-seg, deploy codes */
+
+  /* ---- Typography: scale (all derived from --text-body) --------------- */
+  --text-body: 14px;               /* base size — body text, ribbon, the modular anchor */
+  --text-path: calc(var(--text-body) * 0.85);
+                                   /* path/meta — skill descriptions & identifier paths */
+  --text-skill: calc(var(--text-body) * 1.12);
+                                   /* skill title — protected name in a garden row */
+  --text-mode: calc(var(--text-body) * 1.7);
+                                   /* largest display — empty-state / mode heading */
+  --text-empty: calc(var(--text-body) * 1.4);
+                                   /* sub-display — empty-state secondary heading */
+  --leading-body: 1.5;             /* body line-height — the ledger's reading rhythm */
+
+  /* ---- Spacing & layout rhythm ---------------------------------------- */
+  --space-1: 4px;                  /* tightest gap — icon insets, micro separators */
+  --space-2: 8px;                  /* base gap — chip groups, header gaps */
+  --space-3: 12px;                 /* row padding-x, sticky-action base, sheet header pad */
+  --space-4: 16px;                 /* sheet body, panel padding, ledger gutters */
+  --space-5: 24px;                 /* section rhythm — zone gaps, block separation */
+  --space-6: 32px;                 /* large block separation */
+  --space-7: 48px;                 /* widest rhythm — page-level spacing */
+  --shell-h: 60px;                 /* top shell height — the ledger's masthead band */
+  --dock-h: 0px;                   /* bottom dock height — 0 on desktop, thumb dock on mobile */
+  --gap-zones: 24px;               /* inter-zone gap — whitespace between ledger columns */
+  --row-pad-y: 10px;               /* garden-row vertical padding */
+  --row-pad-x: 12px;               /* garden-row horizontal padding */
+  --press-min: 44px;               /* touch-target minimum — every interactive control floor */
+
+  /* ---- Motion: durations ---------------------------------------------- */
+  --dur-tier: 250ms;               /* tier-stem growth/prune transition */
+  --dur-insert: 280ms;             /* row insert settle-in animation */
+  --dur-decay: 220ms;              /* row decay/prune-out animation */
+  --dur-crossfade: 160ms;          /* overlay dim fade */
+  --dur-toast: 320ms;              /* undo-ribbon / toast entrance */
+
+  /* ---- Motion: curves ------------------------------------------------- */
+  --ease-settle: cubic-bezier(0.22, 1, 0.36, 1);
+                                   /* primary ease — settle-in, stems, sheets (decel out) */
+  --ease-decay: cubic-bezier(0.4, 0, 1, 1);
+                                   /* decay ease — prune-out, removal (accel out) */
+
+  /* ---- Radius (instrument-precise, not soft SaaS) --------------------- */
+  --radius-sm: 2px;                /* primary corner — plates, buttons, chips, stems */
+  --radius-md: 4px;                /* looser corner — reserved for larger surfaces */
+
+  /* ======================================================================
+     DOCUMENTED LITERALS — not custom properties, recorded for the design
+     record. These hardcoded values appear throughout packages/ui/src/index.css
+     and define conventions the token system does not (yet) variable-ize.
+     ====================================================================== */
+
+  /* -- Breakpoints --------------------------------------------------------
+     bp-phone: 720px   single breakpoint; below it the layout switches to the
+                       phone shell (shorter masthead, fixed thumb-dock bottom
+                       nav, full-screen sheets). No tablet/mid breakpoint.   */
+
+  /* -- Touch targets ------------------------------------------------------
+     44px floor is codified as the --press-min token above. The budget-strip
+     uses a 42px min-height (2px under that floor) as a dense exception.      */
+
+  /* -- Borders / rules ----------------------------------------------------
+     Hairline rule width: 1px (color via --color-rule).
+     Heavy rule width:    1.5px (climbing stem) / 3px (plate inset, cost flag).
+     Focus ring:          2px solid --color-forest, offset 2px.             */
+
+  /* -- Shadows & offsets (ink-tinted, rgba on --color-ink #1c2b24) --------
+     plate-inset:  inset 0 0 0 3px plate, inset 0 0 0 4px rule-strong  (double-rule)
+     sheet-rise:   0 -8px 32px rgba(28,43,36,0.12)                     (bottom sheet)
+     dock-rise:    0 0 0 1px rule, 0 -6px 20px rgba(28,43,36,0.08)     (thumb dock)
+     ribbon-lift:  0 0 0 1px rule-strong, 0 10px 28px rgba(28,43,36,0.14) (undo ribbon)
+     cost-flag:    inset 3px 0 0 amber                                 (row edge) */
+
+  /* -- Animation literals (not tokenized) --------------------------------
+     growth-pulse: 1.4s ease-settle x1   (health-disk sweep)
+     skeleton-shimmer: 1.6s linear infinite
+     row-settle @180ms (search), sheet-up 220ms, ribbon-up 200ms          */
+}
+
+/* ==========================================================================
+   MOBILE VARIANT — @media (max-width: 720px)
+   Overrides three rhythm tokens to switch from the desktop masthead layout to
+   the phone shell: a shorter top band and a persistent bottom thumb-dock that
+   claims vertical space the desktop reserves as zero. All other tokens are
+   unchanged; there is no dark-mode / prefers-color-scheme variant.
+   ========================================================================== */
+@media (max-width: 720px) {
+  :root {
+    --shell-h: 50px;   /* shorter masthead — compact phone top band */
+    --dock-h: 60px;    /* thumb-dock height — fixed bottom nav claims layout space */
+    --gap-zones: 12px; /* tighter inter-zone gap — phone column spacing */
+  }
+}

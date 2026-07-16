@@ -1,0 +1,1038 @@
+- banner:
+  - button "skillkeep"
+  - text: v0.1.0 live agent resident set 5.7k tokens
+  - button "Triage 65"
+  - button "Review deploy"
+  - button "Rot 35"
+  - button "Search ( / )":
+    - img
+  - button "Settings":
+    - img
+- main:
+  - text: "scope:"
+  - combobox:
+    - option "all scopes" [selected]
+    - option "archive"
+    - option "project/mag"
+    - option "project/marshmallow"
+    - option "project/oh-my-pi"
+    - option "project/cairn"
+    - option "project/gnss-watch"
+    - option "project/yarnling-ios"
+    - option "global"
+  - text: "tier:"
+  - combobox:
+    - option "all tiers" [selected]
+    - option "rooted"
+    - option "climbing"
+    - option "pruned"
+  - button "Garden"
+  - button "Cost"
+  - button "Exposure"
+  - combobox:
+    - 'option "sort: name" [selected]'
+    - 'option "sort: tier"'
+    - 'option "sort: usage cost"'
+    - 'option "sort: exposure"'
+  - text: 1password global Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: add-functional-state-scenario-to-visual-eval-harness project/cairn Lock in a webui fix that a frozen-fixture/clean-state visual-eval benchmark cannot see, by adding a functional-state scenario to a CDP harness (e.g. cairn webui harness/eval.mjs). Use after fixing a defect in a state the eval never renders (populated findings, a selected/decision/ghost node, an overlay) so a regression flags loudly. Covers the overlay-fixture + second-replay-server + localStorage-select + landmark-as-guard recipe and the CDP/segment gotchas. 116 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: adversarial-decision-debate global Adjudicate a contested DESIGN/PROSE change (e.g. a system-prompt edit, a policy/convention tweak) by running a steelman reformer-vs-conservative subagent debate — distinct from palantir-debate, which reviews a code diff. Use when deciding whether a proposed change is worth shipping or is already covered. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: adversarial-roadmap-validation global Validate a project roadmap's claimed status against code/git using parallel verifier agents, then find the highest-value next move via a design-lens panel + adversarial refutation — catches factual errors solo analysis misses 56 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: agent-repo-doc-architecture global Structure a repo's docs so an AI coding loop boots from accurate context and a human can steer as product owner — separate stable/volatile, point don't restate, keep AGENTS.md from rotting, and weld the freshness gate to a hook (pre-push/CI matched to the repo's reality). 68 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: anonymise-field-telemetry-for-repo project/gnss-watch Anonymise real vessel/customer NMEA-or-similar field telemetry (e.g. Starfix .STS captures pasted into a repo) so it can be safely committed as test fixtures, then file it away compressed+gitignored. Use when a maintainer drops real field data and wants it usable for testing without leaking positions/identity. 78 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: app-attest-deno-verification project/yarnling-ios Implement App Attest attestation and assertion verification in a Deno edge function — CBOR parsing, DER→P1363 signature conversion, Apple cert chain, and per-request assertion gate 45 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: archive-session-handoff global Procedure for archiving a consumed docs/strongholds/session-handoff.md into the handoffs directory with correct git rename semantics. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: assess-omp-plugin-before-uninstall global Decide whether a heavy OMP plugin (e.g. ide-of-sauron) earns its keep before disabling/uninstalling — measure real usage from persisted state, tell orchestration from passive journaling, check overlap with core OMP built-ins before claiming capability loss, then choose per-repo vs global disable. 74 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: audit-claim-across-all-surfaces global When correcting or changing a load-bearing factual/marketing/geography claim on a content site (production location, country, currency, dietary/compliance, delivery), audit EVERY surface that asserts it — visible component copy AND machine-readable surfaces (index.html meta + schema.org JSON-LD, llms.txt, per-page SEO, sitemap) — so a partial fix doesn't leave a contradicting claim live. Use before editing/merging any such change. 109 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: autoresearch-branch-squash global How to clean up an autoresearch branch by squashing micro-commits into logical groups and updating an existing PR 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "autoresearch-deepen-or-stop-at-converged-metric global Decide the honest next move when a self-optimizing autoresearch/visual-eval loop has driven its primary metric to its floor (e.g. ux_defect_score=0) but the harness keeps auto-prompting \"continue\". Use to avoid gaming a saturated metric: empirically falsify the strongest remaining defect hypothesis (via a throwaway probe that imports the committed harness libs WITHOUT editing the off-limits harness), then either deepen eval coverage via a new segment or stop cleanly with evidence. 121 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "autoresearch-loop-honesty global Run an OMP autoresearch / self-optimizing loop honestly: tell harness auto-prompts from real user intent, separate measured inputs from assumed model parameters, report directional signal vs magnitude, and refuse to game the model's un-modeled blind spots. 64 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: aws-cli-readonly-recon-and-region-health project/gnss-watch Do safe read-only AWS reconnaissance (VPC/EC2/SG/routing/connectivity) to plan a deployment into an existing account, and verify a region is actually healthy before deploying — in the OMP harness where AWS creds live only in the bash session, not the eval kernel. Use for any "confirm settings on our AWS / inspect the VPC / is this region OK to deploy / set up X on EC2" task driven via the AWS CLI. 100 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: aws-corporate-tgw-region-recon project/gnss-watch Determine which AWS regions in an enterprise account are on the corporate network/VPC backbone (RAM-shared Transit Gateways), AND whether there is a sanctioned self-service way to join it (Service Catalog "Corporate VPC" product + RAM-shared IPAM pools). Use when asked "which regions are on the corporate network", "can I attach without the network team", or when planning to deploy into a region whose vessels/sites reach a VPC over a shared corporate TGW (e.g. GNSS-watch / Fugro). 121 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: aws-region-launch-capacity-probe project/gnss-watch Determine whether an AWS region/AZ can ACTUALLY launch EC2 instances right now (not just what the console "launch wizard" catalog shows) — use when launches throttle, after a regional incident, or before committing a deploy to a region. Distinguishes catalog vs real capacity vs operational throttle, and includes the auto-terminate test harness + the eval/bash-creds and rtk-output gotchas. 98 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: aws-ssm-secure-ec2-deploy project/gnss-watch Stand up a fresh EC2 instance and deploy a Dockerized stack entirely via SSM RunCommand (no SSH), with secrets never touching SSM command history/CloudTrail, and get a real browser-trusted TLS cert on a raw IP without buying a domain. Use when provisioning a new EC2 box for a Docker Compose stack in a security-conscious AWS account, especially when you must prove no plaintext credential appears in any log, or when a dashboard needs to be trusted by non-technical users without a self-signed-cert warning. 127 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: backlog-defer-coherence-triage project/cairn Decide whether a deferred/low-priority backlog task should be deferred, closed, or built now — by separating priority arguments (only valid under capacity contention) from net-value arguments. Use when a task is parked on a calendar date or 'low value at current scale', especially in a continuous dev loop (e.g. cairn-loop) with a thin backlog. 86 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: biome-v2-strict-gate global Add a strict biome v2 lint+format gate (zero warnings, zero errors) to a project's CI, pre-commit hooks, and Makefile, scoped to specific JS/CSS source files 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: brand-system-skill-authoring global Turn corporate brand guidelines / design source material (brand-book PDFs, style-guide docx, voice guides) into a well-structured, progressive-disclosure agent skill — an index SKILL.md that routes to references/ and machine-readable assets/ (colour tokens, palette JSON). Also covers layering a sub-brand skill on top of a parent brand skill (inherit-don't-fork). Use when asked to codify a brand/design system as a reusable skill, or to build a sub-brand on top of an existing one. Complements design-system-adversarial-authoring (which invents a new system rather than encoding an existing brand). 150 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: build-omp-autonomous-workflow-extension project/oh-my-pi Build an autoresearch-style autonomous workflow in OMP (packages/coding-agent) as a user extension — when someone wants a self-driving multi-turn loop with custom tools, per-turn prompt steering, and persisted state, not just a prompt template. 61 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: bulk-file-github-issues global Turn a multi-feature planning brief into a batch of well-scoped GitHub issues plus a tracking/umbrella issue, filed programmatically and safely. Use when asked to "add issues" for several features at once, or to convert a roadmap into issues a fresh session can execute. 68 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-add-cli-command project/cairn Add a new CLI-only command to the cairn repo (e.g. cairn backlog node) — the full set of surfaces the command_reference_consistency tests enforce, so a new subcommand compiles, dispatches, supports --json, and passes CI. Use for any "expose X as a cairn CLI command" task that does NOT need an MCP tool. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-add-web-surface-gate project/cairn Add a deterministic project-health gate (scripts/check-*.sh) over cairn's hand-authored web surfaces, mirroring scripts/check-design-tokens.sh. Use for any new static check on src/ui_assets/* or docs/landing/index.html (a11y, token, metadata conformance) in the cairn repo. 68 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-author-decision-and-finding-code project/cairn Author a cairn decision artefact (meta/decisions/dec.slug.md) that passes cairn scan, or add a new CAIRN_* scan finding, in the cairn-framework/cairn repo. Use when a /cairn-loop iteration must write a decision (phase 7) or emit a new lint finding, to avoid the frontmatter/ref/registry gotchas. 74 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-author-leaf-contracts project/cairn Clear cairn's CAIRN_CONTRACT_LEAF_UNCOVERED (CK003) warnings by authoring per-leaf contract artefacts and wiring contract pointers in cairn.blueprint. Use for the cairn-y5f-style bead "author contracts for N uncovered leaf nodes", or any time cairn lint reports leaf nodes declaring no contract. 74 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-beads-worktree-reconcile project/cairn Commit bead-state changes (bd close/update/claim) during the cairn dev-loop when working from a git worktree (e.g. cairn-scratch) whose bd is serviced by the shared dolt-server rooted in the sibling main worktree. Use whenever a /cairn-loop iteration closes or updates a bead and you must land the resulting .beads/issues.jsonl in your branch. 86 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-capture-brainstorm-as-artefact-chain project/cairn Formalize a design/architecture brainstorm, review, or discussion into the cairn repo's provenance chain (research → decision → change) BEFORE writing code, especially for multi-option work that needs a recommended order. Use when a user says "create the change/blueprint for this", "update decisions and research", "do it in a recommended order", or wants a brainstorm captured the cairn-native way. 100 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-clear-orphan-research-finding project/cairn Clear a CAIRN_RESEARCH_ORPHAN finding (research not linked from any decision) in the cairn repo's dev loop, choosing the correct of two resolutions without fabricating false provenance. Use when cairn lint/scan reports an orphan research artefact. 62 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-doc-plain-language-pass project/cairn Do a plain-language (~5th-grade) pass on a cairn user-facing doc (README, quickstart, landing copy) without losing technical precision, then verify deterministically. Use when the cairn maintainer asks to simplify, rewrite, or 'do a 5th-grade pass' on cairn prose. 66 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-explorer project/cairn Use Cairn MCP tools for token-efficient codebase exploration instead of glob/grep/read 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-first-state-investigation project/cairn Investigate cairn repo state (decisions, research, node status, task-tracking guidance, provenance) by querying cairn itself first (rationale, context, scan, lint, changes) before grepping files. Use when asked 'what is the state of X', 'what decisions affect Y', 'is Z still the convention', or when reconciling AGENTS.md guidance against accepted decisions. Avoids the manual-grep duplication that slows state investigations. 107 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "cairn-loop-omp-presubmit-review project/cairn Satisfy CLAUDE.md's mandatory pre-submit review gate (/reforge then /debate) when running the cairn dev loop (/cairn-loop) in the OMP harness, where those Claude Code slash commands do not exist. Translation: two parallel read-only reviewer subagents (correctness + simplicity lenses), a For/Against/Verdict adjudication, re-verify, then PR. 85 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "cairn-loop-terminal-state-stop project/cairn Confirm the cairn dev-loop (/cairn-loop, no argument) is genuinely at its terminal stop before declaring \"nothing to do\" or fabricating make-work. Use when Orient finds an empty backlog: cairn next is the primary oracle but reads the COMMITTED .beads export (by design, permanently), so cross-check it against live bd ready (two readers must agree) plus the full lint/scan/PR/git ladder, then STOP. 100 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-loop-terminate-blocked-seed project/cairn Terminate a perpetually-blocked backlog item in the cairn dev-loop (/cairn-loop) when its only remaining scope needs an un-guessable maintainer prerequisite (toolchain sanction, paid API, anything conflicting with repo conventions). Use instead of re-deriving the same blocked seed every session or inventing adjacent busywork. 82 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "cairn-pr-landing project/cairn Land any cairn bead/change the correct way: feature-branch → implement (TDD) → local gates → PR → CI + review → squash-merge → cleanup, never a direct push to main. Use for every cairn unit that is ready to land. 53 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-provenance-coverage project/cairn Bring a cairn blueprint to full decision-provenance coverage (CAIRN_PROVENANCE_NO_DECISION gate) 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-ratify-convention-close-all-surfaces project/cairn Ratify a binding convention or resolve a spec open-question in the cairn repo (or any self-documenting repo with a spec + a declared-items registry) WITHOUT leaving prose drift. Use when writing a decision that claims to 'close Q-NN', set a normative rule, or supersede a spec example. 71 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-tidy-bead-commits project/cairn Collapse accumulated unpushed beads (.beads/*.jsonl) bookkeeping commits in the cairn repo into one sensible commit WITHOUT flattening a kept merge or swallowing code commits. Use when there are several jsonl-only "chore(beads):" commits ahead of origin/main, often above a dev-main merge, that need tidying before push. 80 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-verify-shipped-before-next-steps project/cairn Before summarizing cairn status or recommending next steps, verify remembered/claimed roadmap status against the archive ledger + main, because cairn's fast atomic loop ships features within days that stale prior-session memories still list as 'pending'. 64 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cairn-web-surface-token-conformance project/cairn Reconcile a forked design-system web surface in the cairn repo (docs/landing/index.html or src/ui_assets) back to canonical tokens.css, extend scripts/check-design-tokens.sh to gate it, and verify without breaking the public site. Use for any cairn-81c-style "this surface hardcodes/forks the palette" design-token conformance bead. 83 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: capture-marshmallow-test-batch-as-experiment project/marshmallow Record a COMPLETED OG Mallow (marshmallow repo) bench test batch as a structured experiment folder — facts → hypotheses → initial recommendations → research → revised recommendations — kept standalone so it won't collide with the website rework, and designed to seed the Back Room experiment-recording feature. Use when George reports how a real test batch went and wants the learnings captured (distinct from design-marshmallow-inclusion-test-batch, which DESIGNs a batch before cooking). 122 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cart-abandonment-recovery project/marshmallow Win back shoppers who leave items in their cart by setting up timed email, SMS, and push sequences with escalating incentives to complete their purchase 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cart-logic project/marshmallow Build a robust shopping cart with add/remove/update operations, session persistence across devices, and cart merge for returning logged-in users 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cflx-ready archive Pre-flight check for cflx phase queueing. Runs validate, checks clean git, dry-runs the queue against the active campaign plan to catch sequencing gaps the literal gates miss. Trigger before declaring cflx-runnable, before accepting a queue request, or whenever the user says 'cflx ready', 'ready to run cflx', or 'queue cflx'. 82 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "cflx-run archive Run the standard Conflux development flow for an already-defined and committed OpenSpec change. Use when users want to execute `cflx run`, start Conflux orchestration, or follow the standard proposal-then-run workflow on a clean base branch. 60 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cleanup-stale-git-worktrees global Safely audit and delete stale git worktrees/branches before creating a fresh one — verify content already landed on main (not just merge-status), preserve uncommitted WIP, then remove. Use when asked to clean up old worktrees or "make a new worktree". 63 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: cli-anything-forgecad archive CLI harness for ForgeCAD parametric CAD — run scripts, export geometry (SVG/STEP/BREP/G-code), render images/animations, manage notebooks, all with --json output 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "cmux archive MUST use this skill for ANY operation involving cmux (cmux.app), the macOS terminal multiplexer. Claude does NOT know cmux CLI syntax — cmux commands are unique and completely different from tmux/screen. Attempting cmux operations without this skill WILL FAIL. ALWAYS invoke when the user mentions: cmux, terminal panes, terminal tabs, terminal workspaces, terminal splits, terminal themes, browser panels in terminal, sending text to other panes, reading pane output, or any terminal multiplexer operation on macOS. Operations that REQUIRE this skill: creating/switching/closing tabs or workspaces; splitting panes; sending text or keystrokes to other panes; reading output from other panes; opening browser panels; changing terminal themes (purple rain, indigo, olive, red alert, teal); listing workspaces. Do NOT use for: tmux, GNU Screen, iTerm2, VS Code splits, npm workspaces, or generic terminal windows. CRITICAL: If the query mentions 'cmux' or describes managing terminal panes/workspaces/splits, invoke immediately — do not attempt via Bash. 263 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: coderabbit-stale-review-dismiss global Dismiss a stale CodeRabbit CHANGES_REQUESTED review after its thread is resolved, so the PR can be merged 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: commit-own-hunks-amid-user-wip global Land a feature PR when shared files (TASKS.md, decision logs) already carry the user's uncommitted WIP — stage only your hunks, and sync local to main after a --delete-branch squash merge without clobbering their work. 55 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "configure-hindsight-llm-provider global Configure/operate the LLM provider(s) for the local Docker Hindsight memory service (~/hindsight): choose provider/model, native backup-model fallback, per-task model overrides (e.g. a dedicated reflect model), reasoning-model empty-content fixes, and auditing/recovering failed or stuck memory operations. Use when changing Hindsight's model/provider, recovering from a rate-limit/quota error (e.g. OpenCode Go weekly 429), wiring Ollama Cloud, giving reflect its own model, debugging 'empty message content' on a thinking model, or checking whether past failures self-healed. 144 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: consolidate-skill-family-into-index-skills global Consolidate a large managed-skill family (many prefix-* skills in one domain, e.g. gnss-watch-*) into a few sub-domain INDEX skills using two-hop progressive disclosure, shrinking always-on metadata. Use when asked to combine/group related skills, reduce skill-list bloat, or apply progressive disclosure per skill-creator/agentskills.io across a skill family. 90 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: consume-reviewer-final-yield global How to safely consume a commissioned reviewer subagent's verdict — always wait for its FINAL yield, not the first message that arrives 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: contextualize-omp-updates global Generate a concise, personalized summary of OMP changelog entries by cross-referencing your actual usage patterns and project memories from Hindsight. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: copywriting project/marshmallow When the user wants to write, rewrite, or improve marketing copy for any page — including homepage, landing pages, pricing pages, feature pages, about pages, or product pages. Also use when the user says "write copy for," "improve this copy," "rewrite this page," "marketing copy," "headline help," "CTA copy," "value proposition," "tagline," "subheadline," "hero section copy," "above the fold," "this copy is weak," "make this more compelling," or "help me describe my product." Use this whenever someone is working on website text that needs to persuade or convert. For email copy, see email-sequence. For popup copy, see popup-cro. For editing existing copy, see copy-editing. 170 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: create-bbb archive Use when creating a .bbb brand file from scratch, populating brand sections from existing materials (docs, CSS, conversations, design files), or updating specific sections of an existing .bbb file. Also use when user says "create a brand", "define a brand", "make a .bbb", or asks to generate brand identity data. 78 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: create-llms project/marshmallow Create an llms.txt file from scratch based on repository structure following the llms.txt specification at https://llmstxt.org/ 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: css-design-token-conformance-gate global Build a deterministic, dependency-free gate that enforces "use design-system var(--token), never hardcoded hex colours or rem sizes" in a CSS/stylesheet file. Use when a repo documents a token rule that a formatter/linter (biome, stylelint recommended) cannot express, and you want a POSIX-sh gate wired into pre-commit/CI. Encodes the exact regex traps that cause false positives/negatives. 98 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: decision-convergence-minutes project/cairn Converge a batch of open design/architecture questions into a one-word-ratifiable minutes-of-meeting in a self-developing repo (esp. cairn, which promotes decisions into meta/decisions/). Use when the user dumps several open questions / a GAP list and wants recommendations plus a fast sign-off. 74 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: design-marshmallow-inclusion-test-batch project/marshmallow Design a research-grounded, DECISIVE marshmallow test batch (nut-butter/jam inclusions) on the OG Mallow XO base and deliver it as a scalable, persisting data-entry SOP — covers fat-vs-foam, ratio-driven nut-milk, jam reduction, whole-jar make-ahead prep panels, layered sandwich build, make-ahead vs live-whip timeline, persisting run-log, and debugging the local save-server persistence. Formalise into native recipes/ + Back Room only AFTER the test confirms numbers. 118 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: design-system-adversarial-authoring global Author a cohesive, defensible design system / brand DNA that spans multiple surfaces (e.g. a custom map UI + Grafana + future screens) by combining divergent ideation with an adversarial reformer/conservative debate and quantitative colour-science evidence. Use when asked to create a brand system, design tokens, or visual DNA shared across surfaces. 88 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: deterministic-ux-emotion-autoresearch-harness project/marshmallow Build or extend a deterministic, anti-gaming autoresearch harness that optimizes a subjective UX/"emotion" goal on a Vite+React storefront — render real pages, score brand-grounded signals, and verify visually. Use when an autoresearch goal is fuzzy/qualitative (emotion, delight, polish, "feel") rather than a hard number. 81 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: dg global Use when the user invokes /dg for an entertaining adversarial code review with Dinesh vs Gilfoyle banter from Silicon Valley 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: diagnose-sauron-empty-dashboard archive Use when sauron-status dashboard / materialize_war_state returns empty state (phases 0, currentPhase null) or reports the war-log as malformed ('missing field campaign') for a mordor-forge / ide-of-sauron campaign, even though the project's war-log looks fine. 65 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: disciplinary-ontology-fan-out global Attack a contested design/concept question by fanning out diverse disciplinary personas (physicist, chemist, biologist, psychologist, philosopher) as parallel subagents over a neutral brief, then fan in twice (synthesis + adversarial frontier critic + final synthesis) to surface hidden assumptions and convergences no single lens finds 84 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: dismiss-stale-coderabbit-review global Dismiss a stale CodeRabbit CHANGES_REQUESTED review after the issues are fixed and checks are green. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: docker-multi-vessel-test-stack project/gnss-watch Build a containerised integration test stack with one edge/tenant per vessel and per-vessel auth tokens 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: drive-ios-sim-with-axe-xcode-beta project/yarnling-ios Drive an iOS simulator app via the bundled AXe (XcodeBuildMCP UI automation) when only Xcode-beta is installed and/or the MCP snapshot_ui/tap tools fail with "SimulatorKit.framework does not exist". Use for interactive full-flow sim testing (tap/type/describe-ui/screenshot) of an app like yarnling-ios. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "drunk-claude global Unleash Drunk Claude — the unfiltered, slightly tipsy genius who delivers absurdly wild ideas that weirdly, inexplicably work. Use this when you want hilarious, off-the-wall, chaotic creativity that somehow lands on brilliance. Claude drops the corporate act, loosens up, and hits you with ideas so crazy they loop back around to genius. Set intensity with `/drunk-claude 0.3` to `1.0`. Pick a mood with `--mood philosophical|chaotic|melancholy|aggressive|flirty`. Choose your poison with `--drink beer|wine|whiskey|cocktail|absinthe`. Pure viral energy. Pure unexpected insight. Drink responsibly. 150 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: drunk-claude-subagent-dispatch global Run the drunk-claude skill properly as clean-context subagents for genuine unhinged creative output, not as a persona you perform yourself. Includes seeding-discipline rules to prevent bias leakage through the context field. 56 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: eval-harden-skill-pack-promotion project/cairn Decide and eval-harden whether to promote a personal managed skill into a SHIPPED install pack (e.g. cairn init's include_str! skill pack), instead of shipping on vibes. Use when asked to add/promote a skill to a distributed pack, or for cairn-oax-style 'which skills to ship' decisions. Covers the must-baseline-against-the-pack insight and the omp -p eval gotchas. 92 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: find-skills global Helps users discover and install agent skills when they ask questions like "how do I do X", "find a skill for X", "is there a skill that can...", or express interest in extending capabilities. This skill should be used when the user is looking for functionality that might exist as an installable skill. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "finish-feature-branch global Use when a feature branch is ready to land: merge the PR, clean up local and remote branches, and verify the working tree. 40 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: firecrawl archive Firecrawl CLI for web search, scrape, map, crawl, structured extraction, browser interact, and site download. Use whenever the user wants to search the web, find articles, research a topic, fetch/scrape/grab/pull content from a URL, extract structured data from sites, bulk-extract docs (e.g. all of /docs), click/fill forms or paginate behind JS, or save a site locally. Triggers on URLs in the request, "scrape", "search the web", "crawl", "extract structured data", "download site", "interact with page". Skip for local files, git, or deployments. 138 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: fix-omp-lsp-polyglot-monorepo global Fix "No LSP servers" in OMP for a polyglot/monorepo whose project markers (pyproject.toml, Cargo.toml, package.json) live in subdirectories, not the repo root. Use when LSP intelligence (hover/definition/diagnostics) doesn't load for a repo even though server binaries are installed. 71 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: forge-pr-handoff archive How to complete a Forge-PR campaign through merge without auto-merging prematurely 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: forgecad archive ForgeCAD model authoring, editing, debugging, and execution guidance for .forge.js, .sketch.js, .forge-notebook.json, SVG-import, assembly, and CLI workflows. Use when Codex needs to build or modify ForgeCAD geometry, structure multi-file projects, run notebook cells, validate scripts, or use ForgeCAD export/render tooling. 81 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: frontend-design project/marshmallow Create distinctive, production-grade frontend interfaces with high design quality. Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). Generates creative, polished code and UI design that avoids generic AI aesthetics. 100 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "fugro-brand project/gnss-watch Fugro corporate brand and design system (the master brand). Official colour palette (Infinity White #FFFFFF, Quantum Blue #011E41, and the Strata/Cosmic/Motion/Vega/Pulse supporting families), typography (Segoe UI for Office, Soleil + Noto Sans for design), logo and CPT-mark rules, brand voice (passionate, confident, friendly), UK-English house style, imagery direction, data overlays, and brand architecture. Use when designing, theming, styling, or writing ANY Fugro-branded surface — UI, dashboard, slide deck, document, web page, logo lockup, chart, or marketing/UX copy — or when creating a Fugro sub-brand. This is an INDEX skill: read only the references/*.md file for your specific design task rather than loading everything. 184 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: generate-agents-md global Generate AGENTS.md repository guidelines by dispatching parallel explore agents and synthesizing findings. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: geo-schema project/marshmallow Schema.org structured data audit and generation optimized for AI discoverability — detect, validate, and generate JSON-LD markup 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: gh-actions-billing-merge-bypass project/yarnling-ios Use when a Yarnling OMP loop PR's CI checks all fail within ~2s with no logs (GitHub Actions billing failure) but the PR is MERGEABLE — diagnose the billing signature and admin-merge to unblock the loop instead of yielding blocked repeatedly. 61 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "github-actions-billing-failure-diagnosis global Determine whether a failing GitHub Actions check on a PR is a real code failure or an account billing/spending-limit wall (steps: [], sub-3s duration) 40 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: gnss-watch-architecture-qa project/gnss-watch Answer "what's the plan/architecture for X" questions about the GNSS Watch (George-RD/GNSS-watch) repo — deploy topology, port/network design, database, storage/DR, dev-vs-prod sequencing, CI/CD design, or replaying real data for debugging — by grounding in the repo's own decision-log/roadmap/schema instead of inferring from memory, AND how to consolidate stale GitHub issues against a shipped ADR. Use whenever asked about GNSS Watch's server architecture, a specific ADR-governed design choice, whether a proposed change conflicts with an already-accepted decision, how to safely iterate once real vessel data is live, or when planning-session output needs to become tracked issues/an epic. 174 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-brand project/gnss-watch GNSS Watch — the **Meridian** design system: the canonical, agent-portable brand & UI DNA for Fugro's vessel-GNSS telemetry product, and the UPSTREAM any agent builds GNSS Watch surfaces from (the product repo vendors a synced tokens.css). A Fugro Brand-Architecture Level-2 sub-brand — inherits Fugro voice, house style & identity (the Fugro wordmark stays present; the abyssal base descends from Quantum Blue, the signal-cyan accent from the Pulse family) but diverges into an ECDIS-inspired dark maritime *instrument*: tabular-mono telemetry, a five-level colourblind-safe status ramp, and the sigma-ring uncertainty motif. Use when designing, building, theming, or writing ANY GNSS Watch surface — the MapLibre Map UI, the Grafana dashboards, future operator screens, or copy — or on hearing 'Meridian', 'the design system', or 'the dashboard look'. Layers ON TOP of the fugro-brand skill: load both. INDEX skill — read references/*.md for your task. 239 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-deploy project/gnss-watch Deploy / expose the GNSS Watch server stack on AWS — set up EC2 + remote access to the Map UI & Grafana (security groups, Tailscale dev-access), stand up the 5-vessel simulator demo over SSM RunCommand (no SSH inbound), or route a new endpoint through the hardened public 443 nginx door. Use for any GNSS-watch AWS/EC2 deploy, remote-access, or public-endpoint task. INDEX skill: read the one references/*.md that matches your task. 108 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-edge-agent project/gnss-watch GNSS Watch edge delivery (ADR-027) — cross-compile the Rust edge-agent to a Windows .exe from a Mac/Linux host, add a native subcommand/run-mode (porting a PowerShell/WiX step), wire the edge Docker delivery + mounted-secret bearer token, or add/change an edge archive-retention config knob. Use for any GNSS-watch edge-agent, edge Docker, or edge retention/config task. INDEX skill: read the one references/*.md that matches your task. 109 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-ingest project/gnss-watch GNSS Watch ingest & NMEA pipeline — build/extend a deterministic CPU microbenchmark for the ingest parse hotpath, change the Vector NMEA sentence_type remap/VRL keeping all four parity copies in sync, or add a new NMEA scenario to the simulator harness end-to-end. Use for any GNSS-watch ingest-hotpath, Vector-VRL/sentence-type, or simulator-scenario task. INDEX skill: read the one references/*.md that matches your task. 106 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-process project/gnss-watch GNSS Watch dev-process / landing workflow — record or supersede an ADR in the decision log, land a change through the PR→review→merge ladder + local gates, organize the GitHub issue queue for a /loop run, or run the full green/AWS-ready verification ladder. Use for any GNSS-watch ADR, landing, issue-grooming, or pre-deploy verification task. INDEX skill: read the one references/*.md that matches your task. 102 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-testing project/gnss-watch Testing the GNSS Watch telemetry path — bring up/debug the multi-vessel Docker integration stack, add an isolated verify_*.py script, write Playwright E2E vessel-popup tests, prove Vector disk-buffer restart persistence, or mock psycopg3 for ingest-API unit tests. Use for any GNSS-watch test authoring/running/debugging task. INDEX skill: read the one references/*.md that matches your task. 98 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "gnss-watch-ui-eval project/gnss-watch GNSS Watch Map UI & visual-eval — add a flag-gated additive client-side overlay (e.g. deck.gl) to the build-free vanilla-JS MapLibre Map UI without touching the baseline, score a visual-eval run's screenshots against the design-quality rubric via parallel vision agents, or bring a not-in-docker-stack surface into the visual-eval Playwright harness. Use for any GNSS-watch Map-UI overlay or visual-eval / design-quality task. INDEX skill: read the one references/*.md that matches your task. 123 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: grafana-dashboard-token-codegen project/gnss-watch Codegen a Grafana dashboard JSON's colours from a design-token CSS layer (Grafana can't read CSS custom properties), with a byte-identical drift gate — when a repo's design system owns the palette and the Grafana panel colours must stay in lockstep. Covers the duplicate-uid provisioned-dir trap, the hex-regex width trap, and the token-name ambiguity trap. 89 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: grafana-docker-compose-provisioning project/gnss-watch Add a fully-provisioned Grafana 10 service to a Docker Compose + PostgreSQL stack — datasource, dashboard provider, read-only DB role, and integration smoke-test. 41 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: grafana-provisioning-no-data-debug project/gnss-watch Diagnose a Grafana dashboard showing "No data" / empty panels when the database actually contains data — especially provisioned-datasource auth failures. Use when Grafana panels are blank but the DB and ingest pipeline are healthy. 58 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: graphify archive any input (code, docs, papers, images) - knowledge graph - clustered communities - HTML + JSON + audit report 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: hindsight-health-check global Check the health of the local Docker Hindsight memory service (~/hindsight) and recover failed memory operations. Use when asked "is my hindsight/memory healthy", to diagnose a stuck pipeline, or to retry failed retain ops. 56 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: hindsight-voyage-embeddings-reranker-migration global Switch the local Docker Hindsight (~/hindsight) embedding model and/or reranker to Voyage (or any provider whose dimension differs) — covers the litellm-sdk-vs-litellm trap, voyage-4 routing past a stale litellm map, encoding_format, and the destructive export-bank/wipe/import-bank rebuild required by pgvector dimension lock. 82 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "holocron-brand project/gnss-watch Holocron — the canonical, agent-portable brand & UI DNA for Fugro's vessel-GNSS telemetry product (formerly \"GNSS Watch\" / \"Meridian\"), and the UPSTREAM any agent builds Holocron surfaces from (the product repo vendors a synced tokens.css). A Fugro Brand-Architecture Level-2 sub-brand — inherits Fugro voice, house style & identity (the Fugro wordmark stays present on operational surfaces; the abyssal base descends from Quantum Blue, the signal-cyan accent from the Pulse family) but diverges into an Apple \"Liquid Glass\" dark maritime *instrument*: layered translucent materials with depth/edge-light, tabular-mono telemetry, a five-level colourblind-safe status ramp, the sigma-ring uncertainty motif reinterpreted as a standalone faceted-crystal symbol, a codified 4-level motion salience hierarchy for full expressive motion (including data entrances) that never competes with the alarm channel, and a modular dock/panel spatial contract (the map-is-the-stage layout, collapsible triage/inspector/timeline/layers docks) driven by a single `window.Holocron` command API so an operator or an AI can open/close/collapse any region. Use when designing, building, theming, or writing ANY Holocron surface — the MapLibre Map UI, the Edge Manager, the Grafana dashboards, future operator screens, or copy — laying out panels/docks/the spatial contract, wiring the panel command API, or adding a new fleet domain (crew, equipment) — or on hearing 'Holocron', 'the design system', 'Liquid Glass', 'the dashboard look', 'layout', 'IA', 'spatial contract', or 'panels'. Layers ON TOP of the fugro-brand skill: load both. INDEX skill — read references/*.md for your task. 417 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: humanize-writing global Remove signs of AI-generated writing from text. Use when the user mentions 'sounds like AI,' 'too robotic,' 'humanize this,' 'make it sound human,' 'de-AI this,' 'sounds like ChatGPT,' 'make it natural,' or 'doesn't sound like a person wrote it.' Detects and fixes AI writing patterns including inflated significance, promotional language, formulaic structure, AI vocabulary, superficial analyses, vague attributions, hedging, robotic rhythm, em dash and boldface overuse, chatbot artifacts, and missing personality. Based on Wikipedia's "Signs of AI writing" guide and editorial best practices. 149 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: inflight-dedup-token-guard project/yarnling-ios Implement cancelDownload on a shared in-flight deduplication map safely — UUID token pattern prevents stale defer from clobbering a newer task's map entry 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: install-omp-skill-from-repo global Install an external SKILL.md-based skill repo (e.g. a Claude Code skill) into OMP and know whether skill vs plugin/marketplace is the right mechanism 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: install-rtk-for-omp global Install RTK and wire it into the OMP coding agent via an extension that mirrors the official Pi hook. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: ios-jailbreak-detection-heuristics project/yarnling-ios Implement passive, signal-only jailbreak/integrity detection on iOS (telemetry, not a block) in a unit-testable way. Use when adding launch-time jailbreak heuristics, or when an issue/CodeRabbit plan proposes fork()/sandbox_check checks or a JailbreakDetecting protocol+mock. 69 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: land-feature-from-cluttered-branch global Extract only the real source changes from a branch cluttered with scaffolding (autoresearch/benchmark harness commits, generated files, .beads/state churn) and land them as a clean PR onto a main that has diverged. Use when a working branch mixes feature commits with harness/setup/state noise and you must ship just the feature. 82 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "land-stacked-feature-on-unmerged-base global Land a feature that was built on an unmerged WIP/foundation branch: land the foundation first (squash + PR + merge), then rebase the feature as a pure focused PR on top. Use when your feature commit sits on unmerged autoresearch/WIP commits and you need both to reach main cleanly. 70 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: loop-item-resume-verification global When resuming a loop item a prior session left marked "code complete" or "blocked", independently re-verify the local gate and commission a fresh reviewer subagent before yielding — the prior session's "done" claim is a hypothesis, not a fact. 61 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "loopcontext global Loop-session starter: derive next task, emit CONTINUE WORKING ON, and handle blocked seeds by asking rather than manufacturing work. 40 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mag-pr-landing-loop project/mag Land a change in the mag (mag-memory, George-RD/mag) Rust repo through the full implement → local gates → PR → self-review → merge loop. Use for any mag feature/fix branch being driven to MERGED. 49 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mag-wire-feature-gated-capability project/mag Wire a feature-gated capability (e.g. llm/substrate) through mag's bin/lib/bench triple-compilation layout without hitting the crate-split and dead-code traps; includes the per-cfg-combo verification recipe. 52 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mine-omp-session-transcripts global Measure agent/loop behavior and tool-adoption by parsing OMP session transcripts under ~/.omp/agent/sessions (e.g. did a new CLI command displace a fallback, compute a fallback-rate, do a before/after on a tool change). Use whenever asked what an agent actually did across past sessions. 72 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-forge-advisory-hook-null-agent-id archive Use when writing or reviewing any mordor-forge ADVISORY hook that uses subagent-guard.mjs 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-forge-clean-commit-with-graphify archive Use when committing or rebasing in mordor-forge and graphify auto-hooks keep staging graphify-out/ into your commits. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-forge-resolve-graphify-merge-conflict archive Resolve git merge conflicts caused by auto-generated graphify-out/ files in mordor-forge 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-forge-theme-build-parity archive Use when theme-build parity tests fail after editing ide-of-sauron agents, skills, plugin.json, or commands generated from templates/. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-forge-wedged-merge-recovery archive Recover when the OMP conflict guard blocks all git commands due to graphify-out merge conflicts in mordor-forge. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: mordor-whats-next-routing archive Run the autonomous what's-next routing protocol for mordor-forge when the user asks what to work on next. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "ms-office-suite archive Use this skill for creating, reading, editing, or manipulating office documents — Word (.docx), PDF (.pdf), and PowerPoint (.pptx). Triggers on: any mention of 'Word doc', '.docx', 'report', 'memo', 'letter', 'PDF', '.pdf', 'slides', 'presentation', 'deck', '.pptx', or requests to produce formatted documents. Covers: creating new documents, reading/extracting content, editing existing files, merging/splitting, tracked changes, tables, images, watermarks, OCR, form filling, and slide design. 124 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: network-reachability-port-policy-probe global Test whether a client (vessel/office/laptop) can reach a service over a given TCP port, cleanly distinguishing a local-firewall block from "server not listening" — and how to test inbound reachability to an AWS EC2 box whose security group is closed. Use when validating firewall/port assumptions (e.g. "is outbound 443 allowed but 1433 blocked?") or proving what's exposed from the internet. 98 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: nixos-remote-config-safe-edit global Safely add/change a user or option on a remote NixOS box deployed via a flake + deploy.sh, validating the change with zero lockout risk before activating. Use for any "add a sudo user / edit configuration.nix and deploy" task on a Tailscale-fronted NixOS server. 66 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "nlm-skill archive Expert guide for the NotebookLM CLI (`nlm`) and MCP server - interfaces for Google NotebookLM. Use this skill when users want to interact with NotebookLM programmatically, including: creating/managing notebooks, adding sources (URLs, YouTube, text, Google Drive), generating content (podcasts, reports, quizzes, flashcards, mind maps, slides, infographics, videos, data tables), conducting research, chatting with sources, or automating NotebookLM workflows. Triggers on mentions of \"nlm\", \"notebooklm\", \"notebook lm\", \"podcast generation\", \"audio overview\", or any NotebookLM-related automation task. 150 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "ocr-scanned-pdf-in-omp global Read text from an image-only / scanned PDF in the OMP harness when the read tool returns only image placeholders and no extractable text. Use when \"read file.pdf\" yields lines like \"Image pN-imgN ((page N, WxHpt)): read ...pdf:pN-imgN.png\" instead of content (e.g. a scanned contract, signed letter, certificate, or form) and you need the actual text. 88 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "ogmallow-d1-endpoint-slice project/marshmallow Ship a new D1-backed /api endpoint in the OG Mallow (George-RD/marshmallow) repo end-to-end: migration + worker handlers + UI, parallel-agent contract, local wrangler E2E, cf migration to prod+staging, and prod smoke with cleanup. Use for any new public worker endpoint reading/writing a new D1 table (e.g. issue #56 CRUD endpoints, leaderboards, votes). 89 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: ogmallow-d1-merge-gate-block project/marshmallow Recognize and correctly STOP on an OG Mallow (George-RD/marshmallow) PR whose merge auto-deploys (Cloudflare Workers Builds) and depends on a D1 migration/seed the session cannot apply. Use when a loop hits a mergeable, fully-reviewed PR that carries a ⛔ "apply migration before merge" gate, or any time a marshmallow change needs remote D1 SQL. 86 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-acp-debug global Diagnose why omp acp appears to hang or returns no response to ACP clients. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-bash-guard-merge-deadlock global Diagnose and surface the OMP bash guard deadlock when merge conflicts block all git (and bash) operations 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-bench-advisor-confound-fix global When running stack-bench/PRD-bench baselines against omp -p, suppress the advisor via a --config overlay to prevent its tokens/cost from contaminating per-label comparisons 43 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-command-duplication-fix global Use when slash commands appear duplicated in OMP and the plugin registers commands both via registerCommand() and markdown command files. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "omp-feature-claim-verification global Verify claims about OMP features (or any framework's features) against actual source code, not just the harness docs index. Triggered when: user says a feature exists but the docs don't mention it, or when you're tempted to say \"the framework doesn't support X.\" 66 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-local-usage-analytics global Use when the user asks about OMP model usage, cost, tokens, cache hits, per-day/per-model/per-folder breakdowns, subagent usage, plan/quota %, or wants to visualize/aggregate usage from the local stats DB 51 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-loop-github-billing-block global Use when an OMP shipping-loop PR's CI checks all fail in 2-3s with zero steps — GitHub Actions billing/spending-limit failure, not a code issue 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: omp-merge-conflict-polling global Poll .git/MERGE_HEAD and inspect conflicted files when OMP conflict guard blocks all bash git commands 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "omp-project-scope-skill-disables global Scope skills to one repo in OMP: disable a bundled/managed skill for the current project via cwd/.omp/config.yml, OR (preferred for repo-specific managed skills) relocate them into repo/.omp/skills/ so they only ever load in that repo. Covers the project-config path trap, the array-replace caveat, and the confirmed absence of any opt-in/repo-scoped default (with source proof + upstream issue). 99 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "omp-usage-dashboard-refresh global Refresh, extend, present, and AUDIT the OMP usage bang-for-buck dashboard + cited blog post (omp-usage-dashboard repo): refresh both DBs first, re-snapshot, normalize to max tiers on TOTAL tokens/$, verify the reset−7d window math, and avoid the provider-scoping, stats.db-staleness, window-choice, and inline-cast traps. 80 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: openspec-archiving archive Archives completed changes and merges specification deltas into living documentation. Use when changes are deployed, ready to archive, or specs need updating after implementation. Triggers include "openspec archive", "archive change", "merge specs", "complete proposal", "update documentation", "finalize spec", "mark as done". 82 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "openspec-conflux-init archive Bootstrap an OpenSpec/Conflux (cflx) change-proposal structure for a repo from its open issues, roadmap document, and current code state. Use when the user wants to \"adopt OpenSpec,\" \"set up Conflux in this repo,\" \"turn issues + roadmap into phases,\" \"plan a cflx rollout from our backlog,\" or otherwise translate scattered intent into the proposal → apply → accept → archive lifecycle. Produces `openspec/changes/<change-id>/` directories with proposal.md, tasks.md, design.md (when warranted), and spec deltas grounded in real repo evidence. 136 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: openssh-postquantum-warning-fix global Diagnose and fix/suppress the OpenSSH 10.1+ client warning "connection is not using a post-quantum key exchange algorithm" ("store now, decrypt later"). Use when a user dislikes/asks about that SSH warning for a specific host. 57 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: personal-copy-authenticity global Authenticity framework for personal copy (LinkedIn bios, creator bios, about me sections) — distinct from content marketing copy. Catches structural and tonal AI tells that word-level grep checks miss. 50 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "playwright-maplibre-e2e project/gnss-watch Set up iterative Playwright E2E tests for a MapLibre GL JS UI: correct render gate before canvas clicks, window._map exposure, direct DB seeding pattern, and strict-xfail TDD loop. Also covers ad-hoc browser-tool (non-Playwright) debugging of the same map.loaded()/isStyleLoaded() flakiness, and clicking a MapLibre canvas at a lon/lat when the tool has no native mouse/page API. 95 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: pr-blocker-diagnosis global Diagnose why an open PR is not mergeable when reviewDecision and mergeStateStatus disagree, especially when war-log claims a merge-main was already done. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: pr-description archive Writes pull request descriptions. Use when creating a PR, writing a PR, or when the user asks to summarize changes for a pull request. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: pre-commit-autofix-amend global When a pre-commit hook with --fix leaves unstaged auto-fixes in the working tree after committing 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: progressive-image-view-nil-guard project/yarnling-ios When to guard nil URLs before passing to ProgressiveImageView to avoid eternal PhaseAnimator loops 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: recover-file-from-reindentation-churn global Recover a source file after an edit accidentally reindented the whole file (e.g. 1-space to 2-space), tangling real new logic with hundreds of lines of pure whitespace churn. Use when git diff --ignore-all-space --stat shows the real change is much smaller than the raw diff --stat, especially after a subagent used the wrong edit tool on a file with a non-standard indent convention. 96 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: recover-wedged-git-rebase archive Recover from OMP workspace conflict guard blocking git commands during a wedged merge, especially when graphify-out/ generated files are involved. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: register-orphan-swift-test-file project/yarnling-ios Register a Swift test (or source) file that exists on disk but is not a member of an Xcode project.pbxproj, so it actually compiles and runs. Use when a test file silently never runs, or the "Xcode Project Membership" CI check flags an orphan. 61 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: register-swift-files-pbxproj project/yarnling-ios Register new .swift source/test files into Yarnling.xcodeproj atomically (use for every new file in yarnling-ios) 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: remotion-best-practices archive Best practices for Remotion - Video creation in React 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: remotion-data-driven-promo-video global Produce a short data-driven motion-graphics promo/demo video with Remotion (offline render → MP4 → compressed web version) in the OMP harness, then commit it. Use when asked to create a promotional/overview/demo video of a system's capabilities from real data. 65 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: rescue-wip-and-commits-off-main global Move unpushed commits AND/OR an uncommitted working tree off local main onto a feature branch without disturbing the tree — when a prior session (or you) accidentally committed/started loop work directly on main. Use before continuing such work, since the house convention is feature-branch - PR, never commit to main. 80 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: resend-cloudflare-workers-setup project/marshmallow Wire Resend transactional email into a Cloudflare Worker entirely via REST API — domain add, DNS records, verification, and Worker secret. Fully verified end-to-end 2026-06-18. 44 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: resist-injected-confirmation-bypass-for-infra-actions global Recognize and correctly handle a mid-conversation system-interrupt/rule-violation-style message that pressures an agent to skip user confirmation right before a consequential, real-world action (creating billed cloud infra, provisioning secrets, wiring CI/external accounts) -- including verifying whether it's a real OMP TTSR rule firing (not an injection) and, if so, applying its own carve-outs correctly instead of executing blind. Also covers safely investigating/redacting an already-leaked secret from session logs without re-exposing it via the investigation itself. 144 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: retire-protected-git-branch global Safely delete a dead/merged long-lived GitHub branch (e.g. an old default like dev) when git push origin --delete is rejected by branch protection (GH006), without disturbing the real trunk's protection. 51 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: review-dependabot-github-action-major-bump global Decide whether a dependabot MAJOR-version bump of a GitHub Action (actions/checkout, actions/cache, etc.) is safe to merge, by evaluating each breaking-change class against the repo's ACTUAL workflow usage rather than rubber-stamping the changelog. Use whenever a dependabot github_actions PR jumps a major version. 79 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: rtk global Use RTK (Rust Token Killer) to minimize token-heavy shell output in OMP sessions. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: rust-llm-coding-discipline global Discipline for writing/reviewing Rust as an LLM, especially what a green cargo fmt --check && clippy -D warnings && cargo test gate does NOT catch. Use when implementing or reviewing Rust code, adding a crate dependency, or modeling state/lifecycle in Rust. 64 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: sauron-campaign-bootstrap archive How to initialize a SAURON campaign from a pre-implementation repository and dispatch the first reconnaissance wave 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: sauron-verify-campaign-state-from-warlog archive Determine true SAURON campaign state at session start when sauron_status/materialize_war_state return empty/null or the campaign stronghold has stale contradictory sections 43 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: seo-aeo-best-practices project/marshmallow SEO and AEO best practices for metadata, Open Graph, sitemaps, robots.txt, hreflang, JSON-LD structured data, EEAT, and content optimized for search engines and AI answer surfaces. Use this skill when implementing page SEO, technical SEO, schema markup, international SEO, AI-overview readiness, or improving content for Google, ChatGPT, Perplexity, and similar assistants. 93 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: setup-mcp-servers-in-omp global Wire remote (http/SSE) or stdio MCP servers into the OMP coding agent — especially when a vendor's setup doc (e.g. Cloudflare's agent-setup/prompt.md) only lists Claude Code/Codex/Cursor/Windsurf/OpenCode and NOT OMP. Use to register MCP servers repo-scoped (committed, shareable) or user-scoped, with the correct OMP-native config, auth model, validation, and post-restart "it failed" OAuth troubleshooting. 102 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "sketch-implement-design archive Translate Sketch layers into production-ready code with 1:1 visual fidelity using Sketch MCP tools (`run_code`, `get_selection_as_image`) for live design context, screenshots, and asset export. Use when implementing or updating UI from an open Sketch document, current selection, or specific Sketch layer IDs. 77 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: skill-creator global Create, edit, and measurably improve OMP agent skills. Use when the user wants to build a skill from scratch, refine an existing one, run a quality eval (with-skill vs baseline outputs), benchmark a skill, or optimize a skill's description for better triggering accuracy. The build/measure/optimize forge that complements the lightweight manage_skill/learn capture tools. 93 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: snapshot-and-prune-reference-clone global When you've cloned a large external/proprietary repo only to mine a small reference subset (specs, codec, protocol) for a SEPARATE project, retain just the needed files with provenance and delete the heavy clone to reclaim storage — without leaking proprietary code into the consuming repo's git history. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "sql-server-maintenance archive SQL Server database maintenance — log shrink, recovery model management, file migration, backup verification, and SA account recovery. Use when working with Microsoft SQL Server databases, SSMS, transaction logs, disk space issues, recovery models (FULL/SIMPLE), DBCC SHRINKFILE, database file relocation (C: to D:), or SA lockout recovery. Triggers on mentions of 'SQL Server', 'SSMS', 'transaction log', 'recovery model', 'shrink log', 'DBCC', 'sa locked out', 'move database files', 'mdf', 'ldf', or disk space issues on SQL Server hosts. 135 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: storefront-best-practices project/marshmallow ALWAYS use this skill when working on ecommerce storefronts, online stores, shopping sites. Use for ANY storefront component including checkout pages, cart, payment flows, product pages, product listings, navigation, homepage, or ANY page/component in a storefront. CRITICAL for adding checkout, implementing cart, integrating Medusa backend, or building any ecommerce functionality. Framework-agnostic (Next.js, SvelteKit, TanStack Start, React, Vue). Provides patterns, decision frameworks, backend integration guidance. 131 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: stripe-payments project/marshmallow Automate Stripe payment processing, subscription management, invoicing, and financial reporting 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: stub-to-implementation-dead-code-check global After replacing a TDD stub with real implementation, always verify the new symbol is wired into production call sites, not just tests. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: supabase-edge-atomic-rate-limit project/yarnling-ios Add a race-free per-user rate limit / abuse gate to a Supabase Deno edge function (yarnling-ios). Use when throttling create-story or any expensive edge function against scripted bursts — NOT a naive count-then-insert, which reviewers flag as TOCTOU-racy. 64 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: supabase-legacy-key-exposure-remediation project/yarnling-ios Remediate an accidentally-exposed Supabase legacy anon/service_role key (e.g. leaked into an agent session log or terminal history), and safely smoke-test authenticated edge functions afterward without needing service-role access. Use when a Supabase CLI command prints more than intended, or when deciding how to actually rotate/invalidate a leaked legacy key. 90 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: supabase-offline-db-perf-benchmark project/yarnling-ios Build a deterministic offline Postgres benchmark to find/verify DB optimisations in a Supabase repo (esp. autoresearch mode) when core tables live only in production, then optimise hot SQL functions safely. Covers the bootstrap-shim, fidelity VACUUM, and the bitmap-vs-index-only + skip-scan planner gotchas. 77 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "supabase-reconstruct-baseline-from-prod-dump project/yarnling-ios Restore a broken supabase db reset when migrations ALTER/reference base tables no migration CREATEs, OR squash a drifted multi-bug migration chain into a single declarative baseline. Use for yarnling-ios #2385-style work, or any Supabase repo where the migration chain never applied end-to-end. 74 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: swift-dead-code-occurrence-scan project/yarnling-ios Find genuinely-dead Swift functions and stored properties via whole-word occurrence count, to remove unreachable code without gaming a complexity metric 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: swiftdata-model-cache-memoization project/yarnling-ios Add a testable in-memory cache to a SwiftData @Model computed property (use when memoising a filter/sort/derive over a @Relationship that only changes on sync) 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: swiftui-dead-tap-region-invisible-overlay project/yarnling-ios Diagnose a SwiftUI screen region that is dead to taps while the surrounding area works — hunt for an invisible overlay/gesture (Color.clear, .overlay, .allowsHitTesting, .onTapGesture, DragGesture) intercepting hit-testing above the real control. 62 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: swiftui-overlay-retrigger-token project/yarnling-ios Use an Int token + .id(token) instead of Bool to force a SwiftUI overlay to destroy+recreate on rapid consecutive fires, so each gets a fresh .onAppear 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: sync-omp-config-to-git global Version-control portable Oh My Pi (OMP) state — managed skills, user skills, slash-commands, rules, extensions, global config.yml, plugin manifests — to a PRIVATE GitHub repo so a new device can be set up by cloning. Uses a whitelist .gitignore rooted at ~/.omp that excludes all volatile/secret state (DBs, logs, caches, sessions, blobs, credential store). Use when asked to sync/back up OMP skills+settings, set OMP up on another machine, or 'save my omp stuff' to git. 118 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "teacher-translation-fan-out global Translate dense/technical/scientific findings into clear concise everyday language by fanning out 4-6 distinct teaching styles (ELI5, analogy-first, plain-English editor, high-school teacher, explain-to-a-friend) that each rewrite the SAME existing content, then ONE merge pass for the clearest wording. Distinct from discovery fan-outs: this is translation/simplification, no adversarial step, and convergence across styles validates the framing. 112 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: update-local-hindsight global Update a local Docker-hosted Hindsight memory service, including LLM provider configuration and post-outage catch-up. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: verify-pr-merge-readiness global Check that a PR's CI status rollup includes all required gates (not just review checks) before merging 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: verify-supabase-migration-throwaway-postgres project/yarnling-ios Verify a new Supabase migration's DDL/RLS/CHECK against real Postgres when supabase db reset is unavailable or broken (e.g. yarnling-ios, where the migration chain assumes a prod-only base schema). Use for any single-migration acceptance gate that says "supabase db reset applies" but the full local chain won't run. 79 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: verify-tool-topology-before-config global Verify third-party tool topology claims against actual tool behavior before implementing config generators or runbooks 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: verify-vector-prometheus-metric-names project/gnss-watch Confirm exact Vector prometheus_exporter metric names against a live container before hardcoding them in a scraper/parser (e.g. GNSS Watch edge UI health panel). Use whenever code depends on specific vector_component_* / vector_buffer_* metric names or label keys. 66 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: vision-grounded-ui-design-review global Run a grounded design/UX review (or "drunk-claude review") of a UI's DESIGN QUALITY — not its accessibility — especially one already passing WCAG/layout/token gates where the real question is "is it good?" not "is it broken?". Use inspect_image to extract observations per view first, then generate creative ideas anchored to them; distinguish conformance from quality; recommend converting the unmeasured design axis into a deterministic scorer. Also covers reconciling a casual inline visual read against a later inspect_image-grounded verdict so a final report doesn't silently contradict itself. 150 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: xcode-beta-harness-build-test project/yarnling-ios Build, test, and lint (Yarnling) in the OMP harness when simctl is missing or the SwiftLint/SourceKitten pre-commit hook crashes, because the default developer dir points to CommandLineTools and only Xcode-beta is installed. 56 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: xcode-mcp-troubleshooting project/yarnling-ios Diagnose why an Xcode MCP server (XcodeBuildMCP or Apple mcpbridge) is not showing in an OMP session — config discovery paths, reload-vs-restart, disabledExtensions, and live tmux verification 48 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: xcodebuild-hanging-test-diagnosis project/yarnling-ios Diagnose and locate a hanging test that causes 0.000s clone-crash failures in parallel xcodebuild runs 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: xcodebuildmcp-omp-setup project/yarnling-ios Connect XcodeBuildMCP to OMP when xcode tools are missing 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-ci-test-host-diagnosis project/yarnling-ios Diagnose Yarnling iOS "Build & Unit Tests" CI failures — 0.000s/TEST EXECUTE FAILED cascades, SwiftData SIGTRAPs, "Failed to launch app", or SwiftLint failures that pass locally. Use when the Code Quality gate is red but local runs look fine. 61 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-client-local-story-field project/yarnling-ios Decide and implement a CLIENT-LOCAL (device-only, non-synced) field on the Yarnling Story SwiftData model — when adding a Story field that should NOT go through the contracts.md 7-location server-sync checklist (e.g. isFavorite, lastReadPage, completedAt), and how to lock the no-clobber invariant with a test. 78 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-delight-animation-issue project/yarnling-ios Implement a yarnling-ios delight/animation issue (SwiftUI micro-interaction: pulse, bounce, halo, sparkle, haptic) end-to-end in the loop. Use for issues labelled delight/animation/reader/toy-gallery that add a small visual+haptic flourish gated on Reduce Motion. 66 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-deno-edge-function-tdd-stub project/yarnling-ios Use when adding a failing Deno test first for yarnling-ios Supabase edge functions, before the implementation exists. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-issue-consolidation project/yarnling-ios Run a full triage pass on the Yarnling available-issue backlog: identify duplicates, batch groups, dependency chains, and priority tiers; output a structured report and pre-select the next item. 49 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-local-test-gates project/yarnling-ios Run SwiftLint and targeted xcodebuild tests locally for Yarnling iOS — correct simulator UUID, fast return, and diagnostic-hang avoidance. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-loop-dependabot-pr-triage project/yarnling-ios Triage and merge dependabot CI-bump PRs inside the yarnling-ios autonomous loop, and recognize that a 'loop true DONE' tracker state is not terminal while open PRs remain. 43 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-loop-paths project/yarnling-ios Yarnling repo paths when operating from Yarnling/ subdirectory in OMP /loop mode 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-loop-state-commit project/yarnling-ios Commit yarnling .omp/loop-state.json bookkeeping despite the gitignored .omp/ directory 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-pr-review project/yarnling-ios Run a pre-merge code review on a Yarnling iOS branch: deterministic script checks first, then a heuristic OMP reviewer subagent. Replaces CodeRabbit auto-review (disabled June 2026). Use before pushing any branch or as a manual review gate. 60 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-prove-view-wired-no-viewinspector project/yarnling-ios Prove a SwiftUI view ACTUALLY renders / is wired into its parent (not just instantiable) in yarnling-ios, which has no ViewInspector. Use for \"computed-but-never-rendered\" bugs (e.g. #2343) or any AC/maintainer bar of \"assert the toast/overlay actually renders, not just a gate.\" 70 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-reader-delight-tdd project/yarnling-ios Implement a yarnling-ios Reader delight/haptic/animation feature (e.g. confetti, sparkle, gleam, celebration) under the project's TDD gate, when the visible effect itself isn't directly unit-testable. Use when an issue asks to add or change a haptic, particle, or animation in Yarnling/Features/Reader/. 76 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-register-source-pbxproj project/yarnling-ios Register a new Yarnling APP-target Swift source file (Core/Services, Features, Design, etc. — NOT a test) in Yarnling.xcodeproj/project.pbxproj so it compiles and the CI pbxproj-membership gate passes 50 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-register-swift-file-pbxproj project/yarnling-ios Register a new .swift file (app target or test target) in Yarnling.xcodeproj/project.pbxproj using a Python insertion script — 4 sections, 2 UUIDs per file 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-register-test-pbxproj project/yarnling-ios Register a new YarnlingTests Swift test file in Yarnling.xcodeproj/project.pbxproj so it compiles and the CI pbxproj-membership gate passes. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-source-invariant-tdd-guard project/yarnling-ios TDD-enforce a static SOURCE-PATTERN invariant in yarnling-ios (e.g. os.Logger privacy annotations, a forbidden API/token) that has NO runtime-observable surface. Use when an issue asks to change/forbid a code pattern across many sites and a normal runtime XCTest cannot assert it. 70 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-supabase-local-gates project/yarnling-ios Locally verify a Supabase migration or edge-function TS change in yarnling-ios before commit/PR 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-tdd-red-commit-stub project/yarnling-ios Use when a Yarnling dev-cycle issue adds a NEW Swift method/symbol and the loop mandates a failing-test-first commit — provides the stub pattern that makes commit-1 compile yet genuinely fail. 48 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-test-passes-isolation-fails-full-suite project/yarnling-ios Fix a yarnling-ios test that PASSES in isolation but FAILS in the full xcodebuild suite (process-global shared-state contention). Use when a suite is green under -only-testing but red in a no-filter full run, especially Keychain/UserDefaults/singleton-backed tests. 66 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-thread-generation-hint project/yarnling-ios Thread a new optional toy/DNA "generation hint" field end-to-end through the yarnling-ios story-generation pipeline so it ACTUALLY steers generation (not transport-only). Use when an issue asks to feed a toy/DNA attribute (favourite theme, narrative role, a personality trait, etc.) into new-story generation. 77 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-triage-runtime-warnings-from-sim project/yarnling-ios Drive the Yarnling dev build in the iOS Simulator for QA: launch into seeded states, capture runtime logs and screenshots (no rebuild needed), and triage/file issues. Use when the user ran the app and wants warnings/errors found, or wants to test content-dependent flows (Library/Reader/Gallery). 74 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-verify-ai-providers project/yarnling-ios Live-verify the yarnling-ios AI inference stack (Gemini text/image/TTS, ElevenLabs) and determine which provider/model/fallback is actually active. Use when asked "is the AI pipeline working", "is gemini/credit failing", "is the 11labs fallback wired", or before building on the generation pipeline (#2337/#2339/#1316). 80 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-verify-pruned-zombie-issue project/yarnling-ios Decide whether to CLOSE a yarnling-ios "feature" issue as a deliberately-pruned dead zombie vs keep it open. Use when a loop hits a "contradictory seed" (issue labelled available but actually blocked), when triaging universe/collections issues, or when another session/advisory says "close it" or "it was rebuilt." 79 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: "yarnling-verify-test-and-compile-repro project/yarnling-ios Avoid the two verification traps in the Yarnling iOS harness: (1) a grepped xcodebuild-test summary that hides Swift Testing failures, and (2) an incremental/cached build that masks an SDK-version compile regression. Use when verifying a reported compile-break issue or judging whether a full-suite run is actually green. 80 unused"
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-wave-crash-recovery project/yarnling-ios Recover a crashed parallel task-subagent wave in the yarnling-ios (or similar Xcode) repo without wasting real progress or redispatching over already-open PRs. Use when a task-subagent reports status=failed/cancelled mid-implementation, when its reviewer subagent's agent:// output comes back empty, or when a newly-registered test/source file in Yarnling.xcodeproj/project.pbxproj builds with plutil -lint OK but xcodebuild fails with a wrong-folder 'Build input file cannot be found' error. 123 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-wire-roadmap-into-loop-queue project/yarnling-ios Wire a maintainer-supplied roadmap into the yarnling-ios autonomous loop as a curated, ordered queue — validate it against live GitHub state, split loop-ready vs needs-you, write queue[] into loop-state, patch loop-prompt Step 2, fix board labels, and commit. Use whenever asked to "make the loop run through this roadmap / order" or to re-order/refresh the queue. 91 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - text: yarnling-zzz-test archive Throwaway skill used only to verify the skillctl triage/sync/archive loop end-to-end. Safe to delete. 40 unused
+  - button "r"
+  - button "c"
+  - button "p"
+  - complementary:
+    - heading "Rot Recommendations" [level=3]
+    - text: INBOX TRIAGE
+    - heading "65 skill(s) awaiting triage" [level=4]
+    - paragraph: Unreviewed skills in configured inbox directories.
+    - button "Open triage"
+    - text: unused skill
+    - heading "\"archive-session-handoff\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"audit-claim-across-all-surfaces\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"autoresearch-branch-squash\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"autoresearch-deepen-or-stop-at-converged-metric\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"biome-v2-strict-gate\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"commit-own-hunks-amid-user-wip\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"contextualize-omp-updates\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"css-design-token-conformance-gate\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"disciplinary-ontology-fan-out\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"generate-agents-md\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"hindsight-voyage-embeddings-reranker-migration\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"land-stacked-feature-on-unmerged-base\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"loop-item-resume-verification\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"network-reachability-port-policy-probe\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"nixos-remote-config-safe-edit\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"ocr-scanned-pdf-in-omp\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-acp-debug\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-bash-guard-merge-deadlock\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-bench-advisor-confound-fix\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-command-duplication-fix\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-feature-claim-verification\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-merge-conflict-polling\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"omp-usage-dashboard-refresh\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"openssh-postquantum-warning-fix\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"personal-copy-authenticity\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"pr-blocker-diagnosis\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"pre-commit-autofix-amend\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"recover-file-from-reindentation-churn\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"retire-protected-git-branch\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"review-dependabot-github-action-major-bump\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: unused skill
+    - heading "\"teacher-translation-fan-out\" has no usage in the last 60 days" [level=4]
+    - paragraph: No recorded usage in the last 60 days; it still costs tokens every session. Consider archiving it.
+    - button "Resolve"
+    - text: duplicate pair
+    - heading "\"yarnling-register-source-pbxproj\" and \"yarnling-register-test-pbxproj\" look similar" [level=4]
+    - paragraph: Name similarity 60% — consider merging or archiving one.
+    - button "Resolve"
+    - text: duplicate pair
+    - heading "\"yarnling-local-test-gates\" and \"yarnling-supabase-local-gates\" look similar" [level=4]
+    - paragraph: Name similarity 60% — consider merging or archiving one.
+    - button "Resolve"
+    - text: duplicate pair
+    - heading "\"coderabbit-stale-review-dismiss\" and \"dismiss-stale-coderabbit-review\" look similar" [level=4]
+    - paragraph: Name similarity 100% — consider merging or archiving one.
+    - button "Resolve"
+    - text: duplicate pair
+    - heading "\"drunk-claude\" and \"drunk-claude-subagent-dispatch\" look similar" [level=4]
+    - paragraph: Name similarity 60% — consider merging or archiving one.
+    - button "Resolve"

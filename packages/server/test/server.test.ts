@@ -777,3 +777,308 @@ describe("GET /api/recommendations", () => {
     }
   });
 });
+
+describe("GET /api/inbox", () => {
+  test("returns empty array when inboxDirs is empty", async () => {
+    // Shared suite config seeds inboxDirs: [].
+    const res = await get("/api/inbox");
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual([]);
+  });
+
+  test("lists skills from a configured inbox dir with name/path/dir/description", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-list");
+    makeSkillDir(path.join(inboxDir, "inbox-skill"), "inbox-skill", "awaiting triage");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    const put = await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+    expect(put.status).toBe(200);
+
+    try {
+      const res = await get("/api/inbox");
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as {
+        name: string;
+        path: string;
+        dir: string;
+        description: string;
+      }[];
+      expect(body).toEqual([
+        {
+          name: "inbox-skill",
+          path: path.join(inboxDir, "inbox-skill"),
+          dir: inboxDir,
+          description: "awaiting triage",
+        },
+      ]);
+    } finally {
+      // Restore empty inboxDirs so sibling tests stay hermetic.
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("requires auth (401 without bearer)", async () => {
+    const res = await get("/api/inbox", { auth: false });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("DELETE /api/inbox", () => {
+  test("deletes a skill directory that resolves inside a configured inbox dir", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-delete");
+    const skillPath = path.join(inboxDir, "discard-me");
+    makeSkillDir(skillPath, "discard-me", "to be discarded");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    const put = await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+    expect(put.status).toBe(200);
+
+    try {
+      expect(fs.existsSync(path.join(skillPath, "SKILL.md"))).toBe(true);
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(skillPath)}`, {});
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ ok: true });
+      expect(fs.existsSync(skillPath)).toBe(false);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("422s for a missing path query param", async () => {
+    const res = await send("DELETE", "/api/inbox", {});
+    expect(res.status).toBe(422);
+  });
+
+  test("422s for a path outside every configured inbox dir", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-outside");
+    fs.mkdirSync(inboxDir, { recursive: true });
+    const outside = path.join(tmpDir, "not-inbox", "evil");
+    makeSkillDir(outside, "evil", "outside the inbox");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+
+    try {
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(outside)}`, {});
+      expect(res.status).toBe(422);
+      expect(fs.existsSync(outside)).toBe(true);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("422s for a traversal path that escapes the inbox", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-traverse");
+    fs.mkdirSync(inboxDir, { recursive: true });
+    const escapeTarget = path.join(tmpDir, "escape-target");
+    makeSkillDir(escapeTarget, "escape-target", "must not be deleted");
+    const traversal = path.join(inboxDir, "..", "escape-target");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+
+    try {
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(traversal)}`, {});
+      expect(res.status).toBe(422);
+      expect(fs.existsSync(escapeTarget)).toBe(true);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("422s for a symlink whose realpath escapes the inbox", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-symlink");
+    fs.mkdirSync(inboxDir, { recursive: true });
+    const outside = path.join(tmpDir, "symlink-escape-target");
+    makeSkillDir(outside, "escape-target", "must not be deleted via symlink");
+    const escapeLink = path.join(inboxDir, "escape");
+    fs.symlinkSync(outside, escapeLink, "dir");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+
+    try {
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(escapeLink)}`, {});
+      expect(res.status).toBe(422);
+      // Outside target must survive — realpath containment is the whole point.
+      expect(fs.existsSync(outside)).toBe(true);
+      expect(fs.existsSync(path.join(outside, "SKILL.md"))).toBe(true);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("requires auth (401 without bearer)", async () => {
+    const res = await send("DELETE", "/api/inbox?path=/tmp/x", {}, { auth: false });
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("POST /api/adopt inbox path", () => {
+  test("adopts an inbox skill by absolute path into the registry", async () => {
+    // Inbox skills are not part of /api/scan's DetectedSkill census. This pins whether
+    // POST /api/adopt can still adopt them by absolute path (or needs an additive fallback).
+    const inboxDir = path.join(tmpDir, "inbox-adopt");
+    const skillPath = path.join(inboxDir, "inbox-adopt-me");
+    makeSkillDir(skillPath, "inbox-adopt-me", "adopt from inbox");
+
+    // Registry must be a git repo for adoptSkill's commit path.
+    if (!fs.existsSync(path.join(registryRoot, ".git"))) {
+      execSync("git init -q", { cwd: registryRoot });
+      execSync("git config user.email test@example.com", { cwd: registryRoot });
+      execSync("git config user.name Test", { cwd: registryRoot });
+      execSync("git config commit.gpgsign false", { cwd: registryRoot });
+    }
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+
+    try {
+      const res = await send("POST", "/api/adopt", {
+        items: [{ name: "inbox-adopt-me", path: skillPath, scope: "global" }],
+      });
+      expect(res.status).toBe(200);
+      const body = (await res.json()) as { name: string; ok: boolean; error?: string }[];
+      expect(body).toHaveLength(1);
+      expect(body[0]?.ok).toBe(true);
+
+      const registry = await get("/api/registry");
+      const registryBody = (await registry.json()) as {
+        scope: string;
+        skills: { name: string }[];
+      }[];
+      const global = registryBody.find((s) => s.scope === "global");
+      expect(global?.skills.some((s) => s.name === "inbox-adopt-me")).toBe(true);
+      // Source is removed after adoption (inbox triage move semantics).
+      expect(fs.existsSync(skillPath)).toBe(false);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+});
