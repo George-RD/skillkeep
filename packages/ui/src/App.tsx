@@ -464,22 +464,52 @@ export function App() {
   const [triageScope, setTriageScope] = useState("global");
   const [triageTier, setTriageTier] = useState<Tier>("rooted");
 
-  const openTriage = () => {
-    setDeployOpen(false);
-    setSelectedSkillName(null);
-    setActiveMode("triage");
-    setActiveTriageIndex(0);
-    setTriageSessionN(awaitingCount > 0 ? awaitingCount : seedlings.length);
-    setTriageMergeOpen(false);
-    void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
-  };
-
-  const openRot = () => {
+  /** Mutual exclusion for workbench surfaces — one primary overlay at a time. */
+  const closeAllSurfaces = () => {
     setDeployOpen(false);
     setSelectedSkillName(null);
     setSearchOpen(false);
     setFilterSheetOpen(false);
+    setTriageMergeOpen(false);
+  };
+
+  const goGarden = () => {
+    closeAllSurfaces();
+    setActiveMode("garden");
+  };
+
+  const openTriage = () => {
+    if (activeMode === "triage") {
+      goGarden();
+      return;
+    }
+    closeAllSurfaces();
+    setActiveMode("triage");
+    setActiveTriageIndex(0);
+    setTriageSessionN(awaitingCount > 0 ? awaitingCount : seedlings.length);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+  };
+
+  const openRot = () => {
+    if (activeMode === "rot" && !deployOpen && !selectedSkillName && !searchOpen) {
+      goGarden();
+      return;
+    }
+    closeAllSurfaces();
     setActiveMode("rot");
+  };
+
+  const openSearch = () => {
+    if (searchOpen) {
+      setSearchOpen(false);
+      return;
+    }
+    setDeployOpen(false);
+    setSelectedSkillName(null);
+    setFilterSheetOpen(false);
+    setTriageMergeOpen(false);
+    setActiveMode("garden");
+    setSearchOpen(true);
   };
 
   const runTriageSuggest = () => {
@@ -711,7 +741,14 @@ export function App() {
 
   // Sync Preview & Deploy review
   const openDeployReview = () => {
+    if (deployOpen) {
+      setDeployOpen(false);
+      return;
+    }
     setSelectedSkillName(null);
+    setSearchOpen(false);
+    setFilterSheetOpen(false);
+    setTriageMergeOpen(false);
     setDeployOpen(true);
     setDeployError(false);
     setSyncReport(null);
@@ -926,12 +963,8 @@ export function App() {
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <button
             type="button"
-            onClick={() => {
-              setActiveMode("garden");
-              setSelectedSkillName(null);
-              setDeployOpen(false);
-            }}
-            className="text-lg font-serif font-semibold text-ink tracking-tight bg-transparent border-none cursor-pointer flex-shrink-0"
+            onClick={goGarden}
+            className="wordmark-btn"
           >
             skillkeep
           </button>
@@ -1016,7 +1049,7 @@ export function App() {
 
           <button
             type="button"
-            onClick={() => setSearchOpen(true)}
+            onClick={openSearch}
             className="press-icon"
             title="Search ( / )"
           >
@@ -1028,9 +1061,12 @@ export function App() {
           <button
             type="button"
             onClick={() => {
-              setActiveMode(activeMode === "settings" ? "garden" : "settings");
-              setSelectedSkillName(null);
-              setDeployOpen(false);
+              if (activeMode === "settings") {
+                goGarden();
+              } else {
+                closeAllSurfaces();
+                setActiveMode("settings");
+              }
             }}
             className="press-icon"
             data-active={activeMode === "settings"}
@@ -1047,9 +1083,12 @@ export function App() {
         <button
           type="button"
           onClick={() => {
-            setActiveMode(activeMode === "settings" ? "garden" : "settings");
-            setSelectedSkillName(null);
-            setDeployOpen(false);
+            if (activeMode === "settings") {
+              goGarden();
+            } else {
+              closeAllSurfaces();
+              setActiveMode("settings");
+            }
           }}
           className="press-icon md:hidden flex-shrink-0"
           data-active={activeMode === "settings"}
@@ -1303,7 +1342,7 @@ export function App() {
                                   </span>
                                 </div>
                                 <div
-                                  className="skill-path max-w-lg mt-0.5"
+                                  className="skill-desc max-w-lg mt-0.5"
                                   title={skill.description || undefined}
                                 >
                                   {skill.description || "no description"}
@@ -1356,6 +1395,11 @@ export function App() {
                               />
                               <span className="skill-name min-w-0 flex-1">{skill.name}</span>
                             </div>
+                            {skill.description ? (
+                              <div className="skill-desc" title={skill.description}>
+                                {skill.description}
+                              </div>
+                            ) : null}
                             <div className="garden-row-phone__secondary">
                               <div className="garden-row-phone__meta">
                                 <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30 flex-shrink-0">
@@ -1966,7 +2010,7 @@ export function App() {
       {activeMode === "triage" && (
         <div className="triage-overlay fixed inset-0 bg-field/90 z-40 flex items-center justify-center p-4">
           <div className="triage-plate ledger-plate w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative z-50">
-            <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-rule bg-plate flex flex-col min-h-0">
+            <div className="triage-queue w-full md:w-1/3 border-b md:border-b-0 md:border-r border-rule bg-plate flex flex-col min-h-0">
               <div className="p-3 border-b border-rule bg-plate-raised flex justify-between items-center">
                 <span className="font-serif font-bold text-sm">Seedlings</span>
                 <span className="text-xs text-ink-quiet font-mono">
@@ -2019,9 +2063,9 @@ export function App() {
               </div>
             </div>
 
-            <div className="flex-1 p-5 flex flex-col min-h-0 bg-plate-raised overflow-y-auto">
+            <div className="triage-decide-pane flex-1 p-0 flex flex-col min-h-0 bg-plate-raised">
               {triageLoadState === "loading" && (
-                <div className="flex-1 flex flex-col gap-3">
+                <div className="flex-1 p-5 flex flex-col gap-3">
                   <div className="skeleton-row" />
                   <div className="skeleton-row" />
                   <p className="text-xs font-mono text-ink-quiet">Loading seedlings…</p>
@@ -2045,7 +2089,7 @@ export function App() {
                     >
                       Retry
                     </button>
-                    <button type="button" className="btn btn-quiet" onClick={() => setActiveMode("garden")}>
+                    <button type="button" className="btn btn-quiet" onClick={goGarden}>
                       Back to Garden
                     </button>
                   </div>
@@ -2057,78 +2101,78 @@ export function App() {
                   <span className="action-stem action-stem--forest" />
                   <h3 className="font-serif text-lg font-medium text-ink">Triage inbox clear</h3>
                   <p className="text-sm text-ink-quiet">Nothing waiting — the garden is ready.</p>
-                  <button type="button" onClick={() => setActiveMode("garden")} className="btn btn-primary">
+                  <button type="button" onClick={goGarden} className="btn btn-primary">
                     Back to Garden
                   </button>
                 </div>
               )}
 
               {triageLoadState === "populated" && currentSeedling && (
-                <div className="flex-1 flex flex-col gap-4 min-h-0">
-                  <div>
-                    <h3 className="skill-name text-lg font-bold">{currentSeedling.name}</h3>
-                    <div className="skill-path mt-1" title={currentSeedling.path}>
-                      {currentSeedling.path}
-                    </div>
-                    <div className="font-mono text-[11px] text-ink-quiet mt-1" title={currentSeedling.dir}>
-                      dir · {currentSeedling.dir}
-                    </div>
-                  </div>
-
-                  {currentSeedling.description && (
-                    <div className="bg-plate border border-rule p-3 rounded text-sm italic text-ink-secondary">
-                      "{currentSeedling.description}"
-                    </div>
-                  )}
-
-                  {triageMergeOpen ? (
-                    <div className="border border-rule bg-plate p-4 rounded flex flex-col gap-3">
-                      <h4 className="font-serif font-medium text-sm text-ink-secondary">
-                        Merge Seedling Options
-                      </h4>
-                      <p className="text-xs text-ink-quiet">
-                        Select an existing registry skill to merge this seedling path into.
-                      </p>
-                      <div>
-                        <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
-                          target registry skill
-                        </label>
-                        <select
-                          value={triageMergeTarget}
-                          onChange={(e) => setTriageMergeTarget(e.target.value)}
-                          className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
-                        >
-                          <option value="">Select Target...</option>
-                          {(registry.data ?? [])
-                            .flatMap((scope) => scope.skills)
-                            .map((s) => (
-                              <option key={s.name} value={s.name}>
-                                {s.name} ({rawSkills.find((rs) => rs.name === s.name)?.scope})
-                              </option>
-                            ))}
-                        </select>
+                <>
+                  <div className="triage-decide-scroll flex-1 p-5 flex flex-col gap-4 min-h-0 overflow-y-auto scroll-quiet">
+                    <div>
+                      <h3 className="skill-name text-lg font-bold">{currentSeedling.name}</h3>
+                      <div className="skill-path mt-1" title={currentSeedling.path}>
+                        {currentSeedling.path}
                       </div>
-                      {triageDedupeAdvice && (
-                        <div className="text-xs bg-amber-soft border border-amber/30 text-amber p-2.5 rounded">
-                          <strong>AI Advice:</strong> {triageDedupeAdvice}
+                      <div className="font-mono text-[11px] text-ink-quiet mt-1" title={currentSeedling.dir}>
+                        dir · {currentSeedling.dir}
+                      </div>
+                    </div>
+
+                    {currentSeedling.description && (
+                      <div className="bg-plate border border-rule p-3 rounded text-sm italic text-ink-secondary skill-desc">
+                        "{currentSeedling.description}"
+                      </div>
+                    )}
+
+                    {triageMergeOpen ? (
+                      <div className="border border-rule bg-plate p-4 rounded flex flex-col gap-3">
+                        <h4 className="font-serif font-medium text-sm text-ink-secondary">
+                          Merge Seedling Options
+                        </h4>
+                        <p className="text-xs text-ink-quiet">
+                          Select an existing registry skill to merge this seedling path into.
+                        </p>
+                        <div>
+                          <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
+                            target registry skill
+                          </label>
+                          <select
+                            value={triageMergeTarget}
+                            onChange={(e) => setTriageMergeTarget(e.target.value)}
+                            className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
+                          >
+                            <option value="">Select Target...</option>
+                            {(registry.data ?? [])
+                              .flatMap((scope) => scope.skills)
+                              .map((s) => (
+                                <option key={s.name} value={s.name}>
+                                  {s.name} ({rawSkills.find((rs) => rs.name === s.name)?.scope})
+                                </option>
+                              ))}
+                          </select>
                         </div>
-                      )}
-                      <div className="flex gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={triageConfirmMerge}
-                          disabled={!triageMergeTarget}
-                          className="btn btn-primary flex-1"
-                        >
-                          Mark merge resolved
-                        </button>
-                        <button type="button" onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
-                          Cancel
-                        </button>
+                        {triageDedupeAdvice && (
+                          <div className="text-xs bg-amber-soft border border-amber/30 text-amber p-2.5 rounded">
+                            <strong>AI Advice:</strong> {triageDedupeAdvice}
+                          </div>
+                        )}
+                        <div className="flex gap-2 mt-2">
+                          <button
+                            type="button"
+                            onClick={triageConfirmMerge}
+                            disabled={!triageMergeTarget}
+                            className="btn btn-primary flex-1"
+                          >
+                            Mark merge resolved
+                          </button>
+                          <button type="button" onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
+                            Cancel
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <>
+                    ) : (
                       <div className="border border-rule bg-plate p-4 rounded flex flex-col gap-3">
                         <h4 className="font-serif font-medium text-sm text-ink-secondary">
                           Keep in Garden options
@@ -2179,32 +2223,33 @@ export function App() {
                           </span>
                         </div>
                       </div>
-
-                      <div className="triage-actions mt-auto pt-4 border-t border-rule flex flex-wrap gap-2">
-                        <button type="button" onClick={triageKeep} className="btn btn-primary flex-1">
-                          Keep
+                    )}
+                  </div>
+                  {!triageMergeOpen && (
+                    <div className="triage-actions flex flex-wrap gap-2">
+                      <button type="button" onClick={triageKeep} className="btn btn-primary flex-1">
+                        Keep
+                      </button>
+                      <button type="button" onClick={triageMerge} className="btn btn-forest flex-1">
+                        Merge
+                      </button>
+                      {aiStatus.data?.configured && (
+                        <button type="button" onClick={runTriageSuggest} className="btn btn-quiet px-3">
+                          AI Suggest
                         </button>
-                        <button type="button" onClick={triageMerge} className="btn btn-forest flex-1">
-                          Merge
-                        </button>
-                        {aiStatus.data?.configured && (
-                          <button type="button" onClick={runTriageSuggest} className="btn btn-quiet px-3">
-                            AI Suggest
-                          </button>
-                        )}
-                        <button type="button" onClick={triageDiscard} className="btn btn-brick flex-1">
-                          Discard
-                        </button>
-                      </div>
-                    </>
+                      )}
+                      <button type="button" onClick={triageDiscard} className="btn btn-brick flex-1">
+                        Discard
+                      </button>
+                    </div>
                   )}
-                </div>
+                </>
               )}
             </div>
 
             <button
               type="button"
-              onClick={() => setActiveMode("garden")}
+              onClick={goGarden}
               className="absolute top-3 right-3 press-icon text-sm text-ink-quiet"
             >
               Close
@@ -2246,15 +2291,17 @@ export function App() {
                 <div
                   key={skill.name}
                   onClick={() => {
-                    setSelectedSkillName(skill.name);
                     setSearchOpen(false);
+                    setDeployOpen(false);
+                    setFilterSheetOpen(false);
                     setActiveMode("garden");
+                    setSelectedSkillName(skill.name);
                   }}
                   className="p-3 hover:bg-row-alt/40 cursor-pointer flex justify-between items-start gap-4 text-xs"
                 >
                   <div className="min-w-0 flex-1">
                     <span className="skill-name text-[13px] font-semibold">{skill.name}</span>
-                    <span className="font-mono text-ink-quiet block mt-0.5 truncate">
+                    <span className="skill-desc block mt-0.5">
                       {skill.scope} · {skill.description || "no description"}
                     </span>
                   </div>
@@ -2422,7 +2469,7 @@ export function App() {
           type="button"
           className="thumb-dock__slot"
           data-active={searchOpen}
-          onClick={() => setSearchOpen(true)}
+          onClick={openSearch}
         >
           <span className="thumb-dock__label">Find</span>
         </button>

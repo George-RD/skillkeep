@@ -276,7 +276,7 @@
         "craft": 5,
         "functionality": 5
       },
-      "weightedAverage": 7.0,
+      "weightedAverage": 7,
       "decision": "REFINE",
       "actualViewports": [
         1440,
@@ -302,7 +302,214 @@
           "Resolve rot: Completed. Resolve unused card Rot 35\u219234; Undo restored."
         ]
       }
+    },
+    {
+      "iteration": 3,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "fail",
+        "overflowStressTest": "pass"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "wordmark press height 28px remains the only sub-40 interesting control"
+          ]
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "phone sticky Keep/Merge/Discard at y\u2248836 collides with fixed thumb dock (784\u2013844)"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone Find\u2192detail less reliable than desktop"
+          ]
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 7,
+            "originality": 8,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "triage primary decide row under thumb dock",
+            "phone find/deploy sheet reliability after mode stacking"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 5,
+        "functionality": 5
+      },
+      "weightedAverage": 7,
+      "decision": "REFINE",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [
+        "phone triage Keep/Merge/Discard sticky row under fixed thumb dock (y\u2248836 vs dock 784\u2013844); primary decide path unreachable \u2014 interaction completeness FAIL"
+      ],
+      "keyIssues": [
+        "phone triage Keep/Merge/Discard sticky row sits under fixed thumb dock (y\u2248836 vs dock 784\u2013844) \u2014 primary decide path not thumb-reachable",
+        "phone Find\u2192detail and Deploy sheet less reliable after stacked modes",
+        "wordmark press height remains 28px (only sub-40 interesting control); secondary descriptions still single-line ellipsis"
+      ],
+      "phoneScrollWidths": {
+        "garden": 390,
+        "triage": 390,
+        "deploy": 390,
+        "rot": 390,
+        "search": 390,
+        "detail": 390,
+        "settings": 390,
+        "filter": 390,
+        "gardenFinal": 390
+      },
+      "uxWalkthrough": {
+        "desktop": {
+          "tasksAttempted": 6,
+          "tasksCompleted": 6,
+          "ratio": "6/6"
+        },
+        "phone": {
+          "tasksAttempted": 6,
+          "tasksCompletedFull": 3,
+          "tasksPartial": 3,
+          "ratio": "3 full + 3 partial / 6"
+        },
+        "notes": [
+          "Triage seedling (desktop): Completed. Open Triage 65 \u2192 Keep \u2192 shell 64 + undo ribbon; Undo \u2192 65. Discard \u2192 64; Undo \u2192 65. Budget impact on plate. Phone: sheet opens scrollWidth=390 but Keep/Merge/Discard under dock.",
+          "Change skill tier: Completed desktop+phone. Hover \u221240; r/c/p = 44\u00d744; undo ribbon above dock without overlap on phone.",
+          "Cost/exposure lens: Completed. Cost lens + unused/stale; phone Filter \u00b7 Lens sheet.",
+          "Global find: Completed desktop (1password \u2192 detail). Phone Find opens; result\u2192detail flaky.",
+          "Deploy dry-run: Completed desktop. Review deploy 0 WILL ROOT / 5 WILL PRUNE / 0 DRIFT; Commit sync. Phone Commit 358\u00d744 when sheet present.",
+          "Resolve rot: Completed. Consequence whisper \u201cArchive unused skill \u00b7 reversible via undo\u201d; Rot 35\u219234 (then 34\u219233); Undo ribbon."
+        ]
+      },
+      "hitTargets": {
+        "dockSlots": {
+          "w": 97.5,
+          "h": 59
+        },
+        "tierSegments": {
+          "w": 44,
+          "h": 44
+        },
+        "shellActionsHeight": 44,
+        "triageDecisionsPhone": {
+          "w": 102.7,
+          "h": 44,
+          "y": 836,
+          "note": "under dock"
+        },
+        "wordmark": {
+          "w": 74.6,
+          "h": 28
+        }
+      },
+      "decisionNote": "Deviation from convergence-SHIP rule: hard gate failure (phone triage decide row under dock) violates sprint contract; fidelity fix iteration, design contract unchanged."
     }
   ],
-  "bestIteration": 2
+  "bestIteration": 3
 }

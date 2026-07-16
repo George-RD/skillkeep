@@ -1,0 +1,232 @@
+{
+  "phone": {
+    "wordmark": {
+      "x": 6,
+      "y": 2.5,
+      "w": 87.4,
+      "h": 44,
+      "top": 2.5,
+      "bottom": 46.5
+    },
+    "triage": {
+      "decision": {
+        "x": 1,
+        "y": 706,
+        "w": 388,
+        "h": 69,
+        "top": 706,
+        "bottom": 775
+      },
+      "keep": {
+        "x": 13,
+        "y": 719,
+        "w": 116,
+        "h": 44,
+        "top": 719,
+        "bottom": 763
+      },
+      "dock": {
+        "x": 0,
+        "y": 784,
+        "w": 390,
+        "h": 60,
+        "top": 784,
+        "bottom": 844
+      },
+      "gap": 9,
+      "overlap": false,
+      "keepHit": {
+        "cls": "btn btn-primary flex-1",
+        "inDock": false,
+        "inActions": true,
+        "text": "Keep"
+      },
+      "dockHit": {
+        "cls": "thumb-dock__slot",
+        "inDock": true,
+        "inActions": false,
+        "text": "Deploy"
+      }
+    },
+    "keepWorked": true,
+    "undoWorked": true,
+    "undoRibbon": {
+      "x": 8,
+      "y": 633.3,
+      "w": 374,
+      "h": 78.7,
+      "top": 633.3,
+      "bottom": 712
+    },
+    "afterStack": {
+      "decision": {
+        "x": 1,
+        "y": 706,
+        "w": 388,
+        "h": 69,
+        "top": 706,
+        "bottom": 775
+      },
+      "keep": {
+        "x": 13,
+        "y": 719,
+        "w": 116,
+        "h": 44,
+        "top": 719,
+        "bottom": 763
+      },
+      "dock": {
+        "x": 0,
+        "y": 784,
+        "w": 390,
+        "h": 60,
+        "top": 784,
+        "bottom": 844
+      },
+      "gap": 9,
+      "overlap": false,
+      "dockHit": {
+        "cls": "thumb-dock__slot",
+        "inDock": true,
+        "inActions": false,
+        "text": "Deploy"
+      },
+      "keepHit": {
+        "cls": "btn btn-primary flex-1",
+        "inDock": false,
+        "inActions": true,
+        "text": "Keep"
+      }
+    }
+  },
+  "transitions": [
+    {
+      "i": 1,
+      "seq": "triage→close→find→detail→close→deploy→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 2,
+      "seq": "deploy→close→triage→close→find→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 3,
+      "seq": "find→close→rot→close→triage→close→deploy→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 4,
+      "seq": "rot→close→deploy→close→find→detail→close→triage→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 5,
+      "seq": "triage→deploy→close→find→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 6,
+      "seq": "find→detail→close→deploy→close→triage→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 7,
+      "seq": "deploy→triage→close→find→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 8,
+      "seq": "rot→triage→close→deploy→close→find→detail→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 9,
+      "seq": "find→close→triage→close→deploy→close→rot→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 10,
+      "seq": "triage→close→rot→close→find→close→deploy→close",
+      "open": [],
+      "openCount": 0,
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    }
+  ],
+  "desktop": {
+    "triageOpen": true,
+    "keepVisible": true,
+    "undoVisible": true,
+    "deployVisible": true,
+    "commitVisible": true,
+    "wordmark": {
+      "x": 10,
+      "y": 7.5,
+      "w": 87.4,
+      "h": 44,
+      "top": 7.5,
+      "bottom": 51.5
+    }
+  },
+  "summary": {
+    "transitionPass": 10,
+    "transitionTotal": 10,
+    "gap": 9,
+    "overlap": false,
+    "wordmarkH": 44,
+    "keepWorked": true,
+    "undoWorked": true,
+    "afterGap": 9,
+    "afterOverlap": false,
+    "desktopTriage": true,
+    "desktopDeploy": true
+  }
+}

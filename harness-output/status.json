@@ -2,12 +2,12 @@
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
   "phase": "implement",
-  "iteration": 3,
+  "iteration": 4,
   "agent": "Builder",
-  "note": "Build: phone thumb-dock shell, full-width sheets, 44px targets, 2-line name wrap",
+  "note": "Fidelity fix: dock clearance for sheet actions, sheet stacking, wordmark press",
   "log": [
-    "iteration 2: wavg 7.0 → REFINE",
-    "design 3: three-band mobile shell + bottom thumb dock + sheets; global touch/wrap rules",
-    "builder dispatched (iteration 3)"
+    "iteration 3: wavg 7.0, overflow FIXED, new gate fail: triage actions under dock",
+    "decision: REFINE (deviation logged — convergence-SHIP blocked by gate failure)",
+    "builder-only iteration 4: design contract unchanged (description 3)"
   ]
 }

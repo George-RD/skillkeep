@@ -1,0 +1,67 @@
+[
+  {
+    "flag": "Keep (adopt) undo archives then session-requeues; inbox file not restored on disk",
+    "where": "packages/ui/src/App.tsx (handleUndo triage_adopt, sessionSeedlings, triageKeep)",
+    "closestEquivalent": "Undo archives the registry entry and re-queues a session-only seedling overlay so shell/rot/triage counts rise and the row is actionable again. Re-Keep on a session seedling unarchives via POST /api/registry/move (not adopt). Timed Discard on a session seedling drops the overlay without DELETE. Reload loses the session overlay (no reverse-adopt API / no inbox file recreation)."
+  },
+  {
+    "flag": "Discard uses client soft-delete until undo window lapses",
+    "where": "packages/ui/src/App.tsx (triageDiscard, triggerUndoAction, commitPendingDiscard)",
+    "closestEquivalent": "Discard immediately hides the seedling in the queue and shows the undo ribbon. DELETE /api/inbox?path=... runs only when the ~8s ribbon times out, is dismissed, or is replaced by a later discard. Undo within the window re-queues without server delete. Session-only requeues skip DELETE."
+  },
+  {
+    "flag": "Merge is session-local dismissal",
+    "where": "packages/ui/src/App.tsx (triageConfirmMerge)",
+    "closestEquivalent": "No server endpoint consolidates duplicate skills; Merge dismisses the inbox row in-session (optional AI dedupe hint / target picker). Undo re-queues within the session only; inbox file remains on disk until a later real discard commits."
+  },
+  {
+    "flag": "Client-only visibility tiers",
+    "where": "packages/ui/src/lib/garden.ts (readTier, saveTier)",
+    "closestEquivalent": "Tiers remain localStorage-backed; Undo restores prior tier client-side."
+  },
+  {
+    "flag": "Deploy commit has no full reverse sync",
+    "where": "packages/ui/src/App.tsx (runSyncApply)",
+    "closestEquivalent": "Post-commit messaging is honest: pinned footer confirmation of rooted/pruned counts; shell/dock return to idle; no fake undo ribbon for full harness restore."
+  },
+  {
+    "flag": "Drift summary prefers dry-run fixed[]",
+    "where": "packages/ui/src/App.tsx (Z7 deploy panel)",
+    "closestEquivalent": "SyncReport has created/pruned/fixed (no drift field). Drift section lists dry-run fixed as corrections and supplements with status.drift names when present."
+  },
+  {
+    "flag": "Bulk Keep all suggested has no undo ribbon with session re-queue",
+    "where": "packages/ui/src/App.tsx (bulkKeepSuggested)",
+    "closestEquivalent": "Bulk adopt posts many items at once; ribbon undoes via multi-archive using names only (batchPaths holds names, no seedling snapshots), so session re-queue of each source path is incomplete. Individual Keep still has archive + session re-queue undo. Bulk keep is secondary."
+  },
+  {
+    "flag": "Phone settings full-sheet is CSS-fixed overlay of in-flow plate",
+    "where": "packages/ui/src/index.css (.settings-plate @max-width 720px); packages/ui/src/App.tsx (settings-plate)",
+    "closestEquivalent": "At 390, settings plate is position:fixed from top to dock+8px rather than a separate React sheet tree; Save/Back remain in the plate header. Bottom bound leaves the thumb dock tappable."
+  },
+  {
+    "flag": "Desktop and phone garden rows both mount in DOM; CSS toggles visibility",
+    "where": "packages/ui/src/App.tsx (garden-row-desktop / garden-row-phone)",
+    "closestEquivalent": "Each skill renders desktop multi-column and phone stacked markup; max-width media query hides one. Tier segments are separate element instances per layout (makeTierSeg) so only the visible layout is interactive."
+  },
+  {
+    "flag": "Phone full surfaces bound above thumb dock (+8px gap); dock stays tappable",
+    "where": "packages/ui/src/index.css (@media max-width 720px: .triage-overlay, .sheet-overlay, .search-backdrop, .settings-plate bottom: calc(var(--dock-h) + 8px); .thumb-dock z-index 95)",
+    "closestEquivalent": "Iteration-3 sticky decide row sat under the fixed dock (y≈836 vs dock 784–844). Overlays/backdrops now end 8px above the dock instead of inset:0, so Keep/Merge/Discard and dock slots are both hit-testable with no overlap. Half-sheet Filter·Lens still raises sticky Apply via padding-bottom over the dock."
+  },
+  {
+    "flag": "Mode stack mutual exclusion via closeAllSurfaces / goGarden / open* toggles",
+    "where": "packages/ui/src/App.tsx (closeAllSurfaces, goGarden, openTriage, openRot, openSearch, openDeployReview)",
+    "closestEquivalent": "Root cause of Find→detail/Deploy flakiness: independent booleans (activeMode, deployOpen, selectedSkillName, searchOpen, filterSheetOpen) could leave multiple surfaces mounted. open* now clears siblings first; re-tapping an active dock slot returns to garden; search result sets skill only after closing search/deploy/filter."
+  },
+  {
+    "flag": "Phone triage queue capped so sticky decide row stays inside plate",
+    "where": "packages/ui/src/App.tsx (.triage-queue + .triage-decide-pane/.triage-decide-scroll); packages/ui/src/index.css (.triage-plate > .triage-queue max-height 36%)",
+    "closestEquivalent": "Decide actions moved out of the scrolling pane into a flex-shrink:0 .triage-actions footer; queue column max-height 36% on phone so the footer cannot overflow the dock-cleared plate."
+  },
+  {
+    "flag": "Wordmark uses 44px press plate class; skill-desc two-line clamp",
+    "where": "packages/ui/src/index.css (.wordmark-btn, .skill-desc); packages/ui/src/App.tsx (wordmark-btn, garden/search description)",
+    "closestEquivalent": "Wordmark visual face stays serif ~18px; min-height/min-width var(--press-min) yields measured 44px hit height. Secondary descriptions use .skill-desc (-webkit-line-clamp: 2) instead of single-line truncate."
+  }
+]
