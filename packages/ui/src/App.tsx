@@ -6,7 +6,7 @@ import type {
   SettingsInput,
   HubInput,
   AiLink,
-  DetectedSkill,
+  InboxSkill,
   SyncReport,
   Recommendation,
   RegistryScope,
@@ -25,7 +25,9 @@ import {
   useScan,
   useSettings,
   useDevices,
+  useInbox,
   useAdoptMutation,
+  useDeleteInboxMutation,
   useMoveMutation,
   useArchiveMutation,
   usePutSkillMutation,
@@ -38,6 +40,7 @@ import {
   useAiDescribeMutation,
   useAiDedupeMutation,
   useSkill,
+  queryKeys,
 } from "./hooks/api";
 import { useToast } from "./components/Toast";
 import type { Tier, Exposure, Perspective, Mode, GardenSkill } from "./lib/garden";
@@ -52,7 +55,6 @@ import {
   residentBudget,
   budgetDelta,
   formatBudgetDelta,
-  seedlingSkills,
   sortGarden,
   filterGarden,
   usageMap,
@@ -62,8 +64,14 @@ import { StringListEditor } from "./components/ListEditor";
 interface UndoAction {
   type: "tier" | "triage_adopt" | "triage_discard" | "triage_merge" | "archive" | "move";
   name: string;
+  label: string;
+  /** For triage_discard/merge: inbox path. For archive restore: prior scope. */
   prevScope?: string;
   prevTier?: Tier;
+  /** Snapshot of the inbox skill for soft-delete undo re-queue. */
+  seedling?: InboxSkill;
+  /** Optional multi-path restore for bulk session dismissals. */
+  batchPaths?: string[];
 }
 
 export function App() {
@@ -76,6 +84,7 @@ export function App() {
   const recommendations = useRecommendations();
   const status = useStatus();
   const scan = useScan();
+  const inbox = useInbox();
   const settings = useSettings();
   const devices = useDevices();
 
@@ -93,6 +102,7 @@ export function App() {
 
   // Mutations
   const adoptMutation = useAdoptMutation();
+  const deleteInboxMutation = useDeleteInboxMutation();
   const moveMutation = useMoveMutation();
   const archiveMutation = useArchiveMutation();
   const putSkillMutation = usePutSkillMutation();
@@ -116,9 +126,15 @@ export function App() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [deployOpen, setDeployOpen] = useState(false);
   const [activeTriageIndex, setActiveTriageIndex] = useState(0);
+  /** Frozen N when triage opens — progress is "k of N remaining". */
+  const [triageSessionN, setTriageSessionN] = useState(0);
   const [showSweep, setShowSweep] = useState(false);
   const [undoAction, setUndoAction] = useState<UndoAction | null>(null);
+  const [tierRevision, setTierRevision] = useState(0);
+  /** Paths soft-hidden from the queue (pending discard window or post-keep until refetch). */
   const [dismissedSeedlings, setDismissedSeedlings] = useState<Set<string>>(new Set());
+  /** Session-only seedlings re-queued after Keep undo (inbox source file already consumed by adopt). */
+  const [sessionSeedlings, setSessionSeedlings] = useState<InboxSkill[]>([]);
   const [triageMergeOpen, setTriageMergeOpen] = useState(false);
   const [triageMergeTarget, setTriageMergeTarget] = useState("");
   const [triageDedupeAdvice, setTriageDedupeAdvice] = useState<string | null>(null);
@@ -140,6 +156,7 @@ export function App() {
 
   // Refs for tracking layout
   const undoTimeoutRef = useRef<number | null>(null);
+  const undoActionRef = useRef<UndoAction | null>(null);
 
   // Live SSE Cache Invalidation
   useEffect(() => {
@@ -151,11 +168,13 @@ export function App() {
       setShowSweep(true);
       setTimeout(() => setShowSweep(false), 1400);
       queryClient.invalidateQueries({ queryKey: ["scan"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
     });
     es.addEventListener("sync:done", () => {
       queryClient.invalidateQueries({ queryKey: ["scan"] });
       queryClient.invalidateQueries({ queryKey: ["registry"] });
       queryClient.invalidateQueries({ queryKey: ["status"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
     });
     es.addEventListener("usage:updated", () =>
       queryClient.invalidateQueries({ queryKey: ["usage"] }),
@@ -165,6 +184,7 @@ export function App() {
       queryClient.invalidateQueries({ queryKey: ["status"] });
       queryClient.invalidateQueries({ queryKey: ["scan"] });
       queryClient.invalidateQueries({ queryKey: ["registry"] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
     });
     return () => {
       es.close();
@@ -204,9 +224,10 @@ export function App() {
       setAiKeyVal("");
       return;
     }
+    const provider = aiProvider;
     let cancelled = false;
     async function load() {
-      const key = await getAiKey(aiProvider);
+      const key = await getAiKey(provider);
       if (!cancelled) setAiKeyVal(key ?? "");
     }
     void load();
@@ -231,7 +252,8 @@ export function App() {
       recommendations.data?.recommendations,
       status.data,
     );
-  }, [registry.data, usageBySkill, recommendations.data, status.data]);
+    // tierRevision forces recompute when localStorage tiers change
+  }, [registry.data, usageBySkill, recommendations.data, status.data, tierRevision]);
 
   const filteredSkills = useMemo(() => {
     return filterGarden(rawSkills, { scope: scopeFilter, tier: tierFilter, query: searchQuery });
@@ -241,12 +263,45 @@ export function App() {
     return sortGarden(filteredSkills, perspective, sortField);
   }, [filteredSkills, perspective, sortField]);
 
-  // Seedlings and findings census
-  const seedlings = useMemo(() => {
-    return seedlingSkills(scan.data?.skills).filter((s) => !dismissedSeedlings.has(s.path));
-  }, [scan.data, dismissedSeedlings]);
-  const rotFindingsCount = recommendations.data?.findings.length ?? 0;
-  const currentSeedling = seedlings[activeTriageIndex];
+  // Seedlings census — single source: GET /api/inbox (shared shell / rot / triage truth)
+  const seedlings = useMemo((): InboxSkill[] => {
+    const fromInbox = (inbox.data ?? []).filter((s) => !dismissedSeedlings.has(s.path));
+    const inboxPaths = new Set((inbox.data ?? []).map((s) => s.path));
+    const fromSession = sessionSeedlings.filter(
+      (s) => !dismissedSeedlings.has(s.path) && !inboxPaths.has(s.path),
+    );
+    return [...fromSession, ...fromInbox];
+  }, [inbox.data, dismissedSeedlings, sessionSeedlings]);
+  const awaitingCount = seedlings.length;
+  const triageLoadState: "loading" | "populated" | "empty" | "failed" = (() => {
+    if (inbox.isLoading && !inbox.data) return "loading";
+    if (inbox.isError && !inbox.data) return "failed";
+    if (seedlings.length > 0) return "populated";
+    return "empty";
+  })();
+  const rotFindingsCount = useMemo(() => {
+    const findings = recommendations.data?.findings.length ?? 0;
+    const nonInbox =
+      recommendations.data?.recommendations.filter((r) => r.kind !== "inbox-triage").length ?? 0;
+    return Math.max(findings, nonInbox);
+  }, [recommendations.data]);
+  /** Rot feed: inject live inbox card; drop stale server inbox-triage so counts never desync. */
+  const rotRecommendations = useMemo((): Recommendation[] => {
+    const rest = (recommendations.data?.recommendations ?? []).filter(
+      (r) => r.kind !== "inbox-triage",
+    );
+    if (awaitingCount <= 0) return rest;
+    const inboxCard: Recommendation = {
+      id: "inbox-triage-live",
+      kind: "inbox-triage",
+      title: `${awaitingCount} skill(s) awaiting triage`,
+      detail: "Unreviewed skills in configured inbox directories.",
+      skills: seedlings.slice(0, 8).map((s) => s.name),
+      action: "triage",
+    };
+    return [inboxCard, ...rest];
+  }, [recommendations.data, awaitingCount, seedlings]);
+  const currentSeedling = seedlings[activeTriageIndex] ?? seedlings[0] ?? null;
   // Budget calculations
   const totalBudget = useMemo(() => {
     const baseEstimate = status.data?.globalOnlyTokenEstimate ?? 0;
@@ -263,30 +318,134 @@ export function App() {
     return Math.max(0, baseEstimate + overrideDelta);
   }, [status.data, rawSkills]);
 
-  // Undo manager
+  const [budgetPreviewDelta, setBudgetPreviewDelta] = useState<number | null>(null);
+  const [deployError, setDeployError] = useState(false);
+  const [deployPreviewAt, setDeployPreviewAt] = useState<string | null>(null);
+
+  // Undo manager — discard commits DELETE only after the ~8s ribbon window lapses.
+  const commitPendingDiscard = (action: UndoAction) => {
+    if (action.type !== "triage_discard" || !action.prevScope) return;
+    const path = action.prevScope;
+    // Session re-queues have no inbox file — drop locally without DELETE.
+    const isSessionOnly = sessionSeedlings.some((s) => s.path === path);
+    if (isSessionOnly) {
+      setSessionSeedlings((prev) => prev.filter((s) => s.path !== path));
+      return;
+    }
+    deleteInboxMutation.mutate(path, {
+      onError: (e) => {
+        // Keep shell/rot/triage aligned with server if DELETE fails.
+        setDismissedSeedlings((prev) => {
+          const next = new Set(prev);
+          next.delete(path);
+          return next;
+        });
+        void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+        toast.show(`Discard finalize failed: ${errorMessage(e)}`, "error");
+      },
+    });
+  };
+
   const triggerUndoAction = (action: UndoAction) => {
     if (undoTimeoutRef.current) window.clearTimeout(undoTimeoutRef.current);
+    // Lapsing a prior discard ribbon finalizes that soft-delete.
+    if (
+      undoActionRef.current &&
+      undoActionRef.current.type === "triage_discard" &&
+      undoActionRef.current.prevScope !== action.prevScope
+    ) {
+      commitPendingDiscard(undoActionRef.current);
+    }
+    undoActionRef.current = action;
     setUndoAction(action);
-    undoTimeoutRef.current = window.setTimeout(() => setUndoAction(null), 8000);
+    undoTimeoutRef.current = window.setTimeout(() => {
+      if (action.type === "triage_discard") commitPendingDiscard(action);
+      if (undoActionRef.current === action) undoActionRef.current = null;
+      setUndoAction(null);
+    }, 8000);
   };
 
   const handleUndo = () => {
     if (!undoAction) return;
     const action = undoAction;
+    if (undoTimeoutRef.current) window.clearTimeout(undoTimeoutRef.current);
+    undoTimeoutRef.current = null;
+    undoActionRef.current = null;
     setUndoAction(null);
 
     if (action.type === "tier") {
-      saveTier(action.name, action.prevTier!);
-      queryClient.invalidateQueries({ queryKey: ["registry"] });
+      if (action.prevTier) saveTier(action.name, action.prevTier);
+      setTierRevision((n) => n + 1);
       toast.show(`Restored ${action.name} to ${action.prevTier}`, "success");
     } else if (action.type === "triage_discard" || action.type === "triage_merge") {
-      const path = action.prevScope!;
+      // Soft-delete / session-local dismiss — re-queue without server delete.
+      const paths = action.batchPaths?.length
+        ? action.batchPaths
+        : action.prevScope
+          ? [action.prevScope]
+          : [];
       setDismissedSeedlings((prev) => {
         const next = new Set(prev);
-        next.delete(path);
+        for (const path of paths) next.delete(path);
         return next;
       });
-      toast.show(`Restored seedling ${action.name}`, "success");
+      setActiveMode("triage");
+      setActiveTriageIndex(0);
+      toast.show(
+        paths.length > 1
+          ? `Restored ${paths.length} seedlings`
+          : `Restored seedling ${action.name}`,
+        "success",
+      );
+    } else if (action.type === "triage_adopt") {
+      // Archive the registry entry, then re-queue the seedling in-session (source file is gone).
+      const names = action.batchPaths?.length ? action.batchPaths : [action.name];
+      void (async () => {
+        try {
+          for (const name of names) {
+            await archiveMutation.mutateAsync(name);
+          }
+          queryClient.invalidateQueries({ queryKey: ["scan"] });
+          queryClient.invalidateQueries({ queryKey: ["registry"] });
+          queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+          // Prefer full seedling snapshot; fall back to path/name for single undos.
+          const toRequeue: InboxSkill[] = [];
+          if (action.seedling) {
+            toRequeue.push(action.seedling);
+          } else if (action.prevScope) {
+            toRequeue.push({
+              name: action.name,
+              path: action.prevScope,
+              dir: action.prevScope.replace(/\/[^/]+$/, "") || action.prevScope,
+            });
+          }
+          if (toRequeue.length > 0) {
+            setSessionSeedlings((prev) => {
+              const paths = new Set(prev.map((s) => s.path));
+              const next = [...prev];
+              for (const s of toRequeue) {
+                if (!paths.has(s.path)) next.push(s);
+              }
+              return next;
+            });
+            setDismissedSeedlings((prev) => {
+              const next = new Set(prev);
+              for (const s of toRequeue) next.delete(s.path);
+              return next;
+            });
+            setActiveMode("triage");
+            setActiveTriageIndex(0);
+          }
+          toast.show(
+            names.length > 1
+              ? `Undid keep of ${names.length} skills (archived; re-queued in session)`
+              : `Undid keep of ${action.name} (archived; re-queued in session — inbox file not on disk)`,
+            "success",
+          );
+        } catch (e) {
+          toast.show(`Undo failed: ${errorMessage(e)}`, "error");
+        }
+      })();
     } else if (action.type === "archive") {
       moveMutation.mutate(
         { name: action.name, toScope: action.prevScope ?? "global" },
@@ -302,6 +461,16 @@ export function App() {
   const [triageScope, setTriageScope] = useState("global");
   const [triageTier, setTriageTier] = useState<Tier>("rooted");
 
+  const openTriage = () => {
+    setDeployOpen(false);
+    setSelectedSkillName(null);
+    setActiveMode("triage");
+    setActiveTriageIndex(0);
+    setTriageSessionN(awaitingCount > 0 ? awaitingCount : seedlings.length);
+    setTriageMergeOpen(false);
+    void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+  };
+
   const runTriageSuggest = () => {
     if (!currentSeedling) return;
     triageMutation.mutate([currentSeedling.name], {
@@ -316,18 +485,92 @@ export function App() {
     });
   };
 
+  const localDismissTriage = (
+    seedling: InboxSkill,
+    type: "triage_discard" | "triage_merge" | "triage_adopt",
+  ) => {
+    const { path, name } = seedling;
+    setDismissedSeedlings((prev) => {
+      const next = new Set(prev);
+      next.add(path);
+      return next;
+    });
+
+    if (type === "triage_discard") {
+      toast.show(`Discarded ${name}`, "success");
+      triggerUndoAction({
+        type,
+        name,
+        label: `Discarded ${name}`,
+        prevScope: path,
+        seedling,
+      });
+    } else if (type === "triage_merge") {
+      toast.show("Marked resolved; no file consolidation performed", "success");
+      triggerUndoAction({
+        type,
+        name,
+        label: `Merged ${name}`,
+        prevScope: path,
+        seedling,
+      });
+    } else if (type === "triage_adopt") {
+      toast.show(`Kept ${name} in scope ${triageScope}`, "success");
+      // DESIGN-FLAG: Keep undoes via archive (source file already consumed by adopt).
+      triggerUndoAction({
+        type,
+        name,
+        label: `Kept ${name}`,
+        prevScope: path,
+        seedling,
+      });
+    }
+
+    setActiveTriageIndex((prev) => {
+      const nextLen = Math.max(0, seedlings.length - 1);
+      if (nextLen <= 0) return 0;
+      return Math.min(prev, nextLen - 1);
+    });
+  };
+
   const triageKeep = () => {
     if (!currentSeedling) return;
-    const path = currentSeedling.path;
-    const name = currentSeedling.name;
+    const seedling = currentSeedling;
+    const isSessionOnly = sessionSeedlings.some((s) => s.path === seedling.path);
+
+    const onKept = () => {
+      saveTier(seedling.name, triageTier);
+      setTierRevision((n) => n + 1);
+      localDismissTriage(seedling, "triage_adopt");
+      // Drop any session re-queue copy if this path was restored earlier.
+      setSessionSeedlings((prev) => prev.filter((s) => s.path !== seedling.path));
+    };
+
+    // Session re-queue after Keep-undo: registry entry was archived; unarchive via move.
+    if (isSessionOnly) {
+      moveMutation.mutate(
+        { name: seedling.name, toScope: triageScope },
+        {
+          onSuccess: (res) => {
+            if (res?.ok === false) {
+              toast.show(`Could not keep: ${res?.error ?? "move failed"}`, "error");
+              return;
+            }
+            onKept();
+          },
+          onError: (e) => toast.show(`Keep failed: ${errorMessage(e)}`, "error"),
+        },
+      );
+      return;
+    }
+
     adoptMutation.mutate(
-      [{ name: currentSeedling.name, path: currentSeedling.path, scope: triageScope }],
+      [{ name: seedling.name, path: seedling.path, scope: triageScope }],
       {
         onSuccess: (results) => {
           const res = results[0];
           if (res?.ok) {
-            saveTier(name, triageTier);
-            localDismissTriage(path, name, "triage_adopt");
+            onKept();
           } else {
             toast.show(`Could not keep: ${res?.error ?? "unknown error"}`, "error");
           }
@@ -337,43 +580,12 @@ export function App() {
     );
   };
 
-  const localDismissTriage = (path: string, name: string, type: "triage_discard" | "triage_merge" | "triage_adopt") => {
-    setDismissedSeedlings((prev) => {
-      const next = new Set(prev);
-      next.add(path);
-      return next;
-    });
-
-    if (type === "triage_discard") {
-      toast.show(`Dismissed seedling ${name}`, "success");
-    } else if (type === "triage_merge") {
-      toast.show("Marked resolved; no file consolidation performed", "success");
-    } else if (type === "triage_adopt") {
-      toast.show(`Kept ${name} in scope ${triageScope}`, "success");
-    }
-
-    if (type !== "triage_adopt") {
-      triggerUndoAction({
-        type,
-        name,
-        prevScope: path,
-      });
-    }
-
-    const newLength = seedlings.length - 1;
-    if (newLength === 0) {
-      setActiveTriageIndex(0);
-      setActiveMode("garden");
-      toast.show("Inbox triage complete", "success");
-    } else {
-      setActiveTriageIndex((prev) => Math.min(prev, newLength - 1));
-    }
-  };
-
   const triageDiscard = () => {
     if (!currentSeedling) return;
-    localDismissTriage(currentSeedling.path, currentSeedling.name, "triage_discard");
+    // Soft-hide immediately; DELETE /api/inbox when the undo window lapses.
+    localDismissTriage(currentSeedling, "triage_discard");
   };
+
   const triageMerge = () => {
     if (!currentSeedling) return;
     setTriageMergeOpen(true);
@@ -381,32 +593,36 @@ export function App() {
     const counterpartName = rawSkills.find((s) => s.name === currentSeedling.name)?.name || "";
     setTriageMergeTarget(counterpartName);
 
-    if (aiStatus.data?.configured) {
+    if (aiStatus.data?.configured && counterpartName) {
       const counterpartObj = registry.data
         ?.flatMap((scope) => scope.skills)
         .find((s) => s.name === counterpartName);
       const counterpartDesc = counterpartObj?.description ?? "";
       dedupeMutation.mutate(
         {
-          a: { name: currentSeedling.name, description: currentSeedling.description ?? "", body: "" },
+          a: {
+            name: currentSeedling.name,
+            description: currentSeedling.description ?? "",
+            body: "",
+          },
           b: { name: counterpartName, description: counterpartDesc, body: "" },
         },
         {
           onSuccess: (advice) => {
             setTriageDedupeAdvice(`${advice.recommendation}: ${advice.rationale}`);
           },
-        }
+        },
       );
     }
   };
 
   const triageConfirmMerge = () => {
     if (!currentSeedling || !triageMergeTarget) return;
-    const path = currentSeedling.path;
-    const name = currentSeedling.name;
+    const seedling = currentSeedling;
     setTriageMergeOpen(false);
-    localDismissTriage(path, name, "triage_merge");
+    localDismissTriage(seedling, "triage_merge");
   };
+
   const advanceTriage = () => {
     if (activeTriageIndex < seedlings.length - 1) {
       setActiveTriageIndex((prev) => prev + 1);
@@ -417,18 +633,91 @@ export function App() {
     }
   };
 
+  /** Secondary bulk: adopt remaining queue into global / climbing; ribbon undoes via archive. */
+  const bulkKeepSuggested = () => {
+    const batch = [...seedlings];
+    const items = batch.map((s) => ({ name: s.name, path: s.path, scope: "global" as const }));
+    if (items.length === 0) return;
+    adoptMutation.mutate(items, {
+      onSuccess: (results) => {
+        const okNames = results.filter((r) => r.ok).map((r) => r.name);
+        const fail = results.length - okNames.length;
+        const keptSet = new Set(okNames);
+        setDismissedSeedlings((prev) => {
+          const next = new Set(prev);
+          for (const s of batch) if (keptSet.has(s.name)) next.add(s.path);
+          return next;
+        });
+        for (const name of okNames) saveTier(name, "climbing");
+        setTierRevision((n) => n + 1);
+        toast.show(
+          fail > 0 ? `Kept ${okNames.length}; ${fail} failed` : `Kept ${okNames.length} seedlings (global · climbing)`,
+          fail > 0 ? "error" : "success",
+        );
+        if (okNames.length > 0) {
+          const last = okNames[okNames.length - 1]!;
+          triggerUndoAction({
+            type: "triage_adopt",
+            name: last,
+            label: `Kept ${okNames.length} seedlings`,
+            batchPaths: okNames, // names for archive undo
+          });
+        }
+      },
+      onError: (e) => toast.show(`Bulk keep failed: ${errorMessage(e)}`, "error"),
+    });
+  };
+
+  /**
+   * Secondary bulk: only soft-dismiss seedlings whose names already appear in the registry
+   * (true "obvious duplicates"). Session-local only — no DELETE batch (undo restores all).
+   */
+  const bulkDiscardObvious = () => {
+    const registryNames = new Set(
+      (registry.data ?? []).flatMap((scope) => scope.skills.map((s) => s.name)),
+    );
+    const dups = seedlings.filter((s) => registryNames.has(s.name));
+    if (dups.length === 0) {
+      toast.show("No obvious duplicates in this queue (no names already in the registry)", "info");
+      return;
+    }
+    setDismissedSeedlings((prev) => {
+      const next = new Set(prev);
+      for (const s of dups) next.add(s.path);
+      return next;
+    });
+    toast.show(`Dismissed ${dups.length} obvious duplicate(s) (session-local)`, "success");
+    const last = dups[dups.length - 1]!;
+    triggerUndoAction({
+      type: "triage_merge",
+      name: last.name,
+      label: `Dismissed ${dups.length} duplicate(s)`,
+      prevScope: last.path,
+      seedling: last,
+      batchPaths: dups.map((s) => s.path),
+    });
+  };
+
   // Sync Preview & Deploy review
-  const runSyncPreview = () => {
+  const openDeployReview = () => {
+    setSelectedSkillName(null);
+    setDeployOpen(true);
+    setDeployError(false);
+    setSyncReport(null);
+    setSyncPreviewed(false);
     syncMutation.mutate(
       { dryRun: true },
       {
         onSuccess: (rep) => {
           setSyncReport(rep);
           setSyncPreviewed(true);
-          setDeployOpen(true);
-          toast.show("Sync preview ready", "success");
+          setDeployPreviewAt(new Date().toLocaleTimeString());
+          setDeployError(false);
         },
-        onError: (e) => toast.show(`Sync preview failed: ${errorMessage(e)}`, "error"),
+        onError: (e) => {
+          setDeployError(true);
+          toast.show(`Sync preview failed: ${errorMessage(e)}`, "error");
+        },
       },
     );
   };
@@ -440,13 +729,19 @@ export function App() {
         onSuccess: (rep) => {
           setSyncReport(rep);
           setSyncPreviewed(false);
-          setDeployOpen(false);
+          setDeployError(false);
           queryClient.invalidateQueries({ queryKey: ["scan"] });
           queryClient.invalidateQueries({ queryKey: ["registry"] });
           queryClient.invalidateQueries({ queryKey: ["status"] });
-          toast.show("Sync applied successfully", "success");
+          toast.show(
+            `Deployed ${rep.created.length} root / ${rep.pruned.length} prune — restore via reverse tier/sync if needed`,
+            "success",
+          );
         },
-        onError: (e) => toast.show(`Sync commit failed: ${errorMessage(e)}`, "error"),
+        onError: (e) => {
+          setDeployError(true);
+          toast.show(`Sync commit failed: ${errorMessage(e)}`, "error");
+        },
       },
     );
   };
@@ -485,7 +780,12 @@ export function App() {
     archiveMutation.mutate(name, {
       onSuccess: () => {
         toast.show(`Archived ${name}`, "success");
-        triggerUndoAction({ type: "archive", name, prevScope: currentScope });
+        triggerUndoAction({
+          type: "archive",
+          name,
+          label: `Archived ${name}`,
+          prevScope: currentScope,
+        });
         setSelectedSkillName(null);
       },
       onError: (e) => toast.show(`Archive failed: ${errorMessage(e)}`, "error"),
@@ -541,20 +841,47 @@ export function App() {
   // Recommendations resolution
   const handleResolveRecommendation = (rec: Recommendation) => {
     if (rec.action === "archive") {
-      archiveMutation.mutate(rec.skills[0], {
-        onSuccess: () => toast.show(`Archived ${rec.skills[0]}`, "success"),
+      const skillName = rec.skills[0];
+      if (!skillName) return;
+      const currentScope = rawSkills.find((s) => s.name === skillName)?.scope;
+      archiveMutation.mutate(skillName, {
+        onSuccess: () => {
+          toast.show(`Archived ${skillName}`, "success");
+          triggerUndoAction({
+            type: "archive",
+            name: skillName,
+            label: `Archived ${skillName}`,
+            prevScope: currentScope,
+          });
+        },
         onError: (e) => toast.show(`Resolve failed: ${errorMessage(e)}`, "error"),
       });
     } else if (rec.action === "triage") {
-      setActiveMode("triage");
-      setActiveTriageIndex(0);
+      openTriage();
     } else if (rec.action === "review") {
-      setSelectedSkillName(rec.skills[0]);
+      const skillName = rec.skills[0];
+      if (!skillName) return;
+      setSelectedSkillName(skillName);
       setActiveMode("detail");
     } else if (rec.action === "dedupe") {
       toast.show("Review duplicates in details list", "info");
     }
   };
+
+  const deployLabel = (() => {
+    if (deployError) return "Deploy · error";
+    const driftN = status.data?.drift.length ?? 0;
+    if (driftN > 0) return `Deploy · drift ${driftN}`;
+    if (syncReport && (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0)) {
+      return "Review deploy";
+    }
+    if (deployOpen && syncPreviewed) return "Deploy · idle";
+    return "Review deploy";
+  })();
+  const deployHasWork =
+    (status.data?.drift.length ?? 0) > 0 ||
+    (syncReport != null &&
+      (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0));
 
   return (
     <div className="min-h-screen flex flex-col font-sans bg-field text-ink relative scroll-quiet">
@@ -601,53 +928,62 @@ export function App() {
         <div className="hidden sm:flex items-center gap-2 ledger-plate-tight px-3 py-1 font-mono text-xs tabular">
           <span className="text-ink-quiet text-[10px] uppercase font-bold tracking-wide">resident set</span>
           <span className="font-semibold text-terracotta">{formatTokens(totalBudget)} tokens</span>
+          {budgetPreviewDelta != null && budgetPreviewDelta !== 0 && (
+            <span className="text-[11px] text-ink-secondary">
+              {budgetPreviewDelta > 0 ? "+" : "−"}
+              {formatTokens(Math.abs(budgetPreviewDelta))}
+            </span>
+          )}
         </div>
 
-        {/* Right Status Signals */}
+        {/* Right action signals */}
         <div className="flex items-center gap-3">
-          <div
-            onClick={() => {
-              if (seedlings.length > 0) {
-                setActiveMode("triage");
-                setActiveTriageIndex(0);
-              }
-            }}
-            data-hot={seedlings.length > 0}
-            className="chip chip-signal px-2 py-0.5"
+          <button
+            type="button"
+            onClick={openTriage}
+            data-hot={awaitingCount > 0}
+            className="chip chip-signal chip-action px-2 py-0.5"
           >
-            <span>seedlings</span>
-            <span className="ml-1 font-bold">{seedlings.length}</span>
-          </div>
+            {inbox.isLoading && !inbox.data ? (
+              <span className="text-ink-quiet">Loading inbox…</span>
+            ) : inbox.isError && !inbox.data ? (
+              <>
+                <span className="action-stem action-stem--brick" />
+                <span>Inbox error</span>
+              </>
+            ) : awaitingCount > 0 ? (
+              <>
+                <span className="action-stem action-stem--terracotta" />
+                <span>Triage {awaitingCount}</span>
+              </>
+            ) : (
+              <span className="text-ink-quiet">Inbox clear</span>
+            )}
+          </button>
 
-          <div
-            onClick={() => {
-              runSyncPreview();
-            }}
-            data-hot={status.data && status.data.drift.length > 0}
-            className="chip chip-signal px-2 py-0.5"
+          <button
+            type="button"
+            onClick={openDeployReview}
+            data-hot={deployHasWork || deployError}
+            className="chip chip-signal chip-action px-2 py-0.5"
           >
-            <span>deploy</span>
-            <span className="ml-1 font-bold">
-              {status.data?.drift.length && status.data.drift.length > 0
-                ? `drift (${status.data.drift.length})`
-                : "ready"}
-            </span>
-          </div>
+            <span className="action-stem action-stem--forest" />
+            <span>{deployLabel}</span>
+          </button>
 
-          <div
+          <button
+            type="button"
             onClick={() => {
-              if (rotFindingsCount > 0) {
-                setDeployOpen(false);
-                setSelectedSkillName(null);
-                setActiveMode("garden");
-              }
+              setDeployOpen(false);
+              setSelectedSkillName(null);
+              setActiveMode("garden");
             }}
             data-hot={rotFindingsCount > 0}
-            className="chip chip-signal px-2 py-0.5"
+            className="chip chip-signal chip-action px-2 py-0.5"
           >
-            <span>rot</span>
-            <span className="ml-1 font-bold">{rotFindingsCount}</span>
-          </div>
+            {rotFindingsCount > 0 && <span className="action-stem action-stem--amber" />}
+            <span>Rot{rotFindingsCount > 0 ? ` ${rotFindingsCount}` : ""}</span>
+          </button>
 
           <button
             onClick={() => setSearchOpen(true)}
@@ -676,6 +1012,7 @@ export function App() {
           </button>
         </div>
       </header>
+
 
       {/* Sub budget bar for mobile */}
       <div className="sm:hidden border-b border-rule bg-plate px-4 py-1 text-center font-mono text-xs text-ink-quiet">
@@ -831,50 +1168,47 @@ export function App() {
                             selectedSkillName === skill.name ? "bg-row-alt/65 font-medium" : ""
                           } ${recede ? "row-recede" : ""} ${expensive ? "row-cost-flag" : ""}`}
                         >
-                          {/* Left: tier stem + name/meta */}
                           <div className="flex items-center gap-3 min-w-0 flex-1">
                             <span
                               className={`tier-stem ${
                                 skill.tier === "rooted"
                                   ? "tier-stem--rooted"
                                   : skill.tier === "climbing"
-                                  ? "tier-stem--climbing"
-                                  : "tier-stem--pruned"
+                                    ? "tier-stem--climbing"
+                                    : "tier-stem--pruned"
                               }`}
                             />
                             <div className="min-w-0 flex-1">
-                              <div className="flex items-baseline gap-2">
-                                <span className="font-serif text-[15px] font-medium text-ink truncate">
-                                  {skill.name}
-                                </span>
-                                <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30">
+                              <div className="flex items-start gap-2">
+                                <span className="skill-name min-w-0 flex-1">{skill.name}</span>
+                                <span className="text-[10px] font-mono text-ink-quiet uppercase bg-row-alt/80 px-1 py-0.2 rounded border border-rule/30 flex-shrink-0">
                                   {skill.scope}
                                 </span>
                               </div>
-                              <div className="font-mono text-xs text-ink-quiet truncate max-w-lg mt-0.5">
+                              <div
+                                className="skill-path max-w-lg mt-0.5"
+                                title={skill.description || undefined}
+                              >
                                 {skill.description || "no description"}
                               </div>
                             </div>
                           </div>
 
-                          {/* Center/Right: Data display based on perspective */}
                           <div className="flex items-center gap-4 flex-shrink-0">
-                            {/* Inline cost lens exposure badges */}
                             {(perspective === "exposure" || perspective === "cost") && (
                               <span
                                 className={`verdict ${
                                   skill.exposure === "active"
                                     ? "verdict--active"
                                     : skill.exposure === "stale"
-                                    ? "verdict--stale"
-                                    : "verdict--dormant"
+                                      ? "verdict--stale"
+                                      : "verdict--dormant"
                                 }`}
                               >
                                 {skill.exposure}
                               </span>
                             )}
 
-                            {/* Token usage numbers */}
                             <div className="text-right font-mono text-xs">
                               {perspective === "cost" ? (
                                 <div className="font-medium text-ink">
@@ -886,26 +1220,40 @@ export function App() {
                                 </div>
                               )}
                               <div className="text-[10px] text-ink-quiet">
-                                {skill.usageTokens > 0 ? `${formatTokens(skill.usageTokens)} used` : "unused"}
+                                {skill.usageTokens > 0
+                                  ? `${formatTokens(skill.usageTokens)} used`
+                                  : "unused"}
                               </div>
                             </div>
 
-                            {/* In-situ tier controls (A2) */}
                             <div
                               onClick={(e) => e.stopPropagation()}
                               className="flex border border-rule rounded overflow-hidden"
+                              onMouseLeave={() => setBudgetPreviewDelta(null)}
                             >
                               {(["rooted", "climbing", "pruned"] as Tier[]).map((t) => (
                                 <button
                                   key={t}
+                                  onMouseEnter={() =>
+                                    setBudgetPreviewDelta(
+                                      budgetDelta(skill.tier, t, skill.tokenEstimate),
+                                    )
+                                  }
+                                  onFocus={() =>
+                                    setBudgetPreviewDelta(
+                                      budgetDelta(skill.tier, t, skill.tokenEstimate),
+                                    )
+                                  }
                                   onClick={() => {
                                     const prev = skill.tier;
+                                    if (prev === t) return;
                                     saveTier(skill.name, t);
-                                    queryClient.invalidateQueries({ queryKey: ["registry"] });
-                                    toast.show(`Changed ${skill.name} tier to ${t}`, "success");
+                                    setTierRevision((n) => n + 1);
+                                    setBudgetPreviewDelta(null);
                                     triggerUndoAction({
                                       type: "tier",
                                       name: skill.name,
+                                      label: `Tier → ${t} on ${skill.name}`,
                                       prevTier: prev,
                                     });
                                   }}
@@ -914,8 +1262,8 @@ export function App() {
                                       ? "bg-forest text-field font-semibold"
                                       : "bg-plate hover:bg-row-alt text-ink-secondary"
                                   }`}
-                                  title={`Move to ${t} (budget delta: ${formatBudgetDelta(
-                                    budgetDelta(skill.tier, t, skill.tokenEstimate)
+                                  title={`Move to ${t} (${formatBudgetDelta(
+                                    budgetDelta(skill.tier, t, skill.tokenEstimate),
                                   )})`}
                                 >
                                   {t[0]}
@@ -1201,9 +1549,12 @@ export function App() {
                               const split = prev.split("---");
                               if (split.length >= 3) {
                                 // Preserving frontmatter, replace description
-                                const fm = split[1];
+                                const fm = split[1] ?? "";
                                 const body = split.slice(2).join("---");
-                                const updatedFm = fm.replace(/^description:.*$/m, `description: "${aiSuggestion}"`);
+                                const updatedFm = fm.replace(
+                                  /^description:.*$/m,
+                                  `description: "${aiSuggestion}"`,
+                                );
                                 return `---${updatedFm}---${body}`;
                               }
                               return `description: "${aiSuggestion}"\n${prev}`;
@@ -1275,7 +1626,12 @@ export function App() {
           {deployOpen && !selectedSkillName && (
             <div className="ledger-plate flex flex-col h-full p-4 overflow-y-auto scroll-quiet">
               <div className="flex items-center justify-between border-b border-rule pb-2 mb-3">
-                <h3 className="font-serif text-base font-semibold text-ink">Deploy Review</h3>
+                <div>
+                  <h3 className="font-serif text-base font-semibold text-ink">Deploy review</h3>
+                  <p className="text-[11px] font-mono text-ink-quiet mt-0.5">
+                    {deployPreviewAt ? `Preview as of ${deployPreviewAt}` : "Dry-run preview"}
+                  </p>
+                </div>
                 <button
                   onClick={() => setDeployOpen(false)}
                   className="p-1 rounded hover:bg-row-alt text-ink-quiet cursor-pointer"
@@ -1284,54 +1640,115 @@ export function App() {
                 </button>
               </div>
 
-              <div className="flex-1 flex flex-col gap-4 text-sm">
-                {syncMutation.isPending && <p className="text-xs text-ink-quiet">Computing sync preview...</p>}
+              <div className="flex-1 flex flex-col gap-4 text-sm min-h-0">
+                {syncMutation.isPending && !syncReport && (
+                  <div className="flex flex-col gap-2">
+                    <div className="skeleton-row" />
+                    <div className="skeleton-row" />
+                    <div className="skeleton-row" />
+                  </div>
+                )}
+
+                {deployError && !syncReport && (
+                  <div className="rounded border border-brick/30 bg-brick-soft p-3 flex gap-2 text-brick text-xs">
+                    <span className="action-stem action-stem--brick mt-1" />
+                    <div className="flex-1">
+                      <h4 className="font-serif font-semibold text-sm mb-1">Couldn't load deploy preview</h4>
+                      <p className="text-ink-secondary mb-2">The dry-run failed. Retry to try again.</p>
+                      <button type="button" className="btn btn-primary py-1 px-3" onClick={openDeployReview}>
+                        Retry
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {syncReport && (
-                  <div className="flex-1 flex flex-col gap-3">
-                    <div className="text-xs text-ink-secondary">
-                      Showing dry-run preview before committing to active directories.
+                  <>
+                    <div className="deploy-summary">
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.created.length}</div>
+                        <div className="deploy-summary__label">Will root</div>
+                      </div>
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.pruned.length}</div>
+                        <div className="deploy-summary__label">Will prune</div>
+                      </div>
+                      <div className="deploy-summary__cell">
+                        <div className="deploy-summary__n">{syncReport.fixed.length}</div>
+                        <div className="deploy-summary__label">Drift</div>
+                      </div>
                     </div>
 
-                    <div className="flex-1 overflow-y-auto scroll-quiet flex flex-col gap-3 pr-1">
-                      {syncReport.created.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-mono uppercase font-bold text-forest border-b border-rule/50 mb-1">
-                            will deploy ({syncReport.created.length})
-                          </div>
-                          {syncReport.created.map((s) => (
-                            <div key={s} className="font-mono text-[11px] text-ink truncate">
-                              + {s}
-                            </div>
-                          ))}
+                    <div className="flex-1 overflow-y-auto scroll-quiet flex flex-col gap-3 pr-1 min-h-0">
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold text-forest border-b border-rule/50 mb-1">
+                          Will root
                         </div>
-                      )}
+                        {syncReport.created.length === 0 ? (
+                          <div className="text-xs text-ink-quiet py-1">None</div>
+                        ) : (
+                          syncReport.created.map((s) => (
+                            <div key={s} className="flex gap-2 text-[11px] py-0.5 min-w-0">
+                              <span className="skill-name text-[12px] flex-shrink-0 max-w-[40%]">
+                                {s.split("/").pop() ?? s}
+                              </span>
+                              <span className="skill-path flex-1" title={s}>
+                                {s}
+                              </span>
+                              <span className="font-mono text-forest flex-shrink-0">root</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
 
-                      {syncReport.pruned.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-mono uppercase font-bold text-brick border-b border-rule/50 mb-1">
-                            will prune ({syncReport.pruned.length})
-                          </div>
-                          {syncReport.pruned.map((s) => (
-                            <div key={s} className="font-mono text-[11px] text-ink-quiet truncate">
-                              - {s}
-                            </div>
-                          ))}
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold text-brick border-b border-rule/50 mb-1">
+                          Will prune from harness
                         </div>
-                      )}
+                        {syncReport.pruned.length === 0 ? (
+                          <div className="text-xs text-ink-quiet py-1">None</div>
+                        ) : (
+                          syncReport.pruned.map((s) => (
+                            <div key={s} className="flex gap-2 text-[11px] py-0.5 min-w-0">
+                              <span className="skill-name text-[12px] flex-shrink-0 max-w-[40%]">
+                                {s.split("/").pop() ?? s}
+                              </span>
+                              <span className="skill-path flex-1" title={s}>
+                                {s}
+                              </span>
+                              <span className="font-mono text-brick flex-shrink-0">prune</span>
+                            </div>
+                          ))
+                        )}
+                      </div>
 
-                      {syncReport.fixed.length > 0 && (
-                        <div>
-                          <div className="text-[10px] font-mono uppercase font-bold text-amber border-b border-rule/50 mb-1">
-                            will correct ({syncReport.fixed.length})
-                          </div>
-                          {syncReport.fixed.map((s) => (
-                            <div key={s} className="font-mono text-[11px] text-ink truncate">
-                              ~ {s}
-                            </div>
-                          ))}
+                      <div>
+                        <div className="text-[10px] font-mono uppercase font-bold text-amber border-b border-rule/50 mb-1">
+                          Drift
                         </div>
-                      )}
+                        {syncReport.fixed.length === 0 && (status.data?.drift.length ?? 0) === 0 ? (
+                          <div className="text-xs text-ink-quiet py-1">None</div>
+                        ) : (
+                          <>
+                            {syncReport.fixed.map((s) => (
+                              <div key={`fix-${s}`} className="text-[11px] py-0.5">
+                                <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                                <div className="text-ink-quiet font-mono text-[10px]" title={s}>
+                                  dry-run correction · {s}
+                                </div>
+                              </div>
+                            ))}
+                            {(status.data?.drift ?? []).map((s) => (
+                              <div key={`status-drift-${s}`} className="text-[11px] py-0.5">
+                                <span className="skill-name text-[12px]">{s}</span>
+                                <div className="text-ink-quiet font-mono text-[10px]">
+                                  status: origin vs override
+                                </div>
+                              </div>
+                            ))}
+                          </>
+                        )}
+                      </div>
 
                       {syncReport.errors.length > 0 && (
                         <div>
@@ -1348,19 +1765,35 @@ export function App() {
 
                       {syncReport.created.length === 0 &&
                         syncReport.pruned.length === 0 &&
-                        syncReport.fixed.length === 0 && (
-                          <div className="text-center py-6 text-ink-quiet text-xs italic">
-                            All directories strictly in sync. No changes.
+                        syncReport.fixed.length === 0 &&
+                        (status.data?.drift.length ?? 0) === 0 && (
+                          <div className="text-center py-4 text-ink-quiet text-xs">
+                            Nothing to deploy — registry matches harness
                           </div>
                         )}
                     </div>
-                  </div>
+                  </>
                 )}
 
                 <div className="pt-2 border-t border-rule flex flex-col gap-2">
-                  <button onClick={runSyncApply} className="btn btn-primary w-full">
-                    Commit Deploy Sync
+                  <button
+                    onClick={runSyncApply}
+                    disabled={
+                      !syncReport ||
+                      (syncReport.created.length === 0 &&
+                        syncReport.pruned.length === 0 &&
+                        syncReport.fixed.length === 0)
+                    }
+                    className="btn btn-primary w-full"
+                  >
+                    Commit sync
                   </button>
+                  {!syncReport ||
+                  (syncReport.created.length === 0 &&
+                    syncReport.pruned.length === 0 &&
+                    syncReport.fixed.length === 0) ? (
+                    <p className="text-[10px] text-ink-quiet text-center">Nothing to deploy</p>
+                  ) : null}
                   <button onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
                     Cancel
                   </button>
@@ -1379,29 +1812,31 @@ export function App() {
               <div className="flex-1 flex flex-col gap-3">
                 {recommendations.isLoading && <p className="text-xs text-ink-quiet">Loading health analysis...</p>}
 
-                {recommendations.isSuccess && (recommendations.data?.recommendations.length ?? 0) === 0 && (
+                {recommendations.isSuccess && rotRecommendations.length === 0 && (
                   <div className="text-center py-8 text-ink-quiet text-xs italic">
                     Garden status healthy. No rot detected.
                   </div>
                 )}
 
-                {recommendations.isSuccess &&
-                  recommendations.data?.recommendations.map((rec) => (
-                    <div key={rec.id} className="ledger-plate-tight p-3 text-xs flex flex-col gap-2 bg-plate-raised">
+                {(recommendations.isSuccess || awaitingCount > 0) &&
+                  rotRecommendations.map((rec) => (
+                    <div
+                      key={rec.id}
+                      className="ledger-plate-tight p-3 text-xs flex flex-col gap-2 bg-plate-raised"
+                    >
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.2 bg-amber-soft text-amber border border-amber/30 rounded">
-                          {rec.kind.replace("-", " ")}
+                          {rec.kind === "inbox-triage" ? "INBOX TRIAGE" : rec.kind.replace("-", " ")}
                         </span>
                       </div>
                       <h4 className="font-serif font-medium text-ink text-[13px]">{rec.title}</h4>
                       <p className="text-ink-secondary leading-normal">{rec.detail}</p>
-                      
                       <div className="flex justify-end gap-2 pt-1 border-t border-rule/30">
                         <button
                           onClick={() => handleResolveRecommendation(rec)}
                           className="btn btn-forest py-0.5 px-2 text-[11px]"
                         >
-                          Resolve
+                          {rec.action === "triage" ? "Open triage" : "Resolve"}
                         </button>
                       </div>
                     </div>
@@ -1416,40 +1851,112 @@ export function App() {
       {activeMode === "triage" && (
         <div className="fixed inset-0 bg-field/90 z-40 flex items-center justify-center p-4">
           <div className="ledger-plate w-full max-w-4xl max-h-[90vh] flex flex-col md:flex-row overflow-hidden shadow-2xl relative z-50">
-            {/* Left list queue */}
             <div className="w-full md:w-1/3 border-b md:border-b-0 md:border-r border-rule bg-plate flex flex-col min-h-0">
               <div className="p-3 border-b border-rule bg-plate-raised flex justify-between items-center">
-                <span className="font-serif font-bold text-sm">Seedlings Triage</span>
+                <span className="font-serif font-bold text-sm">Seedlings</span>
                 <span className="text-xs text-ink-quiet font-mono">
-                  {activeTriageIndex + 1} of {seedlings.length}
+                  {triageLoadState === "loading"
+                    ? "Loading seedlings…"
+                    : triageLoadState === "populated"
+                      ? `${Math.max(1, Math.max(triageSessionN, awaitingCount) - seedlings.length + 1)} of ${Math.max(triageSessionN, awaitingCount)} remaining`
+                      : triageLoadState === "failed"
+                        ? `${awaitingCount > 0 ? awaitingCount + " awaiting" : "load failed"}`
+                        : "0 remaining"}
                 </span>
               </div>
+              {triageLoadState === "populated" && seedlings.length > 0 && (
+                <div className="px-3 py-2 border-b border-rule flex flex-wrap gap-2 bg-plate-raised">
+                  <button type="button" className="btn btn-quiet text-[11px] py-0.5 px-2" onClick={bulkKeepSuggested}>
+                    Keep all suggested
+                  </button>
+                  <button type="button" className="btn btn-quiet text-[11px] py-0.5 px-2" onClick={bulkDiscardObvious}>
+                    Discard obvious duplicates
+                  </button>
+                </div>
+              )}
               <div className="flex-1 overflow-y-auto scroll-quiet divide-y divide-rule/40">
+                {triageLoadState === "loading" && (
+                  <div className="p-3 flex flex-col gap-2">
+                    <div className="skeleton-row" />
+                    <div className="skeleton-row" />
+                    <div className="skeleton-row" />
+                  </div>
+                )}
                 {seedlings.map((s, idx) => (
                   <div
                     key={s.path}
                     onClick={() => setActiveTriageIndex(idx)}
-                    className={`p-2.5 text-xs cursor-pointer truncate ${
-                      activeTriageIndex === idx ? "bg-row-alt font-medium text-ink" : "text-ink-secondary hover:bg-row-alt/40"
+                    className={`p-2.5 text-xs cursor-pointer ${
+                      activeTriageIndex === idx
+                        ? "bg-row-alt font-medium text-ink"
+                        : "text-ink-secondary hover:bg-row-alt/40"
                     }`}
                   >
-                    <div className="font-serif font-medium truncate">{s.name}</div>
-                    <div className="font-mono text-[10px] text-ink-quiet truncate mt-0.5">{s.client}</div>
+                    <div className="skill-name text-[13px]">{s.name}</div>
+                    <div className="skill-path mt-0.5" title={s.path}>
+                      {s.path}
+                    </div>
+                    <div className="font-mono text-[10px] text-ink-quiet truncate" title={s.dir}>
+                      {s.dir}
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Right focused decision plate */}
             <div className="flex-1 p-5 flex flex-col min-h-0 bg-plate-raised">
-              {currentSeedling ? (
-                <div className="flex-1 flex flex-col gap-4">
+              {triageLoadState === "loading" && (
+                <div className="flex-1 flex flex-col gap-3">
+                  <div className="skeleton-row" />
+                  <div className="skeleton-row" />
+                  <p className="text-xs font-mono text-ink-quiet">Loading seedlings…</p>
+                </div>
+              )}
+
+              {triageLoadState === "failed" && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
+                  <span className="action-stem action-stem--brick" />
+                  <h3 className="font-serif text-lg font-medium text-ink">Couldn't load seedlings</h3>
+                  <p className="text-sm text-ink-secondary max-w-sm">
+                    The inbox may still have work. Retry loading seedlings, or return to the Garden.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        void queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
+                      }}
+                    >
+                      Retry
+                    </button>
+                    <button type="button" className="btn btn-quiet" onClick={() => setActiveMode("garden")}>
+                      Back to Garden
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {triageLoadState === "empty" && (
+                <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
+                  <span className="action-stem action-stem--forest" />
+                  <h3 className="font-serif text-lg font-medium text-ink">Triage inbox clear</h3>
+                  <p className="text-sm text-ink-quiet">Nothing waiting — the garden is ready.</p>
+                  <button type="button" onClick={() => setActiveMode("garden")} className="btn btn-primary">
+                    Back to Garden
+                  </button>
+                </div>
+              )}
+
+              {triageLoadState === "populated" && currentSeedling && (
+                <div className="flex-1 flex flex-col gap-4 min-h-0">
                   <div>
-                    <h3 className="font-serif text-lg font-bold text-ink leading-tight">
-                      {currentSeedling.name}
-                    </h3>
-                    <div className="text-xs font-mono text-ink-quiet truncate mt-1">
+                    <h3 className="skill-name text-lg font-bold">{currentSeedling.name}</h3>
+                    <div className="skill-path mt-1" title={currentSeedling.path}>
                       {currentSeedling.path}
+                    </div>
+                    <div className="font-mono text-[11px] text-ink-quiet mt-1" title={currentSeedling.dir}>
+                      dir · {currentSeedling.dir}
                     </div>
                   </div>
 
@@ -1459,29 +1966,14 @@ export function App() {
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <span className="block text-ink-quiet uppercase font-bold text-[9px] mb-1">detected via</span>
-                      <span className="font-mono text-ink bg-row-alt px-1.5 py-0.5 rounded border border-rule/50">
-                        {currentSeedling.client}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="block text-ink-quiet uppercase font-bold text-[9px] mb-1">hash signature</span>
-                      <span className="font-mono text-ink truncate block">
-                        {currentSeedling.hash}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Keep settings pane vs Merge pane */}
                   {triageMergeOpen ? (
                     <div className="border border-rule bg-plate p-4 rounded flex flex-col gap-3">
-                      <h4 className="font-serif font-medium text-sm text-ink-secondary">Merge Seedling Options</h4>
+                      <h4 className="font-serif font-medium text-sm text-ink-secondary">
+                        Merge Seedling Options
+                      </h4>
                       <p className="text-xs text-ink-quiet">
                         Select an existing registry skill to merge this seedling path into.
                       </p>
-
                       <div>
                         <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
                           target registry skill
@@ -1492,24 +1984,20 @@ export function App() {
                           className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs"
                         >
                           <option value="">Select Target...</option>
-                          {(registry.data ?? []).flatMap((scope) => scope.skills).map((s) => (
-                            <option key={s.name} value={s.name}>
-                              {s.name} ({rawSkills.find((rs) => rs.name === s.name)?.scope})
-                            </option>
-                          ))}
+                          {(registry.data ?? [])
+                            .flatMap((scope) => scope.skills)
+                            .map((s) => (
+                              <option key={s.name} value={s.name}>
+                                {s.name} ({rawSkills.find((rs) => rs.name === s.name)?.scope})
+                              </option>
+                            ))}
                         </select>
                       </div>
-
-                      {dedupeMutation.isPending && (
-                        <div className="text-xs text-ink-quiet font-mono animate-pulse">Running AI duplicate analysis...</div>
-                      )}
-
                       {triageDedupeAdvice && (
                         <div className="text-xs bg-amber-soft border border-amber/30 text-amber p-2.5 rounded">
                           <strong>AI Advice:</strong> {triageDedupeAdvice}
                         </div>
                       )}
-
                       <div className="flex gap-2 mt-2">
                         <button
                           onClick={triageConfirmMerge}
@@ -1518,10 +2006,7 @@ export function App() {
                         >
                           Mark merge resolved
                         </button>
-                        <button
-                          onClick={() => setTriageMergeOpen(false)}
-                          className="btn btn-quiet"
-                        >
+                        <button onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
                           Cancel
                         </button>
                       </div>
@@ -1529,8 +2014,9 @@ export function App() {
                   ) : (
                     <>
                       <div className="border border-rule bg-plate p-4 rounded flex flex-col gap-3">
-                        <h4 className="font-serif font-medium text-sm text-ink-secondary">Keep in Garden options:</h4>
-                        
+                        <h4 className="font-serif font-medium text-sm text-ink-secondary">
+                          Keep in Garden options
+                        </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
@@ -1549,7 +2035,6 @@ export function App() {
                               ))}
                             </select>
                           </div>
-
                           <div>
                             <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
                               active tier
@@ -1565,18 +2050,20 @@ export function App() {
                             </select>
                           </div>
                         </div>
-
                         <div className="text-xs text-ink-quiet font-mono mt-1">
                           Budget impact:{" "}
                           <span className="font-semibold text-terracotta">
                             {formatBudgetDelta(
-                              budgetDelta("pruned", triageTier, estimateTokens(currentSeedling.description))
+                              budgetDelta(
+                                "pruned",
+                                triageTier,
+                                estimateTokens(currentSeedling.description),
+                              ),
                             )}
                           </span>
                         </div>
                       </div>
 
-                      {/* Decision triggers */}
                       <div className="mt-auto pt-4 border-t border-rule flex gap-2">
                         <button onClick={triageKeep} className="btn btn-primary flex-1">
                           Keep
@@ -1595,13 +2082,6 @@ export function App() {
                       </div>
                     </>
                   )}
-                </div>
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-                  <h3 className="font-serif text-lg font-medium text-ink-secondary mb-2">Triage Inbox Clear</h3>
-                  <button onClick={() => setActiveMode("garden")} className="btn btn-primary">
-                    Return to Garden
-                  </button>
                 </div>
               )}
             </div>
@@ -1676,13 +2156,32 @@ export function App() {
         </div>
       )}
 
-      {/* Undo Toast notification */}
+      {/* Undo ribbon — bottom-docked recovery instrument */}
       {undoAction && (
-        <div className="undo-toast">
-          <span>
-            Action completed for <strong className="font-mono">{undoAction.name}</strong>.
-          </span>
-          <button onClick={handleUndo}>Undo</button>
+        <div className="undo-ribbon" role="status">
+          <div className="undo-ribbon__label">
+            {undoAction.label} · <span className="undo-ribbon__name">{undoAction.name}</span>
+          </div>
+          <div className="undo-ribbon__actions">
+            <button type="button" className="undo-ribbon__undo" onClick={handleUndo}>
+              Undo
+            </button>
+            <button
+              type="button"
+              className="undo-ribbon__dismiss"
+              onClick={() => {
+                if (undoTimeoutRef.current) window.clearTimeout(undoTimeoutRef.current);
+                undoTimeoutRef.current = null;
+                const action = undoActionRef.current;
+                undoActionRef.current = null;
+                setUndoAction(null);
+                if (action?.type === "triage_discard") commitPendingDiscard(action);
+              }}
+              aria-label="Dismiss undo"
+            >
+              Dismiss
+            </button>
+          </div>
         </div>
       )}
 

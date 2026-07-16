@@ -189,8 +189,41 @@ export function formatBudgetDelta(delta: number): string {
   return `${sign}${formatTokens(Math.abs(delta))} resident tokens`;
 }
 
+/** Unmanaged/duplicate skills from /api/scan (detect surface). Does not include inboxDirs. */
 export function seedlingSkills(scan: DetectedSkill[] | undefined): DetectedSkill[] {
   return (scan ?? []).filter((s) => s.state === "unmanaged" || s.state === "duplicate");
+}
+
+/** Parse "N skill(s) awaiting triage" style titles/details from recommendations (legacy fallback). */
+export function inboxCountFromRecommendations(
+  recommendations: Recommendation[] | undefined,
+  findings: { kind: string; detail: string }[] | undefined,
+): number {
+  const inboxRec = (recommendations ?? []).find((r) => r.kind === "inbox-triage");
+  if (inboxRec) {
+    const m = /(\d+)\s*skill/.exec(inboxRec.title) ?? /(\d+)/.exec(inboxRec.title);
+    if (m) return Number(m[1]);
+  }
+  for (const f of findings ?? []) {
+    if (f.kind === "inbox-nonempty" || /awaiting triage/i.test(f.detail)) {
+      const m = /(\d+)/.exec(f.detail);
+      if (m) return Number(m[1]);
+    }
+  }
+  return 0;
+}
+
+/**
+ * Shared "awaiting" truth for shell, rot, and triage.
+ * Prefer live GET /api/inbox length; fall back to max(scan, rec) only when inbox is unknown.
+ */
+export function sharedAwaitingCount(
+  inboxCount: number | null,
+  scanSeedlings: number,
+  recInboxCount: number,
+): number {
+  if (inboxCount != null) return inboxCount;
+  return Math.max(scanSeedlings, recInboxCount);
 }
 
 export function sortGarden(

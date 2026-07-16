@@ -424,46 +424,169 @@ body::before {
   animation: row-settle 180ms var(--ease-settle);
 }
 
-/* Undo toast strip */
-.undo-toast {
+/* Undo ribbon — bottom-docked ledger strip (not a floating toast) */
+.undo-ribbon {
   position: fixed;
-  bottom: 20px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  z-index: 60;
+  z-index: 70;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  background: var(--color-ink);
-  color: var(--color-field);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  box-shadow: 0 8px 24px rgba(28, 43, 36, 0.22);
-  animation: toast-in var(--dur-toast) var(--ease-settle);
+  justify-content: space-between;
+  gap: 16px;
+  width: min(720px, calc(100% - 32px));
+  min-height: 52px;
+  padding: 10px 16px;
+  background: var(--color-plate-raised);
+  color: var(--color-ink);
+  border: 1px solid var(--color-rule);
+  box-shadow:
+    0 0 0 1px var(--color-rule-strong),
+    0 10px 28px rgba(28, 43, 36, 0.14);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  animation: ribbon-up 200ms var(--ease-settle);
 }
-@keyframes toast-in {
+@keyframes ribbon-up {
   from {
     opacity: 0;
-    transform: translate(-50%, 12px);
+    transform: translate(-50%, 14px);
   }
   to {
     opacity: 1;
     transform: translate(-50%, 0);
   }
 }
-.undo-toast button {
+.undo-ribbon__label {
+  min-width: 0;
+  line-height: 1.35;
+}
+.undo-ribbon__name {
+  font-family: var(--font-serif);
+  font-weight: 600;
+}
+.undo-ribbon__actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+.undo-ribbon button.undo-ribbon__undo {
   font-family: var(--font-sans);
   font-weight: 600;
   background: transparent;
-  border: 1px solid rgba(245, 240, 232, 0.45);
-  color: var(--color-field);
+  border: 1px solid var(--color-forest);
+  color: var(--color-forest);
   border-radius: var(--radius-sm);
-  padding: 3px 10px;
+  padding: 4px 12px;
   cursor: pointer;
 }
-.undo-toast button:hover {
-  background: rgba(245, 240, 232, 0.12);
+.undo-ribbon button.undo-ribbon__undo:hover {
+  background: var(--color-forest-soft);
+}
+.undo-ribbon button.undo-ribbon__dismiss {
+  font-family: var(--font-sans);
+  background: transparent;
+  border: none;
+  color: var(--color-ink-quiet);
+  cursor: pointer;
+  padding: 4px 6px;
+}
+
+/* Action signal stem tick */
+.action-stem {
+  display: inline-block;
+  width: 3px;
+  height: 12px;
+  border-radius: 1px;
+  margin-right: 6px;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+.action-stem--terracotta {
+  background: var(--color-terracotta);
+}
+.action-stem--forest {
+  background: var(--color-forest);
+}
+.action-stem--amber {
+  background: var(--color-amber);
+}
+.action-stem--brick {
+  background: var(--color-brick);
+}
+.chip-action {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+.chip-action:active {
+  transform: translateY(1px);
+}
+.chip-action[data-hot="true"] {
+  border-color: var(--color-rule-strong);
+  background: var(--color-plate-raised);
+}
+
+/* Protected skill name — wrap up to 2 lines before ellipsis; never mid-word crush */
+.skill-name {
+  font-family: var(--font-serif);
+  font-size: var(--text-skill);
+  font-weight: 500;
+  color: var(--color-ink);
+  line-height: 1.25;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  word-break: normal;
+  overflow-wrap: normal;
+}
+.skill-path {
+  font-family: var(--font-mono);
+  font-size: var(--text-path);
+  color: var(--color-ink-quiet);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 1 1 0%;
+}
+
+/* Deploy summary strip */
+.deploy-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.deploy-summary__cell {
+  border: 1px solid var(--color-rule);
+  background: var(--color-plate);
+  padding: 8px 10px;
+  text-align: center;
+}
+.deploy-summary__n {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.deploy-summary__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-ink-quiet);
+  margin-top: 2px;
+}
+
+/* Legacy alias */
+.undo-toast {
+  /* DESIGN-FLAG: superseded by .undo-ribbon; kept to avoid blank styles if referenced */
+  display: none;
 }
 
 /* Focus */

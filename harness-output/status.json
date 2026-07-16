@@ -1,14 +1,14 @@
 {
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
-  "phase": "evaluate",
-  "iteration": 1,
-  "agent": "Evaluator",
-  "note": "Adversarial gate + UX walkthrough + zone scoring on live :4519",
+  "phase": "implement",
+  "iteration": 2,
+  "agent": "Builder (finisher)",
+  "note": "Triage wired to /api/inbox; sandbox git identity fixed; final six-flow self-test running",
   "log": [
-    "design 1 complete: winner 'Trellis Ledger'",
-    "build 1 complete: 2325 insertions, vite green, live on :4519",
-    "sandbox reset to pristine data",
-    "evaluator dispatched (iteration 1)"
+    "API added: GET/DELETE /api/inbox + inbox-path adopt (31e4427)",
+    "builder 2b wired triage, interrupted by sandbox git-identity bug",
+    "sandbox fixed: adopt verified ok:true via curl",
+    "builder 2c finisher dispatched"
   ]
 }
