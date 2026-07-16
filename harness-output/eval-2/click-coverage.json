@@ -1,0 +1,257 @@
+{
+  "total": 693,
+  "attempted": 693,
+  "failed": [],
+  "sample": [
+    {
+      "label": "skillkeep",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Triage 64",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Review deploy",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Rot 35",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "BUTTON",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "BUTTON",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "all scopes archive project/mag project/marshmallow project/o",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "all tiers rooted climbing pruned",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Garden",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Cost",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "Exposure",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "sort: name sort: tier sort: usage cost sort: exposure",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "click",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "p",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "r",
+      "action": "skip-dup-tier",
+      "ok": true
+    },
+    {
+      "label": "c",
+      "action": "skip-dup-tier",
+      "ok": true
+    }
+  ]
+}

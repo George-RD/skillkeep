@@ -140,7 +140,169 @@
           "Resolve one rot-feed recommendation: Attempted. Clicked Resolve on 'archive-session-handoff'. Card was removed from list. Completed."
         ]
       }
+    },
+    {
+      "iteration": 2,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "pass",
+        "overflowStressTest": "fail"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 7,
+            "functionality": 8
+          },
+          "issues": [
+            "tier r/c/p hit targets ~17x18px"
+          ]
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "Resolve lacks pre-action consequence copy"
+          ]
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 6,
+            "originality": 7,
+            "craft": 5,
+            "functionality": 5
+          },
+          "issues": [
+            "horizontal overflow scrollWidth 564 > 390",
+            "shell action chips clipped"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 5,
+        "functionality": 5
+      },
+      "weightedAverage": 7.0,
+      "decision": "REFINE",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [
+        "390px horizontal overflow (documentElement.scrollWidth 564 > clientWidth 390); shell actions clip"
+      ],
+      "keyIssues": [
+        "390px layout horizontal overflow clips shell action cluster (C1 fail; craft/functionality floor 5)",
+        "tier r/c/p and dense chips remain sub-44px touch targets",
+        "long skill names still mid-word ellipsize under width pressure (mobile rows, deploy list)"
+      ],
+      "uxWalkthrough": {
+        "tasksAttempted": 6,
+        "tasksCompleted": 6,
+        "notes": [
+          "Triage seedling: Completed. Opened Triage 64 (= rot 64). Keep with scope/tier; shell/rot 63; Undo restored 64. Discard then Undo restored 64. Sync ok.",
+          "Change skill tier in situ: Completed. Hover preview \u221240; demote 1password; budget 5.7k\u21925.6k; Undo ribbon restored.",
+          "Use cost/exposure lens: Completed. Cost lens + dormant/unused row opened detail.",
+          "Global find: Completed. Search 1password \u2192 detail.",
+          "Deploy dry-run: Completed. Review deploy showed Will root 385 / prune 0 / drift 0; Commit sync.",
+          "Resolve rot: Completed. Resolve unused card Rot 35\u219234; Undo restored."
+        ]
+      }
     }
   ],
-  "bestIteration": 1
+  "bestIteration": 2
 }

@@ -1,14 +1,14 @@
 {
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
-  "phase": "implement",
+  "phase": "evaluate",
   "iteration": 2,
-  "agent": "Builder (finisher)",
-  "note": "Triage wired to /api/inbox; sandbox git identity fixed; final six-flow self-test running",
+  "agent": "Evaluator",
+  "note": "Scoring iteration 2 (triage live, deploy review, undo) at 1440/390",
   "log": [
-    "API added: GET/DELETE /api/inbox + inbox-path adopt (31e4427)",
-    "builder 2b wired triage, interrupted by sandbox git-identity bug",
-    "sandbox fixed: adopt verified ok:true via curl",
-    "builder 2c finisher dispatched"
+    "builder 2c: all six flows PASS with evidence",
+    "iteration 2 committed (03ad9d5)",
+    "sandbox reset to pristine",
+    "evaluator dispatched (iteration 2)"
   ]
 }
