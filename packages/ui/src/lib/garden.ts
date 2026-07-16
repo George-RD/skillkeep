@@ -120,7 +120,9 @@ export function buildGardenSkills(
   const out: GardenSkill[] = [];
   for (const scope of scopes ?? []) {
     for (const skill of scope.skills) {
-      out.push(enrichSkill(skill, scope.scope, usageBySkill, unused, duplicates, driftSet, dupStatus));
+      out.push(
+        enrichSkill(skill, scope.scope, usageBySkill, unused, duplicates, driftSet, dupStatus),
+      );
     }
   }
   return out;

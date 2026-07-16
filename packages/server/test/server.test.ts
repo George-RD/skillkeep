@@ -867,11 +867,7 @@ describe("DELETE /api/inbox", () => {
 
     try {
       expect(fs.existsSync(path.join(skillPath, "SKILL.md"))).toBe(true);
-      const res = await send(
-        "DELETE",
-        `/api/inbox?path=${encodeURIComponent(skillPath)}`,
-        {},
-      );
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(skillPath)}`, {});
       expect(res.status).toBe(200);
       expect(await res.json()).toEqual({ ok: true });
       expect(fs.existsSync(skillPath)).toBe(false);
@@ -916,11 +912,7 @@ describe("DELETE /api/inbox", () => {
     });
 
     try {
-      const res = await send(
-        "DELETE",
-        `/api/inbox?path=${encodeURIComponent(outside)}`,
-        {},
-      );
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(outside)}`, {});
       expect(res.status).toBe(422);
       expect(fs.existsSync(outside)).toBe(true);
     } finally {
@@ -960,11 +952,7 @@ describe("DELETE /api/inbox", () => {
     });
 
     try {
-      const res = await send(
-        "DELETE",
-        `/api/inbox?path=${encodeURIComponent(traversal)}`,
-        {},
-      );
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(traversal)}`, {});
       expect(res.status).toBe(422);
       expect(fs.existsSync(escapeTarget)).toBe(true);
     } finally {

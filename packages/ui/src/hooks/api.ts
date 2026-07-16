@@ -168,8 +168,8 @@ export function usePutSettingsMutation() {
   });
 }
 
-export function useDevices() {
-  return useQuery({ queryKey: queryKeys.devices, queryFn: getDevices });
+export function useDevices(enabled = true) {
+  return useQuery({ queryKey: queryKeys.devices, queryFn: getDevices, enabled });
 }
 
 export function useHubPushMutation() {

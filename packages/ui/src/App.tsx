@@ -1,65 +1,56 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useEffect, useMemo, useState, useRef } from "react";
-import { baseUrl, getConnection, errorMessage, getAiKey, hasTauriGlobal, setAiKey } from "./api/client";
-import type {
-  Health,
-  SettingsInput,
-  HubInput,
-  AiLink,
-  InboxSkill,
-  SyncReport,
-  Recommendation,
-  RegistryScope,
-  RegistrySkill,
-  StatusReport,
-  UsageRow,
-  AiSkillContext,
-  AdoptItem,
-  AdoptResult,
-} from "./api/types";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  useHealth,
-  useRegistry,
-  useRecommendations,
-  useStatus,
-  useScan,
-  useSettings,
-  useDevices,
-  useInbox,
+  baseUrl,
+  errorMessage,
+  getAiKey,
+  getConnection,
+  hasTauriGlobal,
+  setAiKey,
+} from "./api/client";
+import type { InboxSkill, Recommendation, SettingsInput, SyncReport, UsageRow } from "./api/types";
+import { StringListEditor } from "./components/ListEditor";
+import { useToast } from "./components/Toast";
+import {
+  queryKeys,
   useAdoptMutation,
-  useDeleteInboxMutation,
-  useMoveMutation,
-  useArchiveMutation,
-  usePutSkillMutation,
-  useSyncMutation,
-  usePutSettingsMutation,
-  useHubPushMutation,
-  useHubPullMutation,
+  useAiDedupeMutation,
+  useAiDescribeMutation,
   useAiStatus,
   useAiTriageMutation,
-  useAiDescribeMutation,
-  useAiDedupeMutation,
+  useArchiveMutation,
+  useDeleteInboxMutation,
+  useDevices,
+  useHealth,
+  useHubPullMutation,
+  useHubPushMutation,
+  useInbox,
+  useMoveMutation,
+  usePutSettingsMutation,
+  usePutSkillMutation,
+  useRecommendations,
+  useRegistry,
+  useScan,
+  useSettings,
   useSkill,
-  queryKeys,
+  useStatus,
+  useSyncMutation,
 } from "./hooks/api";
-import { useToast } from "./components/Toast";
-import type { Tier, Exposure, Perspective, Mode, GardenSkill } from "./lib/garden";
+import type { Mode, Perspective, Tier } from "./lib/garden";
 import {
-  saveTier,
-  readTier,
-  estimateTokens,
-  formatTokens,
-  formatCost,
-  usageWindow,
-  buildGardenSkills,
-  residentBudget,
   budgetDelta,
-  formatBudgetDelta,
-  sortGarden,
+  buildGardenSkills,
+  estimateTokens,
   filterGarden,
+  formatBudgetDelta,
+  formatCost,
+  formatTokens,
+  residentBudget,
+  saveTier,
+  sortGarden,
   usageMap,
+  usageWindow,
 } from "./lib/garden";
-import { StringListEditor } from "./components/ListEditor";
 
 interface UndoAction {
   type: "tier" | "triage_adopt" | "triage_discard" | "triage_merge" | "archive" | "move";
@@ -83,19 +74,26 @@ export function App() {
   const registry = useRegistry();
   const recommendations = useRecommendations();
   const status = useStatus();
-  const scan = useScan();
   const inbox = useInbox();
   const settings = useSettings();
-  const devices = useDevices();
+  // Keep the scan census warm (invalidated by SSE/mutations); result unused in the new UI.
+  useScan();
+  // Devices are a hub-only surface; never hit /api/v1/devices on an agent-mode daemon.
+  useDevices(health.data?.mode === "hub");
 
   const windowDates = useMemo(() => usageWindow(), []);
-  const usageQuery = useHealth().data?.ok
-    ? useQueryClient().getQueryData(["usage", "skill", windowDates.from, windowDates.to]) as { rows: UsageRow[] } | undefined
+  // Usage is read from the React Query cache only while the daemon is live.
+  // No conditional hooks — queryClient and health are already resolved above.
+  const healthOk = health.data?.ok ?? false;
+  const usageQuery = healthOk
+    ? (queryClient.getQueryData(["usage", "skill", windowDates.from, windowDates.to]) as
+        | { rows: UsageRow[] }
+        | undefined)
     : undefined;
-  // Fallback to active query
-  const activeUsageQuery = useHealth().data?.ok
-    ? // eslint-disable-next-line react-hooks/rules-of-hooks
-      useQueryClient().getQueryCache().findAll({ queryKey: ["usage"] })[0]?.state?.data as { rows: UsageRow[] } | undefined
+  const activeUsageQuery = healthOk
+    ? (queryClient.getQueryCache().findAll({ queryKey: ["usage"] })[0]?.state?.data as
+        | { rows: UsageRow[] }
+        | undefined)
     : undefined;
   const usageRows = usageQuery?.rows ?? activeUsageQuery?.rows ?? [];
   const usageBySkill = useMemo(() => usageMap(usageRows), [usageRows]);
@@ -148,7 +146,7 @@ export function App() {
 
   // Settings form state
   const [settingsForm, setSettingsForm] = useState<SettingsInput | null>(null);
-  const [originalSettings, setOriginalSettings] = useState<SettingsInput | null>(null);
+  const [, setOriginalSettings] = useState<SettingsInput | null>(null);
   const [aiKeyVal, setAiKeyVal] = useState("");
 
   // Sync / Deploy review state
@@ -246,6 +244,7 @@ export function App() {
   }, [selectedSkillQuery.data]);
 
   // Master garden list construction
+  // biome-ignore lint/correctness/useExhaustiveDependencies: tierRevision intentionally forces recompute when localStorage tiers change (saveTier/readTier are side-channels)
   const rawSkills = useMemo(() => {
     return buildGardenSkills(
       registry.data,
@@ -253,7 +252,6 @@ export function App() {
       recommendations.data?.recommendations,
       status.data,
     );
-    // tierRevision forces recompute when localStorage tiers change
   }, [registry.data, usageBySkill, recommendations.data, status.data, tierRevision]);
 
   const filteredSkills = useMemo(() => {
@@ -280,12 +278,13 @@ export function App() {
     if (seedlings.length > 0) return "populated";
     return "empty";
   })();
-  const rotFindingsCount = useMemo(() => {
-    const findings = recommendations.data?.findings.length ?? 0;
-    const nonInbox =
-      recommendations.data?.recommendations.filter((r) => r.kind !== "inbox-triage").length ?? 0;
-    return Math.max(findings, nonInbox);
-  }, [recommendations.data]);
+  // Freeze the triage total once the queue first populates after opening (covers the
+  // cold-load race where the inbox query is still settling when Triage is opened).
+  useEffect(() => {
+    if (activeMode === "triage" && triageSessionN === 0 && seedlings.length > 0) {
+      setTriageSessionN(seedlings.length);
+    }
+  }, [activeMode, triageSessionN, seedlings.length]);
   /** Rot feed: inject live inbox card; drop stale server inbox-triage so counts never desync. */
   const rotRecommendations = useMemo((): Recommendation[] => {
     const rest = (recommendations.data?.recommendations ?? []).filter(
@@ -302,7 +301,12 @@ export function App() {
     };
     return [inboxCard, ...rest];
   }, [recommendations.data, awaitingCount, seedlings]);
+  // Badge must equal the rendered Rot feed length (not raw findings[], which can be much larger).
+  const rotBadgeCount = rotRecommendations.length;
   const currentSeedling = seedlings[activeTriageIndex] ?? seedlings[0] ?? null;
+  // Progress: k advances as decisions shrink seedlings; N is the frozen session total.
+  const triageTotal = triageSessionN > 0 ? triageSessionN : seedlings.length;
+  const triagePosition = Math.max(1, triageTotal - seedlings.length + 1);
   // Budget calculations
   const totalBudget = useMemo(() => {
     const baseEstimate = status.data?.globalOnlyTokenEstimate ?? 0;
@@ -605,20 +609,17 @@ export function App() {
       return;
     }
 
-    adoptMutation.mutate(
-      [{ name: seedling.name, path: seedling.path, scope: triageScope }],
-      {
-        onSuccess: (results) => {
-          const res = results[0];
-          if (res?.ok) {
-            onKept();
-          } else {
-            toast.show(`Could not keep: ${res?.error ?? "unknown error"}`, "error");
-          }
-        },
-        onError: (e) => toast.show(`Keep failed: ${errorMessage(e)}`, "error"),
+    adoptMutation.mutate([{ name: seedling.name, path: seedling.path, scope: triageScope }], {
+      onSuccess: (results) => {
+        const res = results[0];
+        if (res?.ok) {
+          onKept();
+        } else {
+          toast.show(`Could not keep: ${res?.error ?? "unknown error"}`, "error");
+        }
       },
-    );
+      onError: (e) => toast.show(`Keep failed: ${errorMessage(e)}`, "error"),
+    });
   };
 
   const triageDiscard = () => {
@@ -664,16 +665,6 @@ export function App() {
     localDismissTriage(seedling, "triage_merge");
   };
 
-  const advanceTriage = () => {
-    if (activeTriageIndex < seedlings.length - 1) {
-      setActiveTriageIndex((prev) => prev + 1);
-    } else {
-      setActiveTriageIndex(0);
-      setActiveMode("garden");
-      toast.show("Inbox triage complete", "success");
-    }
-  };
-
   /** Secondary bulk: adopt remaining queue into global / climbing; ribbon undoes via archive. */
   const bulkKeepSuggested = () => {
     const batch = [...seedlings];
@@ -692,17 +683,20 @@ export function App() {
         for (const name of okNames) saveTier(name, "climbing");
         setTierRevision((n) => n + 1);
         toast.show(
-          fail > 0 ? `Kept ${okNames.length}; ${fail} failed` : `Kept ${okNames.length} seedlings (global · climbing)`,
+          fail > 0
+            ? `Kept ${okNames.length}; ${fail} failed`
+            : `Kept ${okNames.length} seedlings (global · climbing)`,
           fail > 0 ? "error" : "success",
         );
         if (okNames.length > 0) {
-          const last = okNames[okNames.length - 1]!;
-          triggerUndoAction({
-            type: "triage_adopt",
-            name: last,
-            label: `Kept ${okNames.length} seedlings`,
-            batchPaths: okNames, // names for archive undo
-          });
+          const last = okNames[okNames.length - 1];
+          if (last)
+            triggerUndoAction({
+              type: "triage_adopt",
+              name: last,
+              label: `Kept ${okNames.length} seedlings`,
+              batchPaths: okNames, // names for archive undo
+            });
         }
       },
       onError: (e) => toast.show(`Bulk keep failed: ${errorMessage(e)}`, "error"),
@@ -728,7 +722,8 @@ export function App() {
       return next;
     });
     toast.show(`Dismissed ${dups.length} obvious duplicate(s) (session-local)`, "success");
-    const last = dups[dups.length - 1]!;
+    const last = dups[dups.length - 1];
+    if (!last) return;
     triggerUndoAction({
       type: "triage_merge",
       name: last.name,
@@ -894,7 +889,8 @@ export function App() {
 
   const handleHubPull = () => {
     pullMutation.mutate(undefined, {
-      onSuccess: (res) => toast.show(`Pulled ${res.skillsPulled.length} skills from hub`, "success"),
+      onSuccess: (res) =>
+        toast.show(`Pulled ${res.skillsPulled.length} skills from hub`, "success"),
       onError: (e) => toast.show(`Pull failed: ${errorMessage(e)}`, "error"),
     });
   };
@@ -934,7 +930,10 @@ export function App() {
     if (deployJustCommitted) return "Deploy · idle";
     const driftN = status.data?.drift.length ?? 0;
     if (driftN > 0) return `Deploy · drift ${driftN}`;
-    if (syncReport && (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0)) {
+    if (
+      syncReport &&
+      (syncReport.created.length > 0 || syncReport.pruned.length > 0 || syncReport.fixed.length > 0)
+    ) {
       return "Review deploy";
     }
     if (deployOpen && syncPreviewed) return "Deploy · idle";
@@ -961,14 +960,12 @@ export function App() {
       {/* Z1 Main Shell Header — phone: status only */}
       <header className="h-[var(--shell-h)] border-b border-rule bg-plate-raised px-3 sm:px-4 flex items-center justify-between z-30 shadow-sm max-w-[100vw] overflow-hidden">
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-          <button
-            type="button"
-            onClick={goGarden}
-            className="wordmark-btn"
-          >
+          <button type="button" onClick={goGarden} className="wordmark-btn">
             skillkeep
           </button>
-          <span className="shell-version text-[10px] uppercase tracking-wider text-ink-quiet">v0.1.0</span>
+          <span className="shell-version text-[10px] uppercase tracking-wider text-ink-quiet">
+            v0.1.0
+          </span>
 
           <div className="flex items-center gap-2 border-l border-rule pl-2 sm:pl-3 ml-1 sm:ml-2 min-w-0">
             <span
@@ -992,7 +989,9 @@ export function App() {
 
         {/* Center: Context-budget readout (desktop) */}
         <div className="shell-budget-desktop hidden md:flex items-center gap-2 ledger-plate-tight px-3 py-1 font-mono text-xs tabular">
-          <span className="text-ink-quiet text-[10px] uppercase font-bold tracking-wide">resident set</span>
+          <span className="text-ink-quiet text-[10px] uppercase font-bold tracking-wide">
+            resident set
+          </span>
           <span className="font-semibold text-terracotta">{formatTokens(totalBudget)} tokens</span>
           {budgetPreviewDelta != null && budgetPreviewDelta !== 0 && (
             <span className="text-[11px] text-ink-secondary">
@@ -1040,21 +1039,22 @@ export function App() {
           <button
             type="button"
             onClick={openRot}
-            data-hot={rotFindingsCount > 0}
+            data-hot={rotBadgeCount > 0}
             className="chip chip-signal chip-action"
           >
-            {rotFindingsCount > 0 && <span className="action-stem action-stem--amber" />}
-            <span>Rot{rotFindingsCount > 0 ? ` ${rotFindingsCount}` : ""}</span>
+            {rotBadgeCount > 0 && <span className="action-stem action-stem--amber" />}
+            <span>Rot{rotBadgeCount > 0 ? ` ${rotBadgeCount}` : ""}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={openSearch}
-            className="press-icon"
-            title="Search ( / )"
-          >
+          <button type="button" onClick={openSearch} className="press-icon" title="Search ( / )">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <title>Search</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
             </svg>
           </button>
 
@@ -1073,8 +1073,19 @@ export function App() {
             title="Settings"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <title>Settings</title>
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+              />
             </svg>
           </button>
         </div>
@@ -1095,8 +1106,19 @@ export function App() {
           title="Settings"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <title>Settings</title>
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+            />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+            />
           </svg>
         </button>
       </header>
@@ -1127,7 +1149,9 @@ export function App() {
               <div className="control-rail-desktop flex-wrap items-center justify-between gap-3 p-3 border-b border-rule bg-plate-raised">
                 <div className="flex flex-wrap items-center gap-2">
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">scope:</span>
+                    <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">
+                      scope:
+                    </span>
                     <select
                       value={scopeFilter}
                       onChange={(e) => setScopeFilter(e.target.value)}
@@ -1142,7 +1166,9 @@ export function App() {
                     </select>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">tier:</span>
+                    <span className="text-[11px] font-mono text-ink-quiet uppercase font-bold">
+                      tier:
+                    </span>
                     <select
                       value={tierFilter}
                       onChange={(e) => setTierFilter(e.target.value as Tier | "all")}
@@ -1190,7 +1216,9 @@ export function App() {
                   </div>
                   <select
                     value={sortField}
-                    onChange={(e) => setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")}
+                    onChange={(e) =>
+                      setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")
+                    }
                     className="bg-transparent border border-rule rounded px-2 py-0.5 text-xs cursor-pointer text-ink-secondary min-h-[44px]"
                   >
                     <option value="name">sort: name</option>
@@ -1204,7 +1232,9 @@ export function App() {
                 <button
                   type="button"
                   className="chip chip-signal chip-action"
-                  data-hot={perspective !== "garden" || scopeFilter !== "all" || tierFilter !== "all"}
+                  data-hot={
+                    perspective !== "garden" || scopeFilter !== "all" || tierFilter !== "all"
+                  }
                   onClick={() => setFilterSheetOpen(true)}
                 >
                   {(perspective !== "garden" || scopeFilter !== "all" || tierFilter !== "all") && (
@@ -1232,7 +1262,9 @@ export function App() {
                     <div className="rounded border border-brick-soft bg-brick-soft p-4 flex gap-3 text-brick text-sm">
                       <span className="tier-stem bg-brick" />
                       <div>
-                        <h4 className="font-serif font-bold text-base mb-1">Daemon Connection Failure</h4>
+                        <h4 className="font-serif font-bold text-base mb-1">
+                          Daemon Connection Failure
+                        </h4>
                         <p>{errorMessage(registry.error)}</p>
                       </div>
                     </div>
@@ -1241,9 +1273,12 @@ export function App() {
 
                 {registry.isSuccess && sortedSkills.length === 0 && (
                   <div className="p-8 text-center max-w-md mx-auto flex flex-col items-center gap-3">
-                    <h3 className="font-serif text-lg font-medium text-ink-secondary">No skills rooted yet</h3>
+                    <h3 className="font-serif text-lg font-medium text-ink-secondary">
+                      No skills rooted yet
+                    </h3>
                     <p className="text-sm text-ink-quiet">
-                      Configure your repositories in settings and run a triage sweep to manage your AI assistant skills.
+                      Configure your repositories in settings and run a triage sweep to manage your
+                      AI assistant skills.
                     </p>
                     <button
                       type="button"
@@ -1283,24 +1318,29 @@ export function App() {
                       };
 
                       const makeTierSeg = () => (
-                        <div
-                          className="tier-seg"
-                          onClick={(e) => e.stopPropagation()}
-                          onMouseLeave={() => setBudgetPreviewDelta(null)}
-                        >
+                        <div className="tier-seg pointer-events-auto">
                           {(["rooted", "climbing", "pruned"] as Tier[]).map((t) => (
                             <button
-                              key={t}
                               type="button"
+                              key={t}
                               data-active={skill.tier === t}
                               className="tier-seg__btn"
                               onMouseEnter={() =>
-                                setBudgetPreviewDelta(budgetDelta(skill.tier, t, skill.tokenEstimate))
+                                setBudgetPreviewDelta(
+                                  budgetDelta(skill.tier, t, skill.tokenEstimate),
+                                )
                               }
                               onFocus={() =>
-                                setBudgetPreviewDelta(budgetDelta(skill.tier, t, skill.tokenEstimate))
+                                setBudgetPreviewDelta(
+                                  budgetDelta(skill.tier, t, skill.tokenEstimate),
+                                )
                               }
-                              onClick={() => applyTier(t)}
+                              onMouseLeave={() => setBudgetPreviewDelta(null)}
+                              onBlur={() => setBudgetPreviewDelta(null)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                applyTier(t);
+                              }}
                               title={`Move to ${t} (${formatBudgetDelta(
                                 budgetDelta(skill.tier, t, skill.tokenEstimate),
                               )})`}
@@ -1314,16 +1354,21 @@ export function App() {
                       return (
                         <div
                           key={skill.name}
-                          onClick={() => {
-                            setSelectedSkillName(skill.name);
-                            setDeployOpen(false);
-                          }}
-                          className={`hover:bg-row-alt/30 cursor-pointer transition-all duration-150 ${
+                          className={`relative hover:bg-row-alt/30 cursor-pointer transition-all duration-150 ${
                             selectedSkillName === skill.name ? "bg-row-alt/65 font-medium" : ""
                           } ${recede ? "row-recede" : ""} ${expensive ? "row-cost-flag" : ""}`}
                         >
+                          <button
+                            type="button"
+                            className="garden-row-trigger"
+                            aria-label={`Open details for ${skill.name}`}
+                            onClick={() => {
+                              setSelectedSkillName(skill.name);
+                              setDeployOpen(false);
+                            }}
+                          />
                           {/* Desktop multi-column row */}
-                          <div className="garden-row-desktop items-center justify-between gap-4 py-2.5 px-3">
+                          <div className="garden-row-desktop pointer-events-none relative z-[1] items-center justify-between gap-4 py-2.5 px-3">
                             <div className="flex items-center gap-3 min-w-0 flex-1">
                               <span
                                 className={`tier-stem ${
@@ -1365,7 +1410,9 @@ export function App() {
                               )}
                               <div className="text-right font-mono text-xs">
                                 {perspective === "cost" ? (
-                                  <div className="font-medium text-ink">{formatCost(skill.costMicroUsd)}</div>
+                                  <div className="font-medium text-ink">
+                                    {formatCost(skill.costMicroUsd)}
+                                  </div>
                                 ) : (
                                   <div className="text-ink-secondary">
                                     {formatTokens(skill.tokenEstimate)}
@@ -1382,7 +1429,7 @@ export function App() {
                           </div>
 
                           {/* Phone stacked ledger cell — path hidden */}
-                          <div className="garden-row-phone">
+                          <div className="garden-row-phone pointer-events-none relative z-[1]">
                             <div className="garden-row-phone__primary">
                               <span
                                 className={`tier-stem ${
@@ -1439,9 +1486,15 @@ export function App() {
           {activeMode === "settings" && (
             <div className="settings-plate ledger-plate p-5 flex flex-col h-full overflow-y-auto scroll-quiet">
               <div className="flex items-center justify-between border-b border-rule pb-3 mb-4 settings-plate__header">
-                <h2 className="font-serif text-lg font-semibold text-ink">Configuration Settings</h2>
+                <h2 className="font-serif text-lg font-semibold text-ink">
+                  Configuration Settings
+                </h2>
                 <div className="flex gap-2 settings-plate__actions">
-                  <button type="button" onClick={() => setActiveMode("garden")} className="btn btn-quiet">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMode("garden")}
+                    className="btn btn-quiet"
+                  >
                     Back to Garden
                   </button>
                   <button type="button" onClick={handleSaveSettings} className="btn btn-primary">
@@ -1453,18 +1506,27 @@ export function App() {
               {settingsForm && (
                 <div className="flex flex-col gap-5 max-w-2xl">
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1">
+                    <label
+                      className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1"
+                      htmlFor="fld-registry-root-directory"
+                    >
                       Registry Root Directory
                     </label>
                     <input
+                      id="fld-registry-root-directory"
                       className="w-full rounded border border-rule bg-plate-raised px-3 py-1.5 text-sm"
                       value={settingsForm.registryRoot}
-                      onChange={(e) => setSettingsForm({ ...settingsForm, registryRoot: e.target.value })}
+                      onChange={(e) =>
+                        setSettingsForm({ ...settingsForm, registryRoot: e.target.value })
+                      }
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1">
+                    <label
+                      className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1"
+                      htmlFor="fld-repo-roots"
+                    >
                       Repo Roots
                     </label>
                     <StringListEditor
@@ -1476,14 +1538,20 @@ export function App() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-2">
+                      <label
+                        className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-2"
+                        htmlFor="fld-global-client-folders"
+                      >
                         Global Client Folders
                       </label>
                       <div className="flex flex-col gap-1 bg-plate p-3 border border-rule rounded">
                         {["claude", "codex", "opencode", "gemini", "omp", "cursor"].map((c) => {
                           const has = settingsForm.globalClients.includes(c);
                           return (
-                            <label key={c} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                            <label
+                              key={c}
+                              className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                            >
                               <input
                                 type="checkbox"
                                 checked={has}
@@ -1502,14 +1570,20 @@ export function App() {
                     </div>
 
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-2">
+                      <label
+                        className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-2"
+                        htmlFor="fld-repo-client-folders"
+                      >
                         Repo Client Folders
                       </label>
                       <div className="flex flex-col gap-1 bg-plate p-3 border border-rule rounded">
                         {["claude", "codex", "opencode", "gemini", "omp", "cursor"].map((c) => {
                           const has = settingsForm.repoClients.includes(c);
                           return (
-                            <label key={c} className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                            <label
+                              key={c}
+                              className="flex items-center gap-2 text-sm cursor-pointer select-none"
+                            >
                               <input
                                 type="checkbox"
                                 checked={has}
@@ -1529,7 +1603,10 @@ export function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1">
+                    <label
+                      className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1"
+                      htmlFor="fld-link-mode"
+                    >
                       Link Mode
                     </label>
                     <div className="flex gap-4 bg-plate p-3 border border-rule rounded">
@@ -1555,7 +1632,10 @@ export function App() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1">
+                    <label
+                      className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1"
+                      htmlFor="fld-inbox-directories"
+                    >
                       Inbox Directories
                     </label>
                     <StringListEditor
@@ -1566,8 +1646,10 @@ export function App() {
                   </div>
 
                   <div className="border-t border-rule pt-4 mt-2">
-                    <h3 className="font-serif text-[15px] font-medium text-ink mb-3">AI Support (BYOK)</h3>
-                    
+                    <h3 className="font-serif text-[15px] font-medium text-ink mb-3">
+                      AI Support (BYOK)
+                    </h3>
+
                     <div className="flex flex-col gap-3 bg-plate p-4 border border-rule rounded">
                       <div>
                         <label className="flex items-center gap-2 text-sm font-semibold select-none cursor-pointer">
@@ -1588,15 +1670,24 @@ export function App() {
                       {settingsForm.ai && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pl-6">
                           <div>
-                            <label className="block text-xs font-bold text-ink-quiet mb-1">Provider</label>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-provider"
+                            >
+                              Provider
+                            </label>
                             <select
+                              id="fld-provider"
                               value={settingsForm.ai.provider}
                               onChange={(e) =>
                                 setSettingsForm({
                                   ...settingsForm,
                                   ai: {
-                                    provider: e.target.value as "anthropic" | "openai" | "openrouter",
-                                    model: settingsForm.ai!.model,
+                                    provider: e.target.value as
+                                      | "anthropic"
+                                      | "openai"
+                                      | "openrouter",
+                                    model: settingsForm.ai?.model ?? "",
                                   },
                                 })
                               }
@@ -1608,15 +1699,21 @@ export function App() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-xs font-bold text-ink-quiet mb-1">Model Name</label>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-model-name"
+                            >
+                              Model Name
+                            </label>
                             <input
+                              id="fld-model-name"
                               className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
                               value={settingsForm.ai.model}
                               onChange={(e) =>
                                 setSettingsForm({
                                   ...settingsForm,
                                   ai: {
-                                    provider: settingsForm.ai!.provider,
+                                    provider: settingsForm.ai?.provider ?? "anthropic",
                                     model: e.target.value,
                                   },
                                 })
@@ -1625,15 +1722,22 @@ export function App() {
                           </div>
 
                           <div className="md:col-span-2">
-                            <label className="block text-xs font-bold text-ink-quiet mb-1">API Key</label>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-api-key"
+                            >
+                              API Key
+                            </label>
                             <input
+                              id="fld-api-key"
                               type="password"
                               className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
                               placeholder="Key saved securely client-side in keychain"
                               value={aiKeyVal}
                               onChange={(e) => {
                                 setAiKeyVal(e.target.value);
-                                if (settingsForm.ai) void setAiKey(settingsForm.ai.provider, e.target.value);
+                                if (settingsForm.ai)
+                                  void setAiKey(settingsForm.ai.provider, e.target.value);
                               }}
                             />
                           </div>
@@ -1643,13 +1747,15 @@ export function App() {
                   </div>
 
                   <div className="border-t border-rule pt-4 mt-2">
-                    <h3 className="font-serif text-[15px] font-medium text-ink mb-3">Sync with Hub</h3>
+                    <h3 className="font-serif text-[15px] font-medium text-ink mb-3">
+                      Sync with Hub
+                    </h3>
                     <div className="flex flex-col gap-3 bg-plate p-4 border border-rule rounded">
                       <div className="flex gap-2">
-                        <button onClick={handleHubPush} className="btn btn-quiet">
+                        <button type="button" onClick={handleHubPush} className="btn btn-quiet">
                           Push registry to Hub
                         </button>
-                        <button onClick={handleHubPull} className="btn btn-forest">
+                        <button type="button" onClick={handleHubPull} className="btn btn-forest">
                           Pull registry from Hub
                         </button>
                       </div>
@@ -1663,15 +1769,18 @@ export function App() {
 
         {/* RIGHT COLUMN: Contextual side panel */}
         <aside className="hidden md:flex flex-col min-h-0">
-          
           {/* Z9 Selected Skill Detail view */}
           {selectedSkillName && (
             <div className="ledger-plate flex flex-col h-full p-4 overflow-y-auto scroll-quiet">
               <div className="flex items-center justify-between border-b border-rule pb-2 mb-3">
-                <h3 className="font-serif text-base font-semibold text-ink truncate max-w-[200px]" title={selectedSkillName}>
+                <h3
+                  className="font-serif text-base font-semibold text-ink truncate max-w-[200px]"
+                  title={selectedSkillName}
+                >
                   {selectedSkillName}
                 </h3>
                 <button
+                  type="button"
                   onClick={() => setSelectedSkillName(null)}
                   className="p-1 rounded hover:bg-row-alt text-ink-quiet cursor-pointer"
                 >
@@ -1679,14 +1788,18 @@ export function App() {
                 </button>
               </div>
 
-              {selectedSkillQuery.isLoading && <p className="text-sm text-ink-quiet">Loading details...</p>}
-              
+              {selectedSkillQuery.isLoading && (
+                <p className="text-sm text-ink-quiet">Loading details...</p>
+              )}
+
               {selectedSkillQuery.data && (
                 <div className="flex-1 flex flex-col gap-4">
                   {/* File details */}
                   <div className="text-xs font-mono bg-row-alt/40 p-2 border border-rule/50 rounded flex flex-col gap-1">
                     <div className="text-ink-quiet uppercase font-bold text-[9px]">status:</div>
-                    <div className="text-ink">{rawSkills.find((s) => s.name === selectedSkillName)?.tier} set</div>
+                    <div className="text-ink">
+                      {rawSkills.find((s) => s.name === selectedSkillName)?.tier} set
+                    </div>
                   </div>
 
                   {/* AI Suggestion Area */}
@@ -1694,10 +1807,15 @@ export function App() {
                     <div className="border border-forest/40 bg-forest-soft p-3 rounded text-sm flex flex-col gap-2">
                       <p className="font-serif italic text-forest-dark">"{aiSuggestion}"</p>
                       <div className="flex justify-end gap-2 text-xs">
-                        <button onClick={() => setAiSuggestion(null)} className="btn btn-quiet py-0.5 px-2">
+                        <button
+                          type="button"
+                          onClick={() => setAiSuggestion(null)}
+                          className="btn btn-quiet py-0.5 px-2"
+                        >
                           Dismiss
                         </button>
                         <button
+                          type="button"
                           onClick={() => {
                             setDetailContent((prev) => {
                               // Split by frontmatter
@@ -1726,10 +1844,14 @@ export function App() {
 
                   {/* Edit tools */}
                   <div className="flex-1 flex flex-col min-h-[300px]">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1">
+                    <label
+                      className="block text-xs font-bold uppercase tracking-wider text-ink-quiet mb-1"
+                      htmlFor="fld-skill-md-source-file"
+                    >
                       SKILL.md Source File
                     </label>
                     <textarea
+                      id="fld-skill-md-source-file"
                       value={detailContent}
                       onChange={(e) => setDetailContent(e.target.value)}
                       className="w-full flex-1 min-h-[250px] p-2 border border-rule bg-plate-raised font-mono text-xs scroll-quiet rounded resize-none"
@@ -1738,15 +1860,27 @@ export function App() {
 
                   {/* Actions footer */}
                   <div className="flex flex-wrap gap-2 pt-2 border-t border-rule">
-                    <button onClick={handleSaveDetail} className="btn btn-primary flex-1">
+                    <button
+                      type="button"
+                      onClick={handleSaveDetail}
+                      className="btn btn-primary flex-1"
+                    >
                       Save Editor
                     </button>
                     {aiStatus.data?.configured && (
-                      <button onClick={handleDescribeDetail} className="btn btn-forest flex-1">
+                      <button
+                        type="button"
+                        onClick={handleDescribeDetail}
+                        className="btn btn-forest flex-1"
+                      >
                         AI describe
                       </button>
                     )}
-                    <button onClick={handleArchiveDetail} className="btn btn-brick flex-1">
+                    <button
+                      type="button"
+                      onClick={handleArchiveDetail}
+                      className="btn btn-brick flex-1"
+                    >
                       Archive skill
                     </button>
 
@@ -1764,6 +1898,7 @@ export function App() {
                         ))}
                       </select>
                       <button
+                        type="button"
                         onClick={handleMoveDetail}
                         disabled={!detailScope}
                         className="btn btn-quiet px-3 py-1"
@@ -1788,6 +1923,7 @@ export function App() {
                   </p>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setDeployOpen(false)}
                   className="p-1 rounded hover:bg-row-alt text-ink-quiet cursor-pointer"
                 >
@@ -1808,9 +1944,17 @@ export function App() {
                   <div className="rounded border border-brick/30 bg-brick-soft p-3 flex gap-2 text-brick text-xs">
                     <span className="action-stem action-stem--brick mt-1" />
                     <div className="flex-1">
-                      <h4 className="font-serif font-semibold text-sm mb-1">Couldn't load deploy preview</h4>
-                      <p className="text-ink-secondary mb-2">The dry-run failed. Retry to try again.</p>
-                      <button type="button" className="btn btn-primary py-1 px-3" onClick={openDeployReview}>
+                      <h4 className="font-serif font-semibold text-sm mb-1">
+                        Couldn't load deploy preview
+                      </h4>
+                      <p className="text-ink-secondary mb-2">
+                        The dry-run failed. Retry to try again.
+                      </p>
+                      <button
+                        type="button"
+                        className="btn btn-primary py-1 px-3"
+                        onClick={openDeployReview}
+                      >
                         Retry
                       </button>
                     </div>
@@ -1844,7 +1988,9 @@ export function App() {
                         ) : (
                           syncReport.created.map((s) => (
                             <div key={s} className="deploy-line">
-                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-name text-[12px]">
+                                {s.split("/").pop() ?? s}
+                              </span>
                               <div className="deploy-line__meta">
                                 <span className="skill-path" title={s}>
                                   {s}
@@ -1865,7 +2011,9 @@ export function App() {
                         ) : (
                           syncReport.pruned.map((s) => (
                             <div key={s} className="deploy-line">
-                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-name text-[12px]">
+                                {s.split("/").pop() ?? s}
+                              </span>
                               <div className="deploy-line__meta">
                                 <span className="skill-path" title={s}>
                                   {s}
@@ -1887,7 +2035,9 @@ export function App() {
                           <>
                             {syncReport.fixed.map((s) => (
                               <div key={`fix-${s}`} className="deploy-line">
-                                <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                                <span className="skill-name text-[12px]">
+                                  {s.split("/").pop() ?? s}
+                                </span>
                                 <div className="text-ink-quiet font-mono text-[10px]" title={s}>
                                   dry-run correction · {s}
                                 </div>
@@ -1951,7 +2101,11 @@ export function App() {
                     syncReport.fixed.length === 0) ? (
                     <p className="text-[10px] text-ink-quiet text-center">Nothing to deploy</p>
                   ) : null}
-                  <button type="button" onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
+                  <button
+                    type="button"
+                    onClick={() => setDeployOpen(false)}
+                    className="btn btn-quiet w-full"
+                  >
                     Cancel
                   </button>
                 </div>
@@ -1967,7 +2121,9 @@ export function App() {
               </h3>
 
               <div className="flex-1 flex flex-col gap-3">
-                {recommendations.isLoading && <p className="text-xs text-ink-quiet">Loading health analysis...</p>}
+                {recommendations.isLoading && (
+                  <p className="text-xs text-ink-quiet">Loading health analysis...</p>
+                )}
 
                 {recommendations.isSuccess && rotRecommendations.length === 0 && (
                   <div className="text-center py-8 text-ink-quiet text-xs italic">
@@ -1983,10 +2139,14 @@ export function App() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.2 bg-amber-soft text-amber border border-amber/30 rounded">
-                          {rec.kind === "inbox-triage" ? "INBOX TRIAGE" : rec.kind.replace("-", " ")}
+                          {rec.kind === "inbox-triage"
+                            ? "INBOX TRIAGE"
+                            : rec.kind.replace("-", " ")}
                         </span>
                       </div>
-                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">{rec.title}</h4>
+                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">
+                        {rec.title}
+                      </h4>
                       <p className="text-ink-secondary leading-normal">{rec.detail}</p>
                       <p className="rot-whisper">{rotConsequenceWhisper(rec)}</p>
                       <div className="flex justify-end gap-2 pt-1 border-t border-rule/30">
@@ -2017,18 +2177,26 @@ export function App() {
                   {triageLoadState === "loading"
                     ? "Loading seedlings…"
                     : triageLoadState === "populated"
-                      ? `${Math.max(1, Math.max(triageSessionN, awaitingCount) - seedlings.length + 1)} of ${Math.max(triageSessionN, awaitingCount)} remaining`
+                      ? `${triagePosition} of ${triageTotal} remaining`
                       : triageLoadState === "failed"
-                        ? `${awaitingCount > 0 ? awaitingCount + " awaiting" : "load failed"}`
+                        ? `${awaitingCount > 0 ? `${awaitingCount} awaiting` : "load failed"}`
                         : "0 remaining"}
                 </span>
               </div>
               {triageLoadState === "populated" && seedlings.length > 0 && (
                 <div className="px-3 py-2 border-b border-rule flex flex-wrap gap-2 bg-plate-raised">
-                  <button type="button" className="btn btn-quiet text-[11px]" onClick={bulkKeepSuggested}>
+                  <button
+                    type="button"
+                    className="btn btn-quiet text-[11px]"
+                    onClick={bulkKeepSuggested}
+                  >
                     Keep all suggested
                   </button>
-                  <button type="button" className="btn btn-quiet text-[11px]" onClick={bulkDiscardObvious}>
+                  <button
+                    type="button"
+                    className="btn btn-quiet text-[11px]"
+                    onClick={bulkDiscardObvious}
+                  >
                     Discard obvious duplicates
                   </button>
                 </div>
@@ -2042,10 +2210,11 @@ export function App() {
                   </div>
                 )}
                 {seedlings.map((s, idx) => (
-                  <div
+                  <button
+                    type="button"
                     key={s.path}
                     onClick={() => setActiveTriageIndex(idx)}
-                    className={`p-2.5 text-xs cursor-pointer ${
+                    className={`w-full text-left p-2.5 text-xs cursor-pointer ${
                       activeTriageIndex === idx
                         ? "bg-row-alt font-medium text-ink"
                         : "text-ink-secondary hover:bg-row-alt/40"
@@ -2058,7 +2227,7 @@ export function App() {
                     <div className="font-mono text-[10px] text-ink-quiet truncate" title={s.dir}>
                       {s.dir}
                     </div>
-                  </div>
+                  </button>
                 ))}
               </div>
             </div>
@@ -2075,7 +2244,9 @@ export function App() {
               {triageLoadState === "failed" && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-3">
                   <span className="action-stem action-stem--brick" />
-                  <h3 className="font-serif text-lg font-medium text-ink">Couldn't load seedlings</h3>
+                  <h3 className="font-serif text-lg font-medium text-ink">
+                    Couldn't load seedlings
+                  </h3>
                   <p className="text-sm text-ink-secondary max-w-sm">
                     The inbox may still have work. Retry loading seedlings, or return to the Garden.
                   </p>
@@ -2115,7 +2286,10 @@ export function App() {
                       <div className="skill-path mt-1" title={currentSeedling.path}>
                         {currentSeedling.path}
                       </div>
-                      <div className="font-mono text-[11px] text-ink-quiet mt-1" title={currentSeedling.dir}>
+                      <div
+                        className="font-mono text-[11px] text-ink-quiet mt-1"
+                        title={currentSeedling.dir}
+                      >
                         dir · {currentSeedling.dir}
                       </div>
                     </div>
@@ -2135,10 +2309,14 @@ export function App() {
                           Select an existing registry skill to merge this seedling path into.
                         </p>
                         <div>
-                          <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
+                          <label
+                            className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                            htmlFor="fld-target-registry-skill"
+                          >
                             target registry skill
                           </label>
                           <select
+                            id="fld-target-registry-skill"
                             value={triageMergeTarget}
                             onChange={(e) => setTriageMergeTarget(e.target.value)}
                             className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
@@ -2167,7 +2345,11 @@ export function App() {
                           >
                             Mark merge resolved
                           </button>
-                          <button type="button" onClick={() => setTriageMergeOpen(false)} className="btn btn-quiet">
+                          <button
+                            type="button"
+                            onClick={() => setTriageMergeOpen(false)}
+                            className="btn btn-quiet"
+                          >
                             Cancel
                           </button>
                         </div>
@@ -2179,10 +2361,14 @@ export function App() {
                         </h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
+                            <label
+                              className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-scope-location"
+                            >
                               scope location
                             </label>
                             <select
+                              id="fld-scope-location"
                               value={triageScope}
                               onChange={(e) => setTriageScope(e.target.value)}
                               className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
@@ -2196,10 +2382,14 @@ export function App() {
                             </select>
                           </div>
                           <div>
-                            <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">
+                            <label
+                              className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-active-tier"
+                            >
                               active tier
                             </label>
                             <select
+                              id="fld-active-tier"
                               value={triageTier}
                               onChange={(e) => setTriageTier(e.target.value as Tier)}
                               className="w-full bg-plate-raised border border-rule rounded px-2.5 py-1 text-xs min-h-[44px]"
@@ -2234,11 +2424,19 @@ export function App() {
                         Merge
                       </button>
                       {aiStatus.data?.configured && (
-                        <button type="button" onClick={runTriageSuggest} className="btn btn-quiet px-3">
+                        <button
+                          type="button"
+                          onClick={runTriageSuggest}
+                          className="btn btn-quiet px-3"
+                        >
                           AI Suggest
                         </button>
                       )}
-                      <button type="button" onClick={triageDiscard} className="btn btn-brick flex-1">
+                      <button
+                        type="button"
+                        onClick={triageDiscard}
+                        className="btn btn-brick flex-1"
+                      >
                         Discard
                       </button>
                     </div>
@@ -2260,14 +2458,30 @@ export function App() {
 
       {/* Z6 Search Overlay */}
       {searchOpen && (
-        <div className="search-backdrop" onClick={() => setSearchOpen(false)}>
-          <div className="ledger-plate search-plate" onClick={(e) => e.stopPropagation()}>
+        <div className="search-backdrop">
+          <button
+            type="button"
+            className="overlay-dismiss"
+            aria-label="Close search"
+            onClick={() => setSearchOpen(false)}
+          />
+          <div className="ledger-plate search-plate relative z-[1]" role="dialog" aria-modal="true">
             <div className="p-3 border-b border-rule bg-plate-raised flex items-center gap-3">
-              <svg className="w-4 h-4 text-ink-quiet flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              <svg
+                className="w-4 h-4 text-ink-quiet flex-shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <title>Search</title>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2.5}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
               </svg>
               <input
-                autoFocus
                 type="text"
                 placeholder="Find skill by name, description, scope or hash..."
                 value={searchQuery}
@@ -2288,7 +2502,8 @@ export function App() {
 
             <div className="flex-1 overflow-y-auto scroll-quiet divide-y divide-rule/40">
               {filteredSkills.slice(0, 15).map((skill) => (
-                <div
+                <button
+                  type="button"
                   key={skill.name}
                   onClick={() => {
                     setSearchOpen(false);
@@ -2297,7 +2512,7 @@ export function App() {
                     setActiveMode("garden");
                     setSelectedSkillName(skill.name);
                   }}
-                  className="p-3 hover:bg-row-alt/40 cursor-pointer flex justify-between items-start gap-4 text-xs"
+                  className="w-full text-left p-3 hover:bg-row-alt/40 cursor-pointer flex justify-between items-start gap-4 text-xs border-0 bg-transparent"
                 >
                   <div className="min-w-0 flex-1">
                     <span className="skill-name text-[13px] font-semibold">{skill.name}</span>
@@ -2306,7 +2521,7 @@ export function App() {
                     </span>
                   </div>
                   <span className="chip uppercase text-[9px] flex-shrink-0">{skill.tier}</span>
-                </div>
+                </button>
               ))}
 
               {filteredSkills.length === 0 && (
@@ -2321,18 +2536,38 @@ export function App() {
 
       {/* Filter · Lens half-height bottom sheet (phone) */}
       {filterSheetOpen && (
-        <div className="sheet-overlay md:hidden" onClick={() => setFilterSheetOpen(false)}>
-          <div className="sheet-panel sheet-panel--half" onClick={(e) => e.stopPropagation()}>
+        <div className="sheet-overlay md:hidden">
+          <button
+            type="button"
+            className="overlay-dismiss"
+            aria-label="Close filters"
+            onClick={() => setFilterSheetOpen(false)}
+          />
+          <div
+            className="sheet-panel sheet-panel--half relative z-[1]"
+            role="dialog"
+            aria-modal="true"
+          >
             <div className="sheet-header">
               <h3 className="font-serif text-base font-semibold">Filter · Lens</h3>
-              <button type="button" className="press-icon" onClick={() => setFilterSheetOpen(false)}>
+              <button
+                type="button"
+                className="press-icon"
+                onClick={() => setFilterSheetOpen(false)}
+              >
                 Close
               </button>
             </div>
             <div className="sheet-body flex flex-col gap-4">
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">scope</label>
+                <label
+                  className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                  htmlFor="fld-scope"
+                >
+                  scope
+                </label>
                 <select
+                  id="fld-scope"
                   value={scopeFilter}
                   onChange={(e) => setScopeFilter(e.target.value)}
                   className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
@@ -2346,8 +2581,14 @@ export function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">tier</label>
+                <label
+                  className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                  htmlFor="fld-tier"
+                >
+                  tier
+                </label>
                 <select
+                  id="fld-tier"
                   value={tierFilter}
                   onChange={(e) => setTierFilter(e.target.value as Tier | "all")}
                   className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
@@ -2359,10 +2600,18 @@ export function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1">sort</label>
+                <label
+                  className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-1"
+                  htmlFor="fld-sort"
+                >
+                  sort
+                </label>
                 <select
+                  id="fld-sort"
                   value={sortField}
-                  onChange={(e) => setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")}
+                  onChange={(e) =>
+                    setSortField(e.target.value as "name" | "cost" | "exposure" | "tier")
+                  }
                   className="w-full bg-plate-raised border border-rule rounded px-2.5 py-2 text-xs min-h-[44px]"
                 >
                   <option value="name">name</option>
@@ -2372,25 +2621,32 @@ export function App() {
                 </select>
               </div>
               <div>
-                <label className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-2">
+                <label
+                  className="block text-[10px] font-mono uppercase font-bold text-ink-quiet mb-2"
+                  htmlFor="fld-perspective"
+                >
                   perspective
                 </label>
                 <div className="flex gap-2">
                   {(["garden", "cost", "exposure"] as Perspective[]).map((p) => (
                     <button
-                      key={p}
                       type="button"
+                      key={p}
                       className={`btn flex-1 ${perspective === p ? "btn-primary" : "btn-quiet"}`}
                       onClick={() => setPerspective(p)}
                     >
-                      {p[0]!.toUpperCase() + p.slice(1)}
+                      {(p[0] ?? "").toUpperCase() + p.slice(1)}
                     </button>
                   ))}
                 </div>
               </div>
             </div>
             <div className="sheet-sticky-actions">
-              <button type="button" className="btn btn-primary w-full" onClick={() => setFilterSheetOpen(false)}>
+              <button
+                type="button"
+                className="btn btn-primary w-full"
+                onClick={() => setFilterSheetOpen(false)}
+              >
                 Apply
               </button>
             </div>
@@ -2456,13 +2712,13 @@ export function App() {
         <button
           type="button"
           className="thumb-dock__slot"
-          data-hot={rotFindingsCount > 0}
+          data-hot={rotBadgeCount > 0}
           data-active={activeMode === "rot"}
           onClick={openRot}
         >
           <span className="thumb-dock__label">
-            {rotFindingsCount > 0 && <span className="action-stem action-stem--amber" />}
-            {rotFindingsCount > 0 ? `Rot ${rotFindingsCount}` : "Rot"}
+            {rotBadgeCount > 0 && <span className="action-stem action-stem--amber" />}
+            {rotBadgeCount > 0 ? `Rot ${rotBadgeCount}` : "Rot"}
           </span>
         </button>
         <button
@@ -2478,13 +2734,27 @@ export function App() {
       {/* Z12 Mobile full sheets: detail, deploy, rot */}
       <div className="md:hidden">
         {selectedSkillName && !deployOpen && (
-          <div className="sheet-overlay" onClick={() => setSelectedSkillName(null)}>
-            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-overlay">
+            <button
+              type="button"
+              className="overlay-dismiss"
+              aria-label="Close skill detail"
+              onClick={() => setSelectedSkillName(null)}
+            />
+            <div
+              className="sheet-panel sheet-panel--full relative z-[1]"
+              role="dialog"
+              aria-modal="true"
+            >
               <div className="sheet-header">
                 <h3 className="skill-name font-serif text-base font-semibold text-ink min-w-0 flex-1">
                   {selectedSkillName}
                 </h3>
-                <button type="button" onClick={() => setSelectedSkillName(null)} className="press-icon">
+                <button
+                  type="button"
+                  onClick={() => setSelectedSkillName(null)}
+                  className="press-icon"
+                >
                   Close
                 </button>
               </div>
@@ -2501,13 +2771,25 @@ export function App() {
               </div>
               {selectedSkillQuery.data && (
                 <div className="sheet-sticky-actions">
-                  <button type="button" onClick={handleSaveDetail} className="btn btn-primary flex-1">
+                  <button
+                    type="button"
+                    onClick={handleSaveDetail}
+                    className="btn btn-primary flex-1"
+                  >
                     Save
                   </button>
-                  <button type="button" onClick={() => setSelectedSkillName(null)} className="btn btn-quiet flex-1">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedSkillName(null)}
+                    className="btn btn-quiet flex-1"
+                  >
                     Cancel
                   </button>
-                  <button type="button" onClick={handleArchiveDetail} className="btn btn-brick flex-1">
+                  <button
+                    type="button"
+                    onClick={handleArchiveDetail}
+                    className="btn btn-brick flex-1"
+                  >
                     Archive
                   </button>
                 </div>
@@ -2517,8 +2799,18 @@ export function App() {
         )}
 
         {deployOpen && (
-          <div className="sheet-overlay" onClick={() => setDeployOpen(false)}>
-            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-overlay">
+            <button
+              type="button"
+              className="overlay-dismiss"
+              aria-label="Close deploy review"
+              onClick={() => setDeployOpen(false)}
+            />
+            <div
+              className="sheet-panel sheet-panel--full relative z-[1]"
+              role="dialog"
+              aria-modal="true"
+            >
               <div className="sheet-header">
                 <div className="min-w-0">
                   <h3 className="font-serif text-base font-semibold text-ink">Deploy review</h3>
@@ -2539,7 +2831,9 @@ export function App() {
                 )}
                 {deployError && !syncReport && (
                   <div className="rounded border border-brick/30 bg-brick-soft p-3 text-brick text-xs">
-                    <h4 className="font-serif font-semibold text-sm mb-1">Couldn't load deploy preview</h4>
+                    <h4 className="font-serif font-semibold text-sm mb-1">
+                      Couldn't load deploy preview
+                    </h4>
                     <button type="button" className="btn btn-primary" onClick={openDeployReview}>
                       Retry
                     </button>
@@ -2571,7 +2865,9 @@ export function App() {
                         ) : (
                           syncReport.created.map((s) => (
                             <div key={s} className="deploy-line">
-                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-name text-[12px]">
+                                {s.split("/").pop() ?? s}
+                              </span>
                               <span className="skill-path" title={s}>
                                 {s}
                               </span>
@@ -2588,7 +2884,9 @@ export function App() {
                         ) : (
                           syncReport.pruned.map((s) => (
                             <div key={s} className="deploy-line">
-                              <span className="skill-name text-[12px]">{s.split("/").pop() ?? s}</span>
+                              <span className="skill-name text-[12px]">
+                                {s.split("/").pop() ?? s}
+                              </span>
                               <span className="skill-path" title={s}>
                                 {s}
                               </span>
@@ -2601,7 +2899,9 @@ export function App() {
                 )}
               </div>
               <div className="sheet-sticky-actions flex-col">
-                {deployConfirmLine && <div className="deploy-confirm w-full">{deployConfirmLine}</div>}
+                {deployConfirmLine && (
+                  <div className="deploy-confirm w-full">{deployConfirmLine}</div>
+                )}
                 <button
                   type="button"
                   onClick={runSyncApply}
@@ -2615,7 +2915,11 @@ export function App() {
                 >
                   Commit sync
                 </button>
-                <button type="button" onClick={() => setDeployOpen(false)} className="btn btn-quiet w-full">
+                <button
+                  type="button"
+                  onClick={() => setDeployOpen(false)}
+                  className="btn btn-quiet w-full"
+                >
                   Cancel
                 </button>
               </div>
@@ -2624,16 +2928,32 @@ export function App() {
         )}
 
         {activeMode === "rot" && !deployOpen && !selectedSkillName && (
-          <div className="sheet-overlay" onClick={() => setActiveMode("garden")}>
-            <div className="sheet-panel sheet-panel--full" onClick={(e) => e.stopPropagation()}>
+          <div className="sheet-overlay">
+            <button
+              type="button"
+              className="overlay-dismiss"
+              aria-label="Close rot recommendations"
+              onClick={() => setActiveMode("garden")}
+            />
+            <div
+              className="sheet-panel sheet-panel--full relative z-[1]"
+              role="dialog"
+              aria-modal="true"
+            >
               <div className="sheet-header">
                 <h3 className="font-serif text-base font-semibold text-ink">Rot Recommendations</h3>
-                <button type="button" onClick={() => setActiveMode("garden")} className="press-icon">
+                <button
+                  type="button"
+                  onClick={() => setActiveMode("garden")}
+                  className="press-icon"
+                >
                   Close
                 </button>
               </div>
               <div className="sheet-body flex flex-col gap-3">
-                {recommendations.isLoading && <p className="text-xs text-ink-quiet">Loading health analysis...</p>}
+                {recommendations.isLoading && (
+                  <p className="text-xs text-ink-quiet">Loading health analysis...</p>
+                )}
                 {recommendations.isSuccess && rotRecommendations.length === 0 && (
                   <div className="text-center py-8 text-ink-quiet text-xs italic">
                     Garden status healthy. No rot detected.
@@ -2648,7 +2968,9 @@ export function App() {
                       <span className="font-mono text-[9px] uppercase font-bold px-1.5 py-0.2 bg-amber-soft text-amber border border-amber/30 rounded self-start">
                         {rec.kind === "inbox-triage" ? "INBOX TRIAGE" : rec.kind.replace("-", " ")}
                       </span>
-                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">{rec.title}</h4>
+                      <h4 className="font-serif font-medium text-ink text-[13px] skill-name">
+                        {rec.title}
+                      </h4>
                       <p className="text-ink-secondary leading-normal">{rec.detail}</p>
                       <p className="rot-whisper">{rotConsequenceWhisper(rec)}</p>
                       <button

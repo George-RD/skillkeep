@@ -1,13 +1,13 @@
 {
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
-  "phase": "codify",
+  "phase": "finalize",
   "iteration": 4,
-  "agent": "DesignAgent + Builder (parallel)",
-  "note": "SHIP at wavg 7.67 — codifying design-dna.md + tokens.css",
+  "agent": "Landing",
+  "note": "Design system codified. Landing: orphan cleanup, a11y lint, residual UX fixes, CI green",
   "log": [
-    "iteration 4: DQ 8 / OR 8 / CR 7 / FN 7, wavg 7.67, zero gate failures → SHIP",
-    "walkthroughs 6/6 desktop and phone",
-    "codify agents dispatched (DNA + tokens)"
+    "SHIP: wavg 7.67 · design-dna.md + tokens.css + skillkeep-design skill written",
+    "report.md written",
+    "landing agent dispatched (cleanup + CI gate)"
   ]
 }

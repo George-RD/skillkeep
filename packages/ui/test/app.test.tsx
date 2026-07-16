@@ -1,36 +1,13 @@
 import { describe, expect, it } from "bun:test";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderToStaticMarkup } from "react-dom/server";
-import { App, visibleNav } from "../src/App";
+import { App } from "../src/App";
 import type { Health } from "../src/api/types";
 import { ToastProvider } from "../src/components/Toast";
 
-describe("visibleNav", () => {
-  it("shows Detect/Sync and hides Devices in agent mode", () => {
-    const ids = visibleNav("agent").map((n) => n.id);
-    expect(ids).toContain("detect");
-    expect(ids).toContain("sync");
-    expect(ids).not.toContain("devices");
-  });
-
-  it("hides Detect/Sync and shows Devices in hub mode", () => {
-    const ids = visibleNav("hub").map((n) => n.id);
-    expect(ids).not.toContain("detect");
-    expect(ids).not.toContain("sync");
-    expect(ids).toContain("devices");
-  });
-
-  it("treats an undefined mode (health not loaded yet, or an older daemon) as agent mode", () => {
-    const ids = visibleNav(undefined).map((n) => n.id);
-    expect(ids).toContain("detect");
-    expect(ids).toContain("sync");
-    expect(ids).not.toContain("devices");
-  });
-});
-
-function renderApp(health: Health): string {
+function renderApp(health: Health | undefined): string {
   const qc = new QueryClient();
-  qc.setQueryData(["health"], health);
+  if (health) qc.setQueryData(["health"], health);
   return renderToStaticMarkup(
     <QueryClientProvider client={qc}>
       <ToastProvider>
@@ -40,18 +17,35 @@ function renderApp(health: Health): string {
   );
 }
 
-describe("App nav", () => {
-  it("shows Detect and Sync, hides Devices, in agent mode", () => {
+describe("App mode chip", () => {
+  it("renders the agent mode chip in agent mode", () => {
     const html = renderApp({ ok: true, version: "0.1.0", mode: "agent" });
-    expect(html).toContain(">Detect<");
-    expect(html).toContain(">Sync<");
+    expect(html).toContain("agent");
+    // New UI has no Detect/Sync/Devices nav — those screens are gone.
+    expect(html).not.toContain(">Detect<");
+    expect(html).not.toContain(">Sync<");
     expect(html).not.toContain(">Devices<");
   });
 
-  it("hides Detect and Sync, shows Devices, in hub mode", () => {
+  it("renders the hub mode chip in hub mode", () => {
     const html = renderApp({ ok: true, version: "0.1.0", mode: "hub" });
+    expect(html).toContain("hub");
     expect(html).not.toContain(">Detect<");
     expect(html).not.toContain(">Sync<");
-    expect(html).toContain(">Devices<");
+  });
+
+  it("defaults the mode chip to agent when health has not loaded", () => {
+    const html = renderApp(undefined);
+    expect(html).toContain("agent");
+  });
+});
+
+describe("App chrome", () => {
+  it("renders the phone instrument dock with triage/deploy/rot/find", () => {
+    const html = renderApp({ ok: true, version: "0.1.0", mode: "agent" });
+    expect(html).toContain("Phone instrument dock");
+    expect(html).toContain("Deploy");
+    expect(html).toContain("Rot");
+    expect(html).toContain("Find");
   });
 });

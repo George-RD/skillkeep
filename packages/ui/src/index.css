@@ -401,6 +401,32 @@ body::before {
   justify-content: center;
   overflow-x: hidden;
 }
+/* Full-bleed dismiss control behind dialog panels (a11y: real button, no nested interactive) */
+.overlay-dismiss {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: default;
+}
+/* Full-bleed garden-row detail trigger behind content; tier-seg keeps pointer-events */
+.garden-row-trigger {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.garden-row-trigger:focus-visible {
+  outline: 2px solid var(--color-forest);
+  outline-offset: -2px;
+}
 .sheet-panel {
   width: 100%;
   max-width: 100vw;
