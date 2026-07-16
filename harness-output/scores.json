@@ -1,0 +1,146 @@
+{
+  "iterations": [
+    {
+      "iteration": 1,
+      "gateResults": {
+        "viewportBoundary1440": "not-evaluated",
+        "viewportBoundary390": "not-evaluated",
+        "textReadability": "pass",
+        "interactionCompleteness": "fail",
+        "overflowStressTest": "not-evaluated"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 7,
+            "functionality": 2
+          },
+          "issues": [
+            "triage modal shows '1 of 0' and 'Triage Inbox Clear' despite 65 seedlings recommendation"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 5,
+            "originality": 5,
+            "craft": 4,
+            "functionality": 1
+          },
+          "issues": [
+            "dry-run preview and commit controls are entirely missing or non-functional"
+          ]
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 4,
+        "functionality": 1
+      },
+      "weightedAverage": 6.2,
+      "decision": "REFINE",
+      "actualViewports": [
+        800,
+        647
+      ],
+      "gateFailures": [
+        "triage seedlings modal is non-functional ('1 of 0', 'Triage Inbox Clear')",
+        "header deploy chip is non-interactive"
+      ],
+      "keyIssues": [
+        "seedlings triage modal fails to load seedlings ('1 of 0' and 'Triage Inbox Clear')",
+        "deploy/sync dry-run preview and commit control are missing or non-functional",
+        "state-changing actions (triage, tier edits, recommendations resolves) are not reversible (no undo)"
+      ],
+      "uxWalkthrough": {
+        "tasksAttempted": 6,
+        "tasksCompleted": 4,
+        "notes": [
+          "Triage seedling: Attempted. Opened modal but inbox was clear ('1 of 0'), could not triage. Failed.",
+          "Change skill tier in situ: Attempted. Changed 1password from rooted to climbing. Budget updated to 5.6k tokens. Completed.",
+          "Use cost/exposure lens to find dormant/stale skill: Attempted. Cost lens showed holocron-brand as stale, unused. Opened details. Completed.",
+          "Use global find to locate a skill by name fragment: Attempted. Searched '1password', clicked match, opened details in sidebar. Completed.",
+          "Run a deploy/sync dry-run preview: Attempted. Clicked deploy chip in header; no modal opened, no preview. Failed.",
+          "Resolve one rot-feed recommendation: Attempted. Clicked Resolve on 'archive-session-handoff'. Card was removed from list. Completed."
+        ]
+      }
+    }
+  ],
+  "bestIteration": 1
+}

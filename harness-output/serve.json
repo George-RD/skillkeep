@@ -1,0 +1,10 @@
+{
+  "kind": "live-daemon",
+  "url": "http://127.0.0.1:4519/",
+  "port": 4519,
+  "auth": "append ?token=$(cat /tmp/skillkeep-studio-data/daemon.token) to the URL on first navigation",
+  "tokenFile": "/tmp/skillkeep-studio-data/daemon.token",
+  "rebuild": "cd /Users/george/repos/skillkeep/packages/ui && bun run build",
+  "process": "hub-managed process 'studio-daemon' (bun apps/cli/src/main.ts daemon --data /tmp/skillkeep-studio-data --port 4519, HOME=/tmp/skillkeep-studio-home)",
+  "notes": "Sandboxed daemon: data dir, registry root, client dirs, and sync targets all live under /tmp/skillkeep-studio-*. Site source is packages/ui in the repo; the daemon serves packages/ui/dist, so run the rebuild command after every source change."
+}
