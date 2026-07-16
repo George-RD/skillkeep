@@ -969,6 +969,54 @@ describe("DELETE /api/inbox", () => {
       });
     }
   });
+
+  test("422s for a symlink whose realpath escapes the inbox", async () => {
+    const inboxDir = path.join(tmpDir, "inbox-symlink");
+    fs.mkdirSync(inboxDir, { recursive: true });
+    const outside = path.join(tmpDir, "symlink-escape-target");
+    makeSkillDir(outside, "escape-target", "must not be deleted via symlink");
+    const escapeLink = path.join(inboxDir, "escape");
+    fs.symlinkSync(outside, escapeLink, "dir");
+
+    const before = await get("/api/settings");
+    const settings = (await before.json()) as Record<string, unknown>;
+    await send("PUT", "/api/settings", {
+      ...settings,
+      registryRoot,
+      repoRoots: [reposRoot],
+      globalClients: settings.globalClients ?? [],
+      repoClients: settings.repoClients ?? [],
+      linkMode: "symlink",
+      inboxDirs: [inboxDir],
+      hub: null,
+      ai: null,
+    });
+
+    try {
+      const res = await send("DELETE", `/api/inbox?path=${encodeURIComponent(escapeLink)}`, {});
+      expect(res.status).toBe(422);
+      // Outside target must survive — realpath containment is the whole point.
+      expect(fs.existsSync(outside)).toBe(true);
+      expect(fs.existsSync(path.join(outside, "SKILL.md"))).toBe(true);
+    } finally {
+      await send("PUT", "/api/settings", {
+        ...settings,
+        registryRoot,
+        repoRoots: [reposRoot],
+        globalClients: settings.globalClients ?? [],
+        repoClients: settings.repoClients ?? [],
+        linkMode: "symlink",
+        inboxDirs: [],
+        hub: null,
+        ai: null,
+      });
+    }
+  });
+
+  test("requires auth (401 without bearer)", async () => {
+    const res = await send("DELETE", "/api/inbox?path=/tmp/x", {}, { auth: false });
+    expect(res.status).toBe(401);
+  });
 });
 
 describe("POST /api/adopt inbox path", () => {

@@ -8,7 +8,7 @@ import {
   hasTauriGlobal,
   setAiKey,
 } from "./api/client";
-import type { InboxSkill, Recommendation, SettingsInput, SyncReport, UsageRow } from "./api/types";
+import type { InboxSkill, Recommendation, SettingsInput, SyncReport } from "./api/types";
 import { StringListEditor } from "./components/ListEditor";
 import { useToast } from "./components/Toast";
 import {
@@ -35,6 +35,7 @@ import {
   useSkill,
   useStatus,
   useSyncMutation,
+  useUsage,
 } from "./hooks/api";
 import type { Mode, Perspective, Tier } from "./lib/garden";
 import {
@@ -51,6 +52,7 @@ import {
   usageMap,
   usageWindow,
 } from "./lib/garden";
+import { buildAdoptUndoRequeue, buildBulkKeepUndoAction } from "./lib/undo";
 
 interface UndoAction {
   type: "tier" | "triage_adopt" | "triage_discard" | "triage_merge" | "archive" | "move";
@@ -63,6 +65,8 @@ interface UndoAction {
   seedling?: InboxSkill;
   /** Optional multi-path restore for bulk session dismissals. */
   batchPaths?: string[];
+  /** Full seedling snapshots for bulk keep undo re-queue. */
+  seedlings?: InboxSkill[];
 }
 
 export function App() {
@@ -82,20 +86,10 @@ export function App() {
   useDevices(health.data?.mode === "hub");
 
   const windowDates = useMemo(() => usageWindow(), []);
-  // Usage is read from the React Query cache only while the daemon is live.
-  // No conditional hooks — queryClient and health are already resolved above.
-  const healthOk = health.data?.ok ?? false;
-  const usageQuery = healthOk
-    ? (queryClient.getQueryData(["usage", "skill", windowDates.from, windowDates.to]) as
-        | { rows: UsageRow[] }
-        | undefined)
-    : undefined;
-  const activeUsageQuery = healthOk
-    ? (queryClient.getQueryCache().findAll({ queryKey: ["usage"] })[0]?.state?.data as
-        | { rows: UsageRow[] }
-        | undefined)
-    : undefined;
-  const usageRows = usageQuery?.rows ?? activeUsageQuery?.rows ?? [];
+  // Fetch skill usage so the cost/exposure lens has real data in a fresh session.
+  // Cache-peek alone stays empty until something else warms the key.
+  const usageQuery = useUsage("skill", windowDates.from, windowDates.to);
+  const usageRows = usageQuery.data?.rows ?? [];
   const usageBySkill = useMemo(() => usageMap(usageRows), [usageRows]);
 
   // Mutations
@@ -415,17 +409,8 @@ export function App() {
           queryClient.invalidateQueries({ queryKey: ["scan"] });
           queryClient.invalidateQueries({ queryKey: ["registry"] });
           queryClient.invalidateQueries({ queryKey: queryKeys.inbox });
-          // Prefer full seedling snapshot; fall back to path/name for single undos.
-          const toRequeue: InboxSkill[] = [];
-          if (action.seedling) {
-            toRequeue.push(action.seedling);
-          } else if (action.prevScope) {
-            toRequeue.push({
-              name: action.name,
-              path: action.prevScope,
-              dir: action.prevScope.replace(/\/[^/]+$/, "") || action.prevScope,
-            });
-          }
+          // Prefer full seedling snapshot(s); fall back to path/name for single undos.
+          const toRequeue = buildAdoptUndoRequeue(action);
           if (toRequeue.length > 0) {
             setSessionSeedlings((prev) => {
               const paths = new Set(prev.map((s) => s.path));
@@ -688,16 +673,8 @@ export function App() {
             : `Kept ${okNames.length} seedlings (global · climbing)`,
           fail > 0 ? "error" : "success",
         );
-        if (okNames.length > 0) {
-          const last = okNames[okNames.length - 1];
-          if (last)
-            triggerUndoAction({
-              type: "triage_adopt",
-              name: last,
-              label: `Kept ${okNames.length} seedlings`,
-              batchPaths: okNames, // names for archive undo
-            });
-        }
+        const undo = buildBulkKeepUndoAction(batch, okNames);
+        if (undo) triggerUndoAction(undo);
       },
       onError: (e) => toast.show(`Bulk keep failed: ${errorMessage(e)}`, "error"),
     });
@@ -782,6 +759,7 @@ export function App() {
             created: [],
             pruned: [],
             fixed: [],
+            configReminders: [],
             errors: rep.errors ?? [],
           });
           setSyncPreviewed(true);
@@ -1722,24 +1700,33 @@ export function App() {
                           </div>
 
                           <div className="md:col-span-2">
-                            <label
-                              className="block text-xs font-bold text-ink-quiet mb-1"
-                              htmlFor="fld-api-key"
-                            >
-                              API Key
-                            </label>
-                            <input
-                              id="fld-api-key"
-                              type="password"
-                              className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
-                              placeholder="Key saved securely client-side in keychain"
-                              value={aiKeyVal}
-                              onChange={(e) => {
-                                setAiKeyVal(e.target.value);
-                                if (settingsForm.ai)
-                                  void setAiKey(settingsForm.ai.provider, e.target.value);
-                              }}
-                            />
+                            {hasTauriGlobal() ? (
+                              <>
+                                <label
+                                  className="block text-xs font-bold text-ink-quiet mb-1"
+                                  htmlFor="fld-api-key"
+                                >
+                                  API Key
+                                </label>
+                                <input
+                                  id="fld-api-key"
+                                  type="password"
+                                  className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
+                                  placeholder="Key saved securely client-side in keychain"
+                                  value={aiKeyVal}
+                                  onChange={(e) => {
+                                    setAiKeyVal(e.target.value);
+                                    if (settingsForm.ai)
+                                      void setAiKey(settingsForm.ai.provider, e.target.value);
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <p className="text-xs text-ink-quiet">
+                                Set the API key from the desktop app, or via the SKILLKEEP_AI_KEY
+                                environment variable.
+                              </p>
+                            )}
                           </div>
                         </div>
                       )}
@@ -1751,6 +1738,98 @@ export function App() {
                       Sync with Hub
                     </h3>
                     <div className="flex flex-col gap-3 bg-plate p-4 border border-rule rounded">
+                      <label className="flex items-center gap-2 text-sm font-semibold select-none cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={settingsForm.hub !== null}
+                          onChange={(e) => {
+                            setSettingsForm({
+                              ...settingsForm,
+                              hub: e.target.checked
+                                ? (settingsForm.hub ?? { url: "", token: "", device: "" })
+                                : null,
+                            });
+                          }}
+                        />
+                        Enable hub sync
+                      </label>
+                      {settingsForm.hub !== null && (
+                        <div className="flex flex-col gap-3 pl-6">
+                          <div>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-hub-url"
+                            >
+                              URL
+                            </label>
+                            <input
+                              id="fld-hub-url"
+                              className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
+                              value={settingsForm.hub.url}
+                              placeholder="https://hub.example.com"
+                              onChange={(e) =>
+                                setSettingsForm({
+                                  ...settingsForm,
+                                  hub: {
+                                    url: e.target.value,
+                                    token: settingsForm.hub?.token ?? "",
+                                    device: settingsForm.hub?.device ?? "",
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-hub-token"
+                            >
+                              Token
+                            </label>
+                            <input
+                              id="fld-hub-token"
+                              type="password"
+                              className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
+                              value={settingsForm.hub.token}
+                              placeholder="Leave blank to keep the current token"
+                              onChange={(e) =>
+                                setSettingsForm({
+                                  ...settingsForm,
+                                  hub: {
+                                    url: settingsForm.hub?.url ?? "",
+                                    token: e.target.value,
+                                    device: settingsForm.hub?.device ?? "",
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+                          <div>
+                            <label
+                              className="block text-xs font-bold text-ink-quiet mb-1"
+                              htmlFor="fld-hub-device"
+                            >
+                              Device name
+                            </label>
+                            <input
+                              id="fld-hub-device"
+                              className="w-full rounded border border-rule bg-plate-raised px-2 py-1 text-sm"
+                              value={settingsForm.hub.device}
+                              placeholder="e.g. laptop"
+                              onChange={(e) =>
+                                setSettingsForm({
+                                  ...settingsForm,
+                                  hub: {
+                                    url: settingsForm.hub?.url ?? "",
+                                    token: settingsForm.hub?.token ?? "",
+                                    device: e.target.value,
+                                  },
+                                })
+                              }
+                            />
+                          </div>
+                        </div>
+                      )}
                       <div className="flex gap-2">
                         <button type="button" onClick={handleHubPush} className="btn btn-quiet">
                           Push registry to Hub
