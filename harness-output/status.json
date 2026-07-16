@@ -1,13 +1,14 @@
 {
   "run": "skillkeep-ui-overhaul",
   "mode": "overhaul",
-  "phase": "implement",
+  "phase": "evaluate",
   "iteration": 4,
-  "agent": "Builder",
-  "note": "Fidelity fix: dock clearance for sheet actions, sheet stacking, wordmark press",
+  "agent": "Evaluator",
+  "note": "Scoring iteration 4 — SHIP candidate if gates clear",
   "log": [
-    "iteration 3: wavg 7.0, overflow FIXED, new gate fail: triage actions under dock",
-    "decision: REFINE (deviation logged — convergence-SHIP blocked by gate failure)",
-    "builder-only iteration 4: design contract unchanged (description 3)"
+    "build 4: dock/sheet clearance (9px gap), 10/10 stack transitions, 44px wordmark",
+    "iteration 4 committed (7bd2f70)",
+    "sandbox reset to pristine",
+    "evaluator dispatched (iteration 4)"
   ]
 }

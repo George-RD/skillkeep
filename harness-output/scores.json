@@ -509,7 +509,249 @@
         }
       },
       "decisionNote": "Deviation from convergence-SHIP rule: hard gate failure (phone triage decide row under dock) violates sprint contract; fidelity fix iteration, design contract unchanged."
+    },
+    {
+      "iteration": 4,
+      "gateResults": {
+        "viewportBoundary1440": "pass",
+        "viewportBoundary390": "pass",
+        "textReadability": "pass",
+        "interactionCompleteness": "pass",
+        "overflowStressTest": "pass"
+      },
+      "zones": [
+        {
+          "name": "Z1 \u2014 Main shell & status indicators",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 9
+          }
+        },
+        {
+          "name": "Z2 \u2014 Garden master list",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z3 \u2014 Skill object view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z4 \u2014 Seedlings triage flow",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "progress copy still reads '1 of 65 remaining' at queue head",
+            "bulk Keep all suggested vs primary Keep labeling can confuse first glance"
+          ]
+        },
+        {
+          "name": "Z5 \u2014 Cost/Exposure perspective controls",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z6 \u2014 Global search overlay",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          },
+          "issues": [
+            "desktop search control is an unlabeled glyph"
+          ]
+        },
+        {
+          "name": "Z7 \u2014 Deployment preview and review area",
+          "scores": {
+            "designQuality": 8,
+            "originality": 7,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z8 \u2014 Rot/recommendations feed",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone dock Rot badge cold-load count-sync failure (326 vs ~35)"
+          ]
+        },
+        {
+          "name": "Z9 \u2014 Skill detail and content editor",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z10 \u2014 Settings and configuration view",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 8
+          }
+        },
+        {
+          "name": "Z11 \u2014 System states",
+          "scores": {
+            "designQuality": 7,
+            "originality": 7,
+            "craft": 7,
+            "functionality": 7
+          },
+          "issues": [
+            "offline matrix not exhaustively re-proven"
+          ]
+        },
+        {
+          "name": "Z12 \u2014 Mobile (390px)",
+          "scores": {
+            "designQuality": 8,
+            "originality": 8,
+            "craft": 8,
+            "functionality": 7
+          },
+          "issues": [
+            "phone Rot dock badge count-sync defect on cold garden (326 vs ~35)",
+            "triage progress ordinal whisper"
+          ]
+        }
+      ],
+      "scores": {
+        "designQuality": 8,
+        "originality": 8,
+        "craft": 7,
+        "functionality": 7
+      },
+      "weightedAverage": 7.67,
+      "decision": "SHIP",
+      "actualViewports": [
+        1440,
+        390
+      ],
+      "gateFailures": [],
+      "keyIssues": [
+        "phone Rot dock cold garden painted Rot 326 vs desktop/feed ~35 \u2014 count-sync FAIL on Z8/Z12",
+        "triage progress ordinal still reads '1 of 65 remaining'",
+        "desktop search/settings remain unlabeled icon buttons; GET /api/v1/devices 404",
+        "B4 offline matrix still PARTIAL (Z11 floors craft/func at 7)"
+      ],
+      "phoneScrollWidths": {
+        "garden": 390,
+        "triage": 390,
+        "deploy": 390,
+        "rot": 390,
+        "search": 390,
+        "detail": 390,
+        "settings": 390,
+        "filter": 390,
+        "gardenFinal": 390
+      },
+      "uxWalkthrough": {
+        "desktop": {
+          "tasksAttempted": 6,
+          "tasksCompleted": 6,
+          "ratio": "6/6"
+        },
+        "phone": {
+          "tasksAttempted": 6,
+          "tasksCompletedFull": 6,
+          "tasksPartial": 0,
+          "ratio": "6/6",
+          "discardBranch": "65\u219264\u219265 with undo ribbon gap 72px"
+        },
+        "notes": [
+          "Triage seedling: Desktop keep 65\u219264 undo\u219265; discard 65\u219264 undo\u219265. Phone keep+discard both complete; decision row gap 9px (bottom 775 vs dock 784); primary Keep/Merge/Discard 116\u00d744 y=719 inViewport.",
+          "Change skill tier: Completed desktop+phone. Hover \u221240; r/c/p=44\u00d744; phone undo ribbon gap 8px above dock.",
+          "Cost/exposure lens: Completed. Cost lens + unused/stale; phone Filter \u00b7 Lens sheet.",
+          "Global find: Completed desktop (search glyph \u2192 1password \u2192 detail) and phone Find \u2192 detail.",
+          "Deploy dry-run: Completed both. WILL ROOT/PRUNE/DRIFT markers; Commit sync; phone sticky gap 8px.",
+          "Resolve rot: Completed. Consequence whisper present; desktop Rot 35\u219234 + undo. Phone resolve+undo works but cold dock badge was 326 (count-sync defect).",
+          "Exclusive stack: own PRNG 10/10 after-close + 10/10 mid exclusive via strict overlay roots.",
+          "Wordmark: 87.4\u00d744 both viewports (was 28)."
+        ]
+      },
+      "hitTargets": {
+        "dockSlots": {
+          "w": 97.5,
+          "h": 59
+        },
+        "tierSegments": {
+          "w": 44,
+          "h": 44
+        },
+        "shellActionsHeight": 44,
+        "triageDecisionsPhone": {
+          "w": 116,
+          "h": 44,
+          "y": 719,
+          "decisionRowBottom": 775,
+          "dockTop": 784,
+          "gap": 9,
+          "note": "above dock; reachable"
+        },
+        "wordmark": {
+          "w": 87.4,
+          "h": 44
+        },
+        "under44VisibleCount": 0
+      },
+      "sheetGaps": {
+        "triageDecisionRow": 9,
+        "triagePrimaryButtons": 21,
+        "triageUndoAfterKeep": 72,
+        "triageUndoAfterDiscard": 72,
+        "afterTierUndo": 8,
+        "deploySticky": 8,
+        "detailSticky": 8,
+        "rotUndoAfterResolve": 72
+      },
+      "transitions": {
+        "seed": "0x4E4A4C31",
+        "afterCloseSane": "10/10",
+        "midExclusive": "10/10"
+      },
+      "textAudit": {
+        "unintentionalClips": 0,
+        "intentionalEllipsisSamplesDesktop": 7,
+        "intentionalEllipsisSamplesPhone": 4,
+        "evidence": "eval-4/_text_console_audit.json"
+      },
+      "consoleFindings": [
+        "404 GET /api/v1/devices",
+        "intermittent ERR_INCOMPLETE_CHUNKED_ENCODING under mutation load"
+      ],
+      "decisionNote": "SHIP candidate: all four scores \u22657 (8/8/7/7 wavg 7.67); iter-3 gates cleared with numeric evidence; decision left empty for orchestrator."
     }
   ],
-  "bestIteration": 3
+  "bestIteration": 4
 }

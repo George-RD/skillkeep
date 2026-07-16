@@ -1,0 +1,2021 @@
+{
+  "desktop": {
+    "garden": {
+      "smallFont": [
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "v0.1.0",
+          "w": 32.5,
+          "h": 15
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "live",
+          "w": 26.4,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "agent",
+          "w": 59,
+          "h": 44
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "resident set",
+          "w": 75,
+          "h": 16
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "Inbox clear",
+          "w": 57,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "Review deploy",
+          "w": 73,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "Rot 80",
+          "w": 33.2,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "scope:",
+          "w": 39.6,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "tier:",
+          "w": 33,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Set up and use 1Password CLI for sign-in, desktop ",
+          "w": 512,
+          "h": 16.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "unused",
+          "w": 36,
+          "h": 16
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Measure whether a specific instruction given to a ",
+          "w": 512,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "unused",
+          "w": 36,
+          "h": 16
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "project/cairn",
+          "w": 88,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+          "w": 512,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "unused",
+          "w": 36,
+          "h": 16
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Adjudicate adversarial-debate findings against dec",
+          "w": 512,
+          "h": 32.1
+        }
+      ],
+      "clippedAll": [
+        {
+          "kind": "clipH",
+          "text": "Measure whether a specific instruction given to a subagent (",
+          "sw": 512,
+          "cw": 512,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+          "sw": 512,
+          "cw": 512,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate adversarial-debate findings against decisions the",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+          "sw": 512,
+          "cw": 512,
+          "sh": 64,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Validate a project roadmap's claimed status against code/git",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Structure a repo's docs so an AI coding loop boots from accu",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+          "sw": 512,
+          "cw": 512,
+          "sh": 64,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        }
+      ],
+      "clippedUnintentional": [],
+      "clippedIntentional": [
+        {
+          "kind": "clipH",
+          "text": "Measure whether a specific instruction given to a subagent (",
+          "sw": 512,
+          "cw": 512,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+          "sw": 512,
+          "cw": 512,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate adversarial-debate findings against decisions the",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+          "sw": 512,
+          "cw": 512,
+          "sh": 64,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Validate a project roadmap's claimed status against code/git",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Structure a repo's docs so an AI coding loop boots from accu",
+          "sw": 512,
+          "cw": 512,
+          "sh": 48,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        },
+        {
+          "kind": "clipH",
+          "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+          "sw": 512,
+          "cw": 512,
+          "sh": 64,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc max-w-lg mt-0.5"
+        }
+      ]
+    },
+    "modes": {
+      "triage": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "v0.1.0",
+            "w": 32.5,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 75,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Inbox clear",
+            "w": 57,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Review deploy",
+            "w": 73,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Rot 80",
+            "w": 33.2,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "scope:",
+            "w": 39.6,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "tier:",
+            "w": 33,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Set up and use 1Password CLI for sign-in, desktop ",
+            "w": 512,
+            "h": 16.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Measure whether a specific instruction given to a ",
+            "w": 512,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "project/cairn",
+            "w": 88,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+            "w": 512,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Adjudicate adversarial-debate findings against dec",
+            "w": 512,
+            "h": 32.1
+          }
+        ],
+        "clippedAll": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Validate a project roadmap's claimed status against code/git",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Structure a repo's docs so an AI coding loop boots from accu",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          }
+        ],
+        "clippedUnintentional": [],
+        "clippedIntentional": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Validate a project roadmap's claimed status against code/git",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Structure a repo's docs so an AI coding loop boots from accu",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          }
+        ]
+      },
+      "deploy": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "v0.1.0",
+            "w": 32.5,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 75,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Inbox clear",
+            "w": 57,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Review deploy",
+            "w": 74.1,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Rot 80",
+            "w": 33.2,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "scope:",
+            "w": 39.6,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "tier:",
+            "w": 33,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Set up and use 1Password CLI for sign-in, desktop ",
+            "w": 512,
+            "h": 16.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Measure whether a specific instruction given to a ",
+            "w": 512,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "project/cairn",
+            "w": 88,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+            "w": 512,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "unused",
+            "w": 36,
+            "h": 16
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Adjudicate adversarial-debate findings against dec",
+            "w": 512,
+            "h": 32.1
+          }
+        ],
+        "clippedAll": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Validate a project roadmap's claimed status against code/git",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Structure a repo's docs so an AI coding loop boots from accu",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          }
+        ],
+        "clippedUnintentional": [],
+        "clippedIntentional": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 512,
+            "cw": 512,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Validate a project roadmap's claimed status against code/git",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Structure a repo's docs so an AI coding loop boots from accu",
+            "sw": 512,
+            "cw": 512,
+            "sh": 48,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          },
+          {
+            "kind": "clipH",
+            "text": "Anonymise real vessel/customer NMEA-or-similar field telemet",
+            "sw": 512,
+            "cw": 512,
+            "sh": 64,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc max-w-lg mt-0.5"
+          }
+        ]
+      }
+    },
+    "overflow": {
+      "sw": 1440,
+      "cw": 1440
+    }
+  },
+  "phone": {
+    "garden": {
+      "smallFont": [
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "live",
+          "w": 26.4,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "agent",
+          "w": 59,
+          "h": 44
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "resident set",
+          "w": 76.8,
+          "h": 15
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "Filter · Lens",
+          "w": 58.9,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "279 skills",
+          "w": 66,
+          "h": 16.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Set up and use 1Password CLI for sign-in, desktop ",
+          "w": 332,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "40",
+          "w": 12,
+          "h": 15
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "stale",
+          "w": 43.8,
+          "h": 20.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Measure whether a specific instruction given to a ",
+          "w": 332,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "135",
+          "w": 18,
+          "h": 15
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "stale",
+          "w": 43.8,
+          "h": 20.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+          "w": 332,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "project/cairn",
+          "w": 88,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "116",
+          "w": 18,
+          "h": 15
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11,
+          "text": "stale",
+          "w": 43.8,
+          "h": 20.5
+        },
+        {
+          "kind": "smallFont",
+          "fs": 11.9,
+          "text": "Adjudicate adversarial-debate findings against dec",
+          "w": 332,
+          "h": 32.1
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "global",
+          "w": 46,
+          "h": 17
+        },
+        {
+          "kind": "smallFont",
+          "fs": 10,
+          "text": "66",
+          "w": 12,
+          "h": 15
+        }
+      ],
+      "clippedAll": [
+        {
+          "kind": "clipH",
+          "text": "Measure whether a specific instruction given to a subagent (",
+          "sw": 332,
+          "cw": 332,
+          "sh": 145,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+          "sw": 332,
+          "cw": 332,
+          "sh": 129,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate adversarial-debate findings against decisions the",
+          "sw": 332,
+          "cw": 332,
+          "sh": 80,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+          "sw": 332,
+          "cw": 332,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        }
+      ],
+      "clippedUnintentional": [],
+      "clippedIntentional": [
+        {
+          "kind": "clipH",
+          "text": "Measure whether a specific instruction given to a subagent (",
+          "sw": 332,
+          "cw": 332,
+          "sh": 145,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+          "sw": 332,
+          "cw": 332,
+          "sh": 129,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate adversarial-debate findings against decisions the",
+          "sw": 332,
+          "cw": 332,
+          "sh": 80,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        },
+        {
+          "kind": "clipH",
+          "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+          "sw": 332,
+          "cw": 332,
+          "sh": 96,
+          "ch": 32,
+          "intentional": true,
+          "tag": "DIV",
+          "cls": "skill-desc"
+        }
+      ]
+    },
+    "modes": {
+      "triage": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 76.8,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Inbox",
+            "w": 29.7,
+            "h": 12.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Deploy",
+            "w": 48.4,
+            "h": 12.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Rot 80",
+            "w": 46.2,
+            "h": 12.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Find",
+            "w": 22.5,
+            "h": 12.1
+          }
+        ],
+        "clippedAll": [],
+        "clippedUnintentional": [],
+        "clippedIntentional": []
+      },
+      "deploy": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 76.8,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Filter · Lens",
+            "w": 58.9,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "279 skills",
+            "w": 66,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Set up and use 1Password CLI for sign-in, desktop ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "40",
+            "w": 12,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Measure whether a specific instruction given to a ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "135",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "project/cairn",
+            "w": 88,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "116",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Adjudicate adversarial-debate findings against dec",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "66",
+            "w": 12,
+            "h": 15
+          }
+        ],
+        "clippedAll": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ],
+        "clippedUnintentional": [],
+        "clippedIntentional": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ]
+      },
+      "rot": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 76.8,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Filter · Lens",
+            "w": 58.9,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "279 skills",
+            "w": 66,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Set up and use 1Password CLI for sign-in, desktop ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "40",
+            "w": 12,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Measure whether a specific instruction given to a ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "135",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "project/cairn",
+            "w": 88,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "116",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Adjudicate adversarial-debate findings against dec",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "66",
+            "w": 12,
+            "h": 15
+          }
+        ],
+        "clippedAll": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ],
+        "clippedUnintentional": [],
+        "clippedIntentional": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ]
+      },
+      "find": {
+        "smallFont": [
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "live",
+            "w": 26.4,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "agent",
+            "w": 59,
+            "h": 44
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "resident set",
+            "w": 76.8,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "Filter · Lens",
+            "w": 58.9,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "279 skills",
+            "w": 66,
+            "h": 16.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Set up and use 1Password CLI for sign-in, desktop ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "40",
+            "w": 12,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Measure whether a specific instruction given to a ",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "135",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Lock in a webui fix that a frozen-fixture/clean-st",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "project/cairn",
+            "w": 88,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "116",
+            "w": 18,
+            "h": 15
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11,
+            "text": "stale",
+            "w": 43.8,
+            "h": 20.5
+          },
+          {
+            "kind": "smallFont",
+            "fs": 11.9,
+            "text": "Adjudicate adversarial-debate findings against dec",
+            "w": 332,
+            "h": 32.1
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "global",
+            "w": 46,
+            "h": 17
+          },
+          {
+            "kind": "smallFont",
+            "fs": 10,
+            "text": "66",
+            "w": 12,
+            "h": 15
+          }
+        ],
+        "clippedAll": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ],
+        "clippedUnintentional": [],
+        "clippedIntentional": [
+          {
+            "kind": "clipH",
+            "text": "Measure whether a specific instruction given to a subagent (",
+            "sw": 332,
+            "cw": 332,
+            "sh": 145,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Lock in a webui fix that a frozen-fixture/clean-state visual",
+            "sw": 332,
+            "cw": 332,
+            "sh": 129,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate adversarial-debate findings against decisions the",
+            "sw": 332,
+            "cw": 332,
+            "sh": 80,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          },
+          {
+            "kind": "clipH",
+            "text": "Adjudicate a contested DESIGN/PROSE change (e.g. a system-pr",
+            "sw": 332,
+            "cw": 332,
+            "sh": 96,
+            "ch": 32,
+            "intentional": true,
+            "tag": "DIV",
+            "cls": "skill-desc"
+          }
+        ]
+      }
+    },
+    "overflow": {
+      "sw": 390,
+      "cw": 390
+    }
+  },
+  "console": {
+    "desktop": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    ],
+    "phone": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    ]
+  },
+  "failed": {
+    "desktop": [
+      {
+        "status": 404,
+        "url": "http://127.0.0.1:4519/api/v1/devices"
+      }
+    ],
+    "phone": [
+      {
+        "status": 404,
+        "url": "http://127.0.0.1:4519/api/v1/devices"
+      }
+    ]
+  },
+  "failedSummary": [
+    {
+      "n": 2,
+      "entry": "404 http://127.0.0.1:4519/api/v1/devices"
+    }
+  ],
+  "summary": {
+    "desktopGarden": {
+      "unint": 0,
+      "intent": 7,
+      "small": 20
+    },
+    "desktopTriage": {
+      "unint": 0,
+      "intent": 7,
+      "small": 20
+    },
+    "desktopDeploy": {
+      "unint": 0,
+      "intent": 7,
+      "small": 20
+    },
+    "phoneGarden": {
+      "unint": 0,
+      "intent": 4,
+      "small": 20
+    },
+    "phoneTriage": {
+      "unint": 0,
+      "intent": 0,
+      "small": 7
+    },
+    "phoneDeploy": {
+      "unint": 0,
+      "intent": 4,
+      "small": 20
+    },
+    "phoneRot": {
+      "unint": 0,
+      "intent": 4,
+      "small": 20
+    },
+    "phoneFind": {
+      "unint": 0,
+      "intent": 4,
+      "small": 20
+    },
+    "failedTop": [
+      {
+        "n": 2,
+        "entry": "404 http://127.0.0.1:4519/api/v1/devices"
+      }
+    ],
+    "consoleDesktop": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    ],
+    "consolePhone": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING"
+    ],
+    "sampleUnintDesktop": [],
+    "sampleUnintPhone": []
+  }
+}

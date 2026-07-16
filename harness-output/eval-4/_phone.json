@@ -1,0 +1,1839 @@
+{
+  "phase": "phone",
+  "tokenTail": "a48ebd0c",
+  "startedAt": "2026-07-16T12:55:12.741Z",
+  "console": {
+    "errors": [
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: the server responded with a status of 404 (Not Found)",
+      "Failed to load resource: net::ERR_INCOMPLETE_CHUNKED_ENCODING",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)",
+      "Failed to load resource: the server responded with a status of 500 (Internal Server Error)"
+    ],
+    "failed": [
+      "net::ERR_INCOMPLETE_CHUNKED_ENCODING http://127.0.0.1:4519/api/events?token=<redacted>"
+    ]
+  },
+  "sheetGaps": {
+    "triage": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "keep": {
+          "text": "Keep all suggested",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 138.1,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        },
+        "merge": {
+          "text": "Merge",
+          "top": 719,
+          "bottom": 763,
+          "y": 719,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        },
+        "discard": {
+          "text": "Discard obvious duplicates",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 185.6,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "triage-actions flex flex-wrap gap-2",
+          "top": 706,
+          "bottom": 775,
+          "h": 69,
+          "gap": 9,
+          "overlap": false,
+          "text": "KeepMergeDiscard"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "keep",
+          "gap": 686,
+          "overlap": false
+        },
+        {
+          "k": "merge",
+          "gap": 21,
+          "overlap": false
+        },
+        {
+          "k": "discard",
+          "gap": 686,
+          "overlap": false
+        }
+      ],
+      "decisionRow": {
+        "top": 706,
+        "bottom": 775,
+        "h": 69,
+        "gap": 9,
+        "overlap": false
+      },
+      "gapMin": 21,
+      "overlapAny": false
+    },
+    "triageAfterKeep": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "keep": {
+          "text": "Keep all suggested",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 138.1,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        },
+        "merge": {
+          "text": "Merge",
+          "top": 719,
+          "bottom": 763,
+          "y": 719,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        },
+        "discard": {
+          "text": "Discard obvious duplicates",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 185.6,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        },
+        "undo": {
+          "text": "Undo",
+          "top": 641.2,
+          "bottom": 685.2,
+          "y": 641.2,
+          "w": 64.2,
+          "h": 44,
+          "gap": 98.8,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "triage-actions flex flex-wrap gap-2",
+          "top": 706,
+          "bottom": 775,
+          "h": 69,
+          "gap": 9,
+          "overlap": false,
+          "text": "KeepMergeDiscard"
+        },
+        {
+          "cls": "undo-ribbon",
+          "top": 614.4,
+          "bottom": 712,
+          "h": 97.6,
+          "gap": 72,
+          "overlap": false,
+          "text": "Kept openspine-change-landing-ceremony · openspine-change-landing-ceremonyUndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__label",
+          "top": 625.4,
+          "bottom": 701,
+          "h": 75.6,
+          "gap": 83,
+          "overlap": false,
+          "text": "Kept openspine-change-landing-ceremony · openspine-change-landing-ceremony"
+        },
+        {
+          "cls": "undo-ribbon__name",
+          "top": 663.2,
+          "bottom": 700.1,
+          "h": 36.9,
+          "gap": 83.9,
+          "overlap": false,
+          "text": "openspine-change-landing-ceremony"
+        },
+        {
+          "cls": "undo-ribbon__actions",
+          "top": 641.2,
+          "bottom": 685.2,
+          "h": 44,
+          "gap": 98.8,
+          "overlap": false,
+          "text": "UndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__undo",
+          "top": 641.2,
+          "bottom": 685.2,
+          "h": 44,
+          "gap": 98.8,
+          "overlap": false,
+          "text": "Undo"
+        },
+        {
+          "cls": "undo-ribbon__dismiss",
+          "top": 641.2,
+          "bottom": 685.2,
+          "h": 44,
+          "gap": 98.8,
+          "overlap": false,
+          "text": "Dismiss"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "keep",
+          "gap": 686,
+          "overlap": false
+        },
+        {
+          "k": "merge",
+          "gap": 21,
+          "overlap": false
+        },
+        {
+          "k": "discard",
+          "gap": 686,
+          "overlap": false
+        },
+        {
+          "k": "undo",
+          "gap": 98.8,
+          "overlap": false
+        }
+      ],
+      "decisionRow": {
+        "top": 706,
+        "bottom": 775,
+        "h": 69,
+        "gap": 9,
+        "overlap": false
+      },
+      "gapMin": 21,
+      "overlapAny": false
+    },
+    "afterTier": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "undo": {
+          "text": "Undo",
+          "top": 721,
+          "bottom": 765,
+          "y": 721,
+          "w": 64.2,
+          "h": 44,
+          "gap": 19,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "undo-ribbon",
+          "top": 710,
+          "bottom": 776,
+          "h": 66,
+          "gap": 8,
+          "overlap": false,
+          "text": "Tier → climbing on 1password · 1passwordUndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__label",
+          "top": 724.1,
+          "bottom": 761.9,
+          "h": 37.8,
+          "gap": 22.1,
+          "overlap": false,
+          "text": "Tier → climbing on 1password · 1password"
+        },
+        {
+          "cls": "undo-ribbon__name",
+          "top": 743,
+          "bottom": 761,
+          "h": 18,
+          "gap": 23,
+          "overlap": false,
+          "text": "1password"
+        },
+        {
+          "cls": "undo-ribbon__actions",
+          "top": 721,
+          "bottom": 765,
+          "h": 44,
+          "gap": 19,
+          "overlap": false,
+          "text": "UndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__undo",
+          "top": 721,
+          "bottom": 765,
+          "h": 44,
+          "gap": 19,
+          "overlap": false,
+          "text": "Undo"
+        },
+        {
+          "cls": "undo-ribbon__dismiss",
+          "top": 721,
+          "bottom": 765,
+          "h": 44,
+          "gap": 19,
+          "overlap": false,
+          "text": "Dismiss"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "undo",
+          "gap": 19,
+          "overlap": false
+        }
+      ],
+      "gapMin": 19,
+      "overlapAny": false
+    },
+    "filter": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {},
+      "sticky": [],
+      "gaps": [],
+      "gapMin": null,
+      "overlapAny": false
+    },
+    "find": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {},
+      "sticky": [],
+      "gaps": [],
+      "gapMin": null,
+      "overlapAny": false
+    },
+    "detail": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "cancel": {
+          "text": "Cancel",
+          "top": 712,
+          "bottom": 756,
+          "y": 712,
+          "w": 114,
+          "h": 44,
+          "gap": 28,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "sheet-sticky-actions",
+          "top": 699,
+          "bottom": 776,
+          "h": 77,
+          "gap": 8,
+          "overlap": false,
+          "text": "SaveCancelArchive"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "cancel",
+          "gap": 28,
+          "overlap": false
+        }
+      ],
+      "gapMin": 28,
+      "overlapAny": false
+    },
+    "deploy": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {},
+      "sticky": [
+        {
+          "cls": "sheet-sticky-actions flex-col",
+          "top": 647,
+          "bottom": 776,
+          "h": 129,
+          "gap": 8,
+          "overlap": false,
+          "text": "Commit syncCancel"
+        }
+      ],
+      "gaps": [],
+      "gapMin": 8,
+      "overlapAny": false
+    },
+    "rot": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {},
+      "sticky": [],
+      "gaps": [],
+      "gapMin": null,
+      "overlapAny": false
+    },
+    "rotAfterResolve": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "undo": {
+          "text": "Undo",
+          "top": 650.7,
+          "bottom": 694.7,
+          "y": 650.7,
+          "w": 64.2,
+          "h": 44,
+          "gap": 89.3,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "undo-ribbon",
+          "top": 633.3,
+          "bottom": 712,
+          "h": 78.7,
+          "gap": 72,
+          "overlap": false,
+          "text": "Archived archive-session-handoff · archive-session-handoffUndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__label",
+          "top": 644.3,
+          "bottom": 701,
+          "h": 56.7,
+          "gap": 83,
+          "overlap": false,
+          "text": "Archived archive-session-handoff · archive-session-handoff"
+        },
+        {
+          "cls": "undo-ribbon__name",
+          "top": 663.2,
+          "bottom": 700.1,
+          "h": 36.9,
+          "gap": 83.9,
+          "overlap": false,
+          "text": "archive-session-handoff"
+        },
+        {
+          "cls": "undo-ribbon__actions",
+          "top": 650.7,
+          "bottom": 694.7,
+          "h": 44,
+          "gap": 89.3,
+          "overlap": false,
+          "text": "UndoDismiss"
+        },
+        {
+          "cls": "undo-ribbon__undo",
+          "top": 650.7,
+          "bottom": 694.7,
+          "h": 44,
+          "gap": 89.3,
+          "overlap": false,
+          "text": "Undo"
+        },
+        {
+          "cls": "undo-ribbon__dismiss",
+          "top": 650.7,
+          "bottom": 694.7,
+          "h": 44,
+          "gap": 89.3,
+          "overlap": false,
+          "text": "Dismiss"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "undo",
+          "gap": 89.3,
+          "overlap": false
+        }
+      ],
+      "gapMin": 89.3,
+      "overlapAny": false
+    },
+    "settings": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {},
+      "sticky": [],
+      "gaps": [],
+      "gapMin": null,
+      "overlapAny": false
+    },
+    "triageAfterStack": {
+      "dock": {
+        "top": 784,
+        "bottom": 844,
+        "h": 60,
+        "w": 390,
+        "visible": true
+      },
+      "items": {
+        "keep": {
+          "text": "Keep all suggested",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 138.1,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        },
+        "merge": {
+          "text": "Merge",
+          "top": 719,
+          "bottom": 763,
+          "y": 719,
+          "w": 116,
+          "h": 44,
+          "gap": 21,
+          "overlap": false,
+          "inViewport": true
+        },
+        "discard": {
+          "text": "Discard obvious duplicates",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 185.6,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        }
+      },
+      "sticky": [
+        {
+          "cls": "triage-actions flex flex-wrap gap-2",
+          "top": 706,
+          "bottom": 775,
+          "h": 69,
+          "gap": 9,
+          "overlap": false,
+          "text": "KeepMergeDiscard"
+        }
+      ],
+      "gaps": [
+        {
+          "k": "keep",
+          "gap": 686,
+          "overlap": false
+        },
+        {
+          "k": "merge",
+          "gap": 21,
+          "overlap": false
+        },
+        {
+          "k": "discard",
+          "gap": 686,
+          "overlap": false
+        }
+      ],
+      "decisionRow": {
+        "top": 706,
+        "bottom": 775,
+        "h": 69,
+        "gap": 9,
+        "overlap": false
+      },
+      "gapMin": 21,
+      "overlapAny": false
+    }
+  },
+  "transitions": [
+    {
+      "i": 1,
+      "seq": "rot→esc→find→detail→esc→deploy→triage→find→detail",
+      "openCount": 1,
+      "major": 2,
+      "exclusive": false,
+      "modes": {
+        "triage": false,
+        "deploy": true,
+        "rot": true,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": false
+    },
+    {
+      "i": 2,
+      "seq": "rot→esc→find→rot→esc→triage→esc→triage→esc→find→esc→deploy",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 3,
+      "seq": "triage→triage→esc→find→detail→triage→triage→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 4,
+      "seq": "triage→esc→deploy→esc→deploy→esc→rot→esc→deploy→deploy→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 5,
+      "seq": "triage→esc→rot→rot→esc→triage→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 6,
+      "seq": "find→detail→deploy→esc→rot→rot→triage→esc→deploy→triage→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 7,
+      "seq": "deploy→esc→deploy→find→detail→esc→find→detail→deploy→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 8,
+      "seq": "find→detail→esc→triage→esc→deploy→rot→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 9,
+      "seq": "find→detail→rot→esc→find→detail→esc→rot→esc",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    },
+    {
+      "i": 10,
+      "seq": "deploy→deploy→esc→find→detail→esc→rot→esc→find→esc→find",
+      "openCount": 0,
+      "major": 0,
+      "exclusive": true,
+      "modes": {
+        "triage": false,
+        "deploy": false,
+        "rot": false,
+        "find": false
+      },
+      "dockVis": true,
+      "scrollWidth": 390,
+      "clientWidth": 390,
+      "sane": true
+    }
+  ],
+  "walkthrough": {
+    "tasks": {
+      "a_triage": {
+        "completed": true,
+        "keep": true,
+        "keepRect": {
+          "t": "Keep",
+          "x": 71,
+          "y": 741,
+          "w": 116,
+          "h": 44,
+          "len": 4
+        },
+        "undo": true,
+        "decideGap": 9,
+        "decideOverlap": false,
+        "decideInViewport": true,
+        "decisionRow": {
+          "top": 706,
+          "bottom": 775,
+          "h": 69,
+          "gap": 9,
+          "overlap": false
+        },
+        "keepItem": {
+          "text": "Keep all suggested",
+          "top": 54,
+          "bottom": 98,
+          "y": 54,
+          "w": 138.1,
+          "h": 44,
+          "gap": 686,
+          "overlap": false,
+          "inViewport": true
+        },
+        "undoRibbon": {
+          "cls": "undo-ribbon",
+          "top": 614.4,
+          "bottom": 712,
+          "h": 97.6,
+          "gap": 72,
+          "overlap": false,
+          "text": "Kept openspine-change-landing-ceremony · openspine-change-landing-ceremonyUndoDismiss"
+        },
+        "counts": {
+          "before": {
+            "triage": 65,
+            "rot": 326,
+            "remaining": null,
+            "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Filter · Lens | 214 skills | 1password | Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. | GLOBAL | — | 40 | stale | r | c | p"
+          },
+          "afterKeep": {
+            "triage": 64,
+            "rot": 321,
+            "remaining": {
+              "cur": 2,
+              "total": 65
+            },
+            "head": "skillkeep | live | AGENT | RESIDENT SET | 5.8k tokens | Seedlings | 2 of 65 remaining | Keep all suggested | Discard obvious duplicates | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cli-anything-doc-bootstrap | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | bot-review-second-pass-triage"
+          },
+          "afterUndo": {
+            "triage": 65,
+            "rot": 326,
+            "remaining": {
+              "cur": 1,
+              "total": 65
+            },
+            "head": "skillkeep | live | AGENT | RESIDENT SET | 5.8k tokens | Seedlings | 1 of 65 remaining | Keep all suggested | Discard obvious duplicates | openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint | /tmp/skillkeep-studio-home/.omp/agent/managed-skills | cli-anything-doc-bootstrap"
+          }
+        }
+      },
+      "b_tier": {
+        "completed": true,
+        "tier": {
+          "x": 294,
+          "y": 266.734375,
+          "w": 44,
+          "h": 44
+        },
+        "undo": true,
+        "undoRibbon": {
+          "cls": "undo-ribbon",
+          "top": 710,
+          "bottom": 776,
+          "h": 66,
+          "gap": 8,
+          "overlap": false,
+          "text": "Tier → climbing on 1password · 1passwordUndoDismiss"
+        }
+      },
+      "c_lens": {
+        "completed": true
+      },
+      "d_find": {
+        "completed": true,
+        "findOk": true
+      },
+      "e_deploy": {
+        "completed": true,
+        "markers": {
+          "willRoot": true,
+          "willPrune": true,
+          "drift": true,
+          "commit": true
+        },
+        "commit": true,
+        "commitItem": null,
+        "sticky": [
+          {
+            "cls": "sheet-sticky-actions flex-col",
+            "top": 647,
+            "bottom": 776,
+            "h": 129,
+            "gap": 8,
+            "overlap": false,
+            "text": "Commit syncCancel"
+          }
+        ]
+      },
+      "f_rot": {
+        "completed": true,
+        "whisper": {
+          "whisper": true,
+          "snippet": "Archive unused skill · reversible via undo"
+        },
+        "resolve": true,
+        "undo": true,
+        "resolveItem": null,
+        "counts": {
+          "beforeRot": {
+            "triage": 65,
+            "rot": 326,
+            "remaining": null,
+            "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Filter · Lens | 215 skills | 1password | Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. | GLOBAL | — | 40 | stale | r | c | p"
+          },
+          "afterRot": {
+            "triage": 65,
+            "rot": 34,
+            "remaining": null,
+            "head": "skillkeep | live | AGENT | RESIDENT SET | 5.7k tokens | Filter · Lens | 215 skills | 1password | Set up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets. | GLOBAL | — | 40 | stale | r | c | p"
+          }
+        }
+      }
+    },
+    "tasksAttempted": 6,
+    "tasksCompletedFull": 6,
+    "ratio": "6/6"
+  },
+  "screenshots": [
+    "z12-mobile-390.png",
+    "mobile-390-full.png",
+    "mobile-390-garden-rows.png",
+    "mobile-390-triage.png",
+    "mobile-390-sheet-open.png",
+    "04-triage-dock.png",
+    "mobile-390-after-keep.png",
+    "mobile-390-after-tier.png",
+    "mobile-390-filter-lens.png",
+    "mobile-390-search.png",
+    "mobile-390-search-results.png",
+    "mobile-390-detail.png",
+    "mobile-390-deploy.png",
+    "mobile-390-after-commit.png",
+    "mobile-390-rot.png",
+    "mobile-390-settings.png",
+    "05-midtransition.png",
+    "mobile-390-after-stack.png",
+    "mobile-390-triage-after-stack.png"
+  ],
+  "actualViewport": 390,
+  "overflowGarden": {
+    "innerWidth": 390,
+    "clientWidth": 390,
+    "scrollWidth": 390,
+    "overflowX": false
+  },
+  "hitsGarden": {
+    "total": 649,
+    "allVisible": 22,
+    "under40": [],
+    "under44": [],
+    "under40Interesting": [],
+    "under44Interesting": [],
+    "wordmark": {
+      "tag": "BUTTON",
+      "name": "skillkeep",
+      "cls": "wordmark-btn",
+      "w": 87.4,
+      "h": 44,
+      "x": 6,
+      "y": 2.5,
+      "bottom": 46.5,
+      "fail40": false,
+      "fail44": false,
+      "interesting": true,
+      "visible": true
+    },
+    "interesting": [
+      {
+        "tag": "BUTTON",
+        "name": "skillkeep",
+        "cls": "wordmark-btn",
+        "w": 87.4,
+        "h": 44,
+        "x": 6,
+        "y": 2.5,
+        "bottom": 46.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Filter · Lens",
+        "cls": "chip chip-signal chip-action",
+        "w": 80.9,
+        "h": 44,
+        "x": 29,
+        "y": 117,
+        "bottom": 161,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Triage 65",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 0,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Deploy",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 97.5,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Rot 326",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 195,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Find",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 292.5,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      }
+    ]
+  },
+  "wordmark": {
+    "tag": "BUTTON",
+    "name": "skillkeep",
+    "cls": "wordmark-btn",
+    "w": 87.4,
+    "h": 44,
+    "x": 6,
+    "y": 2.5,
+    "bottom": 46.5,
+    "fail40": false,
+    "fail44": false,
+    "interesting": true,
+    "visible": true
+  },
+  "dock": {
+    "top": 784,
+    "bottom": 844,
+    "h": 60,
+    "slots": [
+      {
+        "text": "Triage 65",
+        "w": 97.5,
+        "h": 59
+      },
+      {
+        "text": "Deploy",
+        "w": 97.5,
+        "h": 59
+      },
+      {
+        "text": "Rot 326",
+        "w": 97.5,
+        "h": 59
+      },
+      {
+        "text": "Find",
+        "w": 97.5,
+        "h": 59
+      }
+    ]
+  },
+  "triageOpen": {
+    "open": [
+      {
+        "cls": "triage-overlay fixed inset-0 bg-field/90 z-40 flex items-center justif",
+        "top": 0,
+        "bottom": 776,
+        "h": 776,
+        "z": "90"
+      }
+    ],
+    "openCount": 1,
+    "modes": {
+      "triage": true,
+      "deploy": false,
+      "rot": false,
+      "find": false
+    },
+    "major": 1,
+    "exclusive": true,
+    "dockVisible": true,
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "head": "skillkeep\nlive\nAGENT\nRESIDENT SET\n5.7k tokens\nSeedlings\n1 of 65 remaining\nKeep all suggested\nDiscard obvious duplicates\nopenspine-change-landing-ceremony\n/tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony"
+  },
+  "triageBodyHead": "skillkeep\nlive\nAGENT\nRESIDENT SET\n5.7k tokens\nSeedlings\n1 of 65 remaining\nKeep all suggested\nDiscard obvious duplicates\nopenspine-change-landing-ceremony\n/tmp/skillkeep-studio-home/.omp/agent/managed-skills/openspine-change-landing-ceremony\n/tmp/skillkeep-studio-home/.omp/agent/managed-skills\ncairn-bootstrap-blueprint\n/tmp/skillkeep-studio-home/.omp/agent/managed-skills/cairn-bootstrap-blueprint\n/tmp/skillkeep-studio-home/.omp/agent/managed-skills\ncli-anything-doc-bootstrap\n/tmp/skillkeep-studio",
+  "scrollWidths": {
+    "garden": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "triage": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "filter": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "search": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "detail": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "deploy": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "rot": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "settings": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    },
+    "gardenFinal": {
+      "innerWidth": 390,
+      "clientWidth": 390,
+      "scrollWidth": 390,
+      "overflowX": false
+    }
+  },
+  "midTransition": {
+    "open": [
+      {
+        "cls": "sheet-overlay",
+        "top": 0,
+        "bottom": 776,
+        "h": 776,
+        "z": "80"
+      }
+    ],
+    "openCount": 1,
+    "modes": {
+      "triage": false,
+      "deploy": true,
+      "rot": true,
+      "find": false
+    },
+    "major": 2,
+    "exclusive": false,
+    "dockVisible": true,
+    "scrollWidth": 390,
+    "clientWidth": 390,
+    "head": "skillkeep\nlive\nAGENT\nRESIDENT SET\n5.7k tokens\nFilter · Lens\n215 skills\n1password\nSet up and use 1Password CLI for sign-in, desktop integration, and reading or injecting secrets.\nGLOBAL\n—\n40\nstale\nr\nc\np\nadd-functional-state-scenario-to-visua"
+  },
+  "midTransitionDock": {
+    "dock": {
+      "top": 784,
+      "bottom": 844,
+      "h": 60,
+      "w": 390,
+      "visible": true
+    },
+    "items": {},
+    "sticky": [
+      {
+        "cls": "sheet-sticky-actions flex-col",
+        "top": 647,
+        "bottom": 776,
+        "h": 129,
+        "gap": 8,
+        "overlap": false,
+        "text": "Commit syncCancel"
+      }
+    ],
+    "gaps": [],
+    "gapMin": 8,
+    "overlapAny": false
+  },
+  "exerciseInteractives": [
+    {
+      "name": "skillkeep",
+      "ok": true,
+      "w": 87.4,
+      "h": 44,
+      "fail44": false
+    },
+    {
+      "name": "Filter · Lens",
+      "ok": true,
+      "w": 80.9,
+      "h": 44,
+      "fail44": false
+    },
+    {
+      "name": "Triage 65",
+      "ok": true,
+      "w": 97.5,
+      "h": 59,
+      "fail44": false
+    },
+    {
+      "name": "Deploy",
+      "ok": true,
+      "w": 97.5,
+      "h": 59,
+      "fail44": false
+    },
+    {
+      "name": "Rot 34",
+      "ok": true,
+      "w": 97.5,
+      "h": 59,
+      "fail44": false
+    },
+    {
+      "name": "Find",
+      "ok": true,
+      "w": 97.5,
+      "h": 59,
+      "fail44": false
+    }
+  ],
+  "hitsFinal": {
+    "total": 654,
+    "allVisible": 24,
+    "under40": [],
+    "under44": [],
+    "under40Interesting": [],
+    "under44Interesting": [],
+    "wordmark": {
+      "tag": "BUTTON",
+      "name": "skillkeep",
+      "cls": "wordmark-btn",
+      "w": 87.4,
+      "h": 44,
+      "x": 6,
+      "y": 2.5,
+      "bottom": 46.5,
+      "fail40": false,
+      "fail44": false,
+      "interesting": true,
+      "visible": true
+    },
+    "interesting": [
+      {
+        "tag": "BUTTON",
+        "name": "skillkeep",
+        "cls": "wordmark-btn",
+        "w": 87.4,
+        "h": 44,
+        "x": 6,
+        "y": 2.5,
+        "bottom": 46.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Filter · Lens",
+        "cls": "chip chip-signal chip-action",
+        "w": 80.9,
+        "h": 44,
+        "x": 29,
+        "y": 117,
+        "bottom": 161,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 244.7,
+        "bottom": 288.7,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 395.1,
+        "bottom": 439.1,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 525.8,
+        "bottom": 569.8,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 656.5,
+        "bottom": 700.5,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "r",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 228,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "c",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 272,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "p",
+        "cls": "tier-seg__btn",
+        "w": 44,
+        "h": 44,
+        "x": 316,
+        "y": 787.3,
+        "bottom": 831.3,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Triage 65",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 0,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Deploy",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 97.5,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Rot 34",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 195,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      },
+      {
+        "tag": "BUTTON",
+        "name": "Find",
+        "cls": "thumb-dock__slot",
+        "w": 97.5,
+        "h": 59,
+        "x": 292.5,
+        "y": 785,
+        "bottom": 844,
+        "fail40": false,
+        "fail44": false,
+        "interesting": true,
+        "visible": true
+      }
+    ]
+  },
+  "finishedAt": "2026-07-16T12:57:04.899Z",
+  "gate": {
+    "viewportBoundary390": "pass",
+    "interactionCompleteness": "pass",
+    "overflowStressTest": "pass",
+    "triageGap": 9,
+    "triageOverlap": false,
+    "wordmarkH": 44,
+    "transitionsSane": "9/10",
+    "under44All": 0,
+    "under44Interesting": 0
+  }
+}
